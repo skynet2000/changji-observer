@@ -13,19 +13,30 @@ const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1,
   sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null };
 const translated: Record<string, string> = { [item.title]: "Company issues an all-staff letter", [item.summary!]: "The company announces an organisational change affecting employee roles.",
   [item.reason!]: "Relevant to employees' careers.", "本期关注公司组织调整与岗位变化。": "This issue focuses on organisational changes and employee roles." };
+let dense = false;
+const lookupSizes: number[] = [];
+const failedTexts: string[] = [];
+const longItems = Array.from({ length: 32 }, (_, i) => ({ ...item, id: `long-${i}`, title: `长标题${i}`, summary: `${"长摘要".repeat(1300)}${i}` }));
+for (const [i, entry] of longItems.entries()) { translated[entry.title] = `Long story ${i}`; translated[entry.summary!] = `Long summary ${i}`; }
 let failing = false, lookups = 0, web: WebServer, browser: Browser;
 const api = createServer(async (req, res) => {
   const path = new URL(req.url!, "http://fixture").pathname;
   res.setHeader("content-type", "application/json");
   if (path === "/api/site/meta") return res.end('{"changelogVersion":null}');
   if (path === "/api/reader/session") return res.end('{"enabled":true,"providers":["google","github"],"user":null}');
-  if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: [{ key: item.id, anchorAt: at, item, group: null }], nextCursor: null, hot: null, dayCounts: { "2026-10-21": 1 } }));
+  if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: (dense ? longItems : [item]).map(item => ({ key: item.id, anchorAt: at, item, group: null })), nextCursor: null, hot: null, dayCounts: { "2026-10-21": dense ? longItems.length : 1 } }));
   if (path === "/api/site/reports/daily/latest-page") return res.end(JSON.stringify({ index: [{ key: report.key, issueNumber: 1, title: report.title }], report }));
   if (path === "/api/language/lookup") {
     lookups++;
-    if (failing) { res.statusCode = 503; return res.end("{}"); }
     let raw = ""; for await (const chunk of req) raw += chunk;
+    lookupSizes.push(Buffer.byteLength(raw));
+    if (Buffer.byteLength(raw) > 128 * 1024) { res.statusCode = 413; return res.end("{}"); }
     const texts = JSON.parse(raw).texts as string[];
+    if (failing) {
+      failedTexts.push(...texts);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      res.statusCode = 503; return res.end("{}");
+    }
     return res.end(JSON.stringify({ translations: Object.fromEntries(texts.filter(text => translated[text]).map(text => [text, translated[text]])) }));
   }
   res.statusCode = 404; res.end("{}");
@@ -63,7 +74,7 @@ test("Chinese/English changes interface, headlines, summaries and daily body; pr
 });
 
 test("unavailable saved translations keep readable Chinese and a pending notice; a failing endpoint cannot cause a request loop", async () => {
-  failing = true; lookups = 0;
+  failing = true; lookups = 0; failedTexts.length = 0;
   const context = await browser.newContext({ viewport: { width: 390, height: 900 } }), page = await context.newPage();
   try {
     await page.goto(web.origin + "/");
@@ -71,9 +82,11 @@ test("unavailable saved translations keep readable Chinese and a pending notice;
     await expect(page.getByRole("heading", { name: item.title, exact: true })).toBeVisible();
     await expect(page.getByText(/Original text is shown when a translation is pending/)).toBeVisible();
     await expect.poll(() => lookups).toBeGreaterThan(0);
-    const settled = lookups;
+    // Rerender while the failed read is still in flight: those texts must remain deduplicated.
+    await page.getByRole("button", { name: "Switch to Chinese", exact: true }).click();
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
     await page.waitForTimeout(1000);
-    assert.equal(lookups, settled);
+    assert.equal(new Set(failedTexts).size, failedTexts.length, "a failed or in-flight text is not queued twice; new late UI labels may use another batch");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   } finally { failing = false; await context.close(); }
 });
@@ -88,4 +101,16 @@ test("English titles matching JavaScript object property names remain plain read
     await expect(page.getByRole("heading", { name: "constructor", exact: true })).toBeVisible();
     assert.deepEqual(errors, []);
   } finally { item.title = original; await context.close(); }
+});
+
+test("long summaries are split into lookup requests below the public API body limit", async () => {
+  dense = true; lookupSizes.length = 0;
+  const context = await browser.newContext({ viewport: { width: 390, height: 900 } }), page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/");
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+    await expect(page.locator('[data-item-id="long-31"]').getByText("Long summary 31", { exact: true })).toHaveCount(1);
+    assert.ok(lookupSizes.length > 1);
+    assert.ok(lookupSizes.every(size => size <= 128 * 1024));
+  } finally { dense = false; await context.close(); }
 });

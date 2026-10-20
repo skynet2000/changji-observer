@@ -110,3 +110,19 @@ test("public lookup limits bursts before doing content reads and never starts tr
     assert.equal(limited.statusCode, 429); assert.equal(limited.headers["retry-after"], "60");
   } finally { await isolated.close(); }
 });
+
+test("real date ranges, compound units, discounts and gaming labels keep their meaning without weakening wrong-value checks", () => {
+  const cases = [
+    ["腾讯3A最后的希望", "Tencent's last hope for AAA games"],
+    ["17岁，5份百万美元offer", "17 years old, holding 5 million-dollar offers"],
+    ["17岁，5份百万美元邀约，2.8万亿参数的Kimi K3", "17 years old, five million-dollar-level offers, the 2.8-trillion-parameter Kimi K3"],
+    ["8160亿参数、420亿激活，100万token", "816-billion-parameter, 42 billion activated, 1-million-token context"],
+    ["补偿10.8-10.14消费", "Refund consumption from Oct. 8-14"],
+    ["下午13:04恢复，持续4小时52分钟", "Restored at 1:04 p.m., lasting 4 hours and 52 minutes"],
+    ["N1搭载5000万像素，支持4K", "N1 features a 50-megapixel camera and supports 4K"],
+    ["首单5折", "50% off the first order"],
+    ["15或30万字，2026年11月12日至14日", "150,000 or 300,000 characters, November 12 to 14, 2026"],
+  ];
+  for (const [source, english] of cases) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
+  for (const [source, english] of [["首单5折", "70% off"], ["5000万像素", "5 megapixels"], ["13:04恢复", "Restored at 2:04 p.m."], ["补偿10.8-10.14消费", "Refund November 8-14"], ["腾讯3A", "Tencent AA"], ["保持活跃的10多家", "Only a dozen or so remain"]]) assert.equal(validTranslations([source!], [english!]), false);
+});

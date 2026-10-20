@@ -38,9 +38,9 @@ export default function Account() {
       <section className="overflow-hidden rounded-sheet border border-line bg-surface shadow-[0_8px_40px_rgba(32,42,48,0.04)]">
         <div className="px-6 pb-7 pt-8 sm:px-8">
           <div className="mb-7 text-center">
-            {reader.user && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-accent-soft text-[22px] font-semibold text-accent" aria-hidden="true"><Text>{Array.from(reader.user.name)[0]}</Text></div>}
+            {reader.user && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-accent-soft text-[22px] font-semibold text-accent" aria-hidden="true">{Array.from(reader.user.name)[0]}</div>}
             <h1 data-page-title="" className="text-[27px] font-bold tracking-[-0.03em] text-ink"><Text>{reader.user ? "我的阅读记录" : `登录${SITE.name}`}</Text></h1>
-            <p className="mt-2 text-[14px] leading-relaxed text-ink-3"><Text>{reader.user ? `${reader.user.name} · ${reader.user.provider === "google" ? "Google" : "GitHub"}` : "收藏好内容，换台设备接着读。"}</Text></p>
+            <p className="mt-2 text-[14px] leading-relaxed text-ink-3">{reader.user ? `${reader.user.name} · ${reader.user.provider === "google" ? "Google" : "GitHub"}` : <Text>收藏好内容，换台设备接着读。</Text>}</p>
           </div>
           {query.has("error") && <p role="alert" className="mb-4 rounded-control bg-hot-soft p-3 text-[13px] text-hot"><Text>登录未完成或授权已过期，请重新尝试。</Text></p>}
           {reader.loading ? <p role="status" className="py-6 text-center text-[14px] text-ink-3"><Text>正在读取账号状态…</Text></p> : unavailable ? <p className="text-[14px] leading-relaxed text-ink-3"><Text>读者登录尚未开放。收藏、已读仍保存在当前浏览器。</Text></p> : !reader.user ? <>

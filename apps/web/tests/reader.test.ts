@@ -6,14 +6,14 @@ import { chromium, expect, type Browser } from "@playwright/test";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 let web: WebServer, browser: Browser;
-let enabled = true, version = 0;
+let enabled = true, version = 0, displayName = "测试读者";
 let state: { starred: Record<string, unknown>[]; read: string[] } = { starred: [], read: [] };
 const api = createServer(async (req, res) => {
   const url = new URL(req.url!, "http://fixture"), signedIn = req.headers.cookie?.includes("reader-fixture=yes");
   res.setHeader("content-type", "application/json");
   if (url.pathname === "/api/site/meta") return res.end('{"changelogVersion":"fixture"}');
   if (url.pathname === "/api/site/items/availability") return res.end("{}");
-  if (url.pathname === "/api/reader/session") return res.end(JSON.stringify({ enabled, providers: enabled ? ["google", "github"] : [], user: signedIn ? { id: "fixture", name: "测试读者", provider: "github" } : null, csrf: "test-csrf", state, version }));
+  if (url.pathname === "/api/reader/session") return res.end(JSON.stringify({ enabled, providers: enabled ? ["google", "github"] : [], user: signedIn ? { id: "fixture", name: displayName, provider: "github" } : null, csrf: "test-csrf", state, version }));
   if (url.pathname === "/api/reader/login/github") {
     res.writeHead(303, { "set-cookie": "reader-fixture=yes; Path=/; HttpOnly; SameSite=Lax", location: "/account" }); return res.end();
   }
@@ -114,4 +114,18 @@ test("account entries stay in navigation and login choices fit phone, desktop an
       await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/登录改版-深色-${width}-20261021.png`, import.meta.url)), fullPage: true });
     } finally { await context.close(); }
   }
+});
+
+test("language switching preserves a reader's display name even when it matches an interface label", async () => {
+  enabled = true; displayName = "精选";
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await context.addCookies([{ name: "reader-fixture", value: "yes", url: web.origin }]);
+  const page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/account");
+    await expect(page.locator('[data-reader-entry="sidebar"]')).toContainText("精选");
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+    await expect(page.locator('[data-reader-entry="sidebar"]')).toContainText("精选");
+    await expect(page.getByText("精选 · GitHub", { exact: true })).toBeVisible();
+  } finally { displayName = "测试读者"; await context.close(); }
 });

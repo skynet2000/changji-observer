@@ -26,7 +26,13 @@ async function flush() {
   timer = undefined;
   if (pending || locale !== "en" || !queued.size) return;
   pending = true;
-  const texts = [...queued].slice(0, 64); texts.forEach(text => queued.delete(text));
+  const texts: string[] = [];
+  let characters = 0;
+  for (const text of queued) {
+    // JSON escaping uses at most six bytes per UTF-16 unit; stay below the API's 128 KiB limit.
+    if (texts.length >= 64 || (texts.length > 0 && characters + text.length > 16000)) break;
+    texts.push(text); characters += text.length;
+  }
   try {
     const response = await fetch("/api/language/lookup", { method: "POST", credentials: "omit", headers: { "content-type": "application/json" },
       body: JSON.stringify({ texts }), signal: AbortSignal.timeout(10000) });
@@ -38,7 +44,7 @@ async function flush() {
       else missing.add(source);
     }
   } catch { texts.forEach(text => missing.add(text)); }
-  finally { pending = false; emit(); if (queued.size) timer = setTimeout(flush, 50); }
+  finally { texts.forEach(text => queued.delete(text)); pending = false; emit(); if (queued.size) timer = setTimeout(flush, 50); }
 }
 const templates = patterns.map(source => ({ source, parts: source.split(/\{\{\d+\}\}/) }));
 function templateValues(source: string, parts: string[]): string[] | null {
@@ -56,7 +62,7 @@ function templateValues(source: string, parts: string[]): string[] | null {
   return at === source.length ? values : null;
 }
 function requestText(source: string) {
-  if (/\p{Script=Han}/u.test(source) && !missing.has(source) && !queued.has(source)) {
+  if (source.length <= 20000 && /\p{Script=Han}/u.test(source) && !missing.has(source) && !queued.has(source)) {
     queued.add(source); timer ??= setTimeout(flush, 30);
   }
 }
