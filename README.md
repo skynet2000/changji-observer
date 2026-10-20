@@ -1,3 +1,9 @@
+# 厂际观察
+
+面向互联网中大厂职场人的行业资讯网站，关注企业发展、业务竞争、组织调整与员工热点。基于 [AIHOT](https://github.com/KKKKhazix/AIHOT) 定制，保留原项目 MIT 许可及下方框架说明。
+
+本站部署说明见 [innews.site 部署准备](docs/innews-deployment.md) 与 [上线检查清单](docs/launch-checklist.md)。运行密钥、数据库、备份和本地标注结果不随代码入库。
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">

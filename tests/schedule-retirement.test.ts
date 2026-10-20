@@ -40,6 +40,8 @@ test("retired schedules leave the current overview and execution queues while li
   // Multiple schedule keys must still yield one latest result per task.
   await boss.schedule("cron.kept", "0 0 1 1 *", {}, { key: "extra" });
   const schedules = await boss.getSchedules();
+  assert.equal(schedules.find(s => s.name === "cron.content.sweep")?.cron, "* * * * *",
+    "articles waiting for minute budgets must resume on the next minute sweep");
   for (const name of retired) {
     assert.ok(!schedules.some((s) => s.name === name));
     assert.equal(await boss.getQueue(name), null, `${name} leaves no execution queue`);

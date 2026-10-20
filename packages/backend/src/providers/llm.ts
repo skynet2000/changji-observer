@@ -7,6 +7,7 @@ import { PRESETS } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
 import { assertAccepted, paidRequest, ProviderRejectedError, rejectReceivedResponse } from "./receipts.ts";
+import { budgetedOutputTokens, modelCost, reserveModelCost } from "./model-cost.ts";
 
 export interface ModelSpec {
   key: string;
@@ -135,7 +136,8 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
   if (!baseUrl || !apiKey || !spec.model) throw new Error(`Model ${opts.model} is not configured (${spec.baseUrlEnv}, ${spec.apiKeyEnv}${spec.key === "default" ? ", LLM_MODEL" : ""})`);
 
   const temperature = opts.temperature ?? 0.2;
-  const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.reasoningTokens ?? 0);
+  const requestedTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.reasoningTokens ?? 0);
+  const maxTokens = budgetedOutputTokens(requestedTokens);
   const userText = typeof opts.user === "string" ? opts.user : JSON.stringify(opts.user);
   const body: Record<string, unknown> = {
     model: spec.model,
@@ -151,6 +153,8 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
     ...(spec.extra ?? {}),
   };
 
+  const costBudget = reserveModelCost(baseUrl, body);
+
   const receipt = await paidRequest(
     {
       service: spec.service,
@@ -160,6 +164,7 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
       identity: { model: spec.model, promptVersion: opts.promptVersion, system: sha256(opts.system), user: sha256(userText), temperature, maxTokens, extra: spec.extra ?? null },
       requestSummary: { promptVersion: opts.promptVersion, systemHash: sha256(opts.system), userHash: sha256(userText), userChars: userText.length, temperature, maxTokens },
       attemptTag: opts.attemptTag,
+      costBudget,
     },
     async () => {
       const started = Date.now();
@@ -189,7 +194,7 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
         response: { ...json, _latencyMs: Date.now() - started },
         requestId: (json.id as string | undefined) ?? res.headers.get("x-request-id"),
         usage,
-        cost: null,
+        cost: costBudget ? { amount: modelCost(usage) ?? costBudget.maxAmount, currency: "CNY", basis: "estimated" } : null,
       };
     },
   );

@@ -7,6 +7,7 @@ import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilte
 import { inNav } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 import { Timeline } from "../features/feed/Timeline";
+import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
 import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
 
@@ -41,15 +42,19 @@ export default function Home() {
       <ActiveFilters base="/" category={filters.category} channel={filters.channel} tag={filters.tag} />
       <div className="hidden lg:block">
         <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>
-        <div className="mb-5 mt-4 flex items-center justify-between gap-4">
+        <div className="mb-4 mt-4 flex items-start justify-between gap-4">
           <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
           <SearchField keep={{ category: filters.category }} />
         </div>
       </div>
 
+      <p className="mb-4 text-[12px] leading-relaxed text-ink-4">按原文发布时间排列 · 同一事件合并展示，可展开查看进展</p>
+
       {data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}
 
-      <Timeline initial={data} filters={data.filters} />
+      {data.cards.length === 0 && !hasFeedFilters(filters)
+        ? <FeedWelcome />
+        : <Timeline initial={data} filters={data.filters} />}
     </div>
   );
 }

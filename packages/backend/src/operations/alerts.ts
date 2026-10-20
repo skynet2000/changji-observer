@@ -16,6 +16,7 @@ import { GROUPING_WARN_AFTER_MS, waitingSelectedNews } from "./grouping.ts";
 import { upstreamFindings } from "../media/upstream.ts";
 import { responder, serverModules } from "../modules.ts";
 import { sourceHealth, sourceHealthList } from "../sources/health.ts";
+import { firstDailyDate } from "../reports/start.ts";
 
 const REPEAT_MS: Record<Exclude<Level, "later">, number> = { now: 3600_000, today: 24 * 3600_000 };
 
@@ -287,15 +288,11 @@ async function alertState(): Promise<AlertState> {
 async function dailyReportFindings(now: number): Promise<Finding[]> {
   const today = beijingDate(now);
   const state = await alertState();
-  const [activity] = await sql<{ first_report: string | null; first_attempt: Date | null }[]>`
-    SELECT (SELECT min(key) FROM reports WHERE kind = 'daily') AS first_report,
-           (SELECT min(started_at) FROM job_runs WHERE job = 'reports.compose') AS first_attempt`;
-  const starts = [activity?.first_report, activity?.first_attempt && beijingDate(activity.first_attempt)]
-    .filter((date): date is string => !!date && isValidDate(date)).sort();
-  const start = starts[0] ?? today;
+  const start = await firstDailyDate();
+  if (!start) return [];
   // New gaps and announced editions alike are followed for the scan window; checkAlerts closes older ones.
   const from = dailyScanFrom(now);
-  const dates = new Set(Object.keys(state).map(dailyDate).filter((date): date is string => !!date && date >= from));
+  const dates = new Set(Object.keys(state).map(dailyDate).filter((date): date is string => !!date && date >= from && date >= start));
   for (let date = from; date <= today; date = addDays(date, 1)) {
     if (date >= start) dates.add(date);
   }
@@ -322,6 +319,7 @@ export async function checkAlerts(now = Date.now()) {
   const found = tell.filter((f) => f.level !== "later");
   const state = await alertState();
   const sent: string[] = [];
+  const firstDaily = await firstDailyDate();
   for (const f of found) {
     const open = state[f.key];
     if (open && now - Date.parse(open.sentAt) <= REPEAT_MS[f.level as Exclude<Level, "later">]) continue;
@@ -337,6 +335,8 @@ export async function checkAlerts(now = Date.now()) {
     const date = dailyDate(key);
     if (date) {
       const [report] = await sql`SELECT 1 FROM reports WHERE kind = 'daily' AND key = ${date}`;
+      // Retire a pre-launch false alarm without claiming a missing report was recovered.
+      if (!report && (!firstDaily || date < firstDaily)) { delete state[key]; continue; }
       if (!report && date >= dailyScanFrom(now)) continue;
       if (!report) {
         // Past the scan window a missing edition is closed with one message instead of reminded about forever.

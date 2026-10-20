@@ -2,20 +2,20 @@
 // (全部动态, topics, search results).
 import { IntentLink } from "../../components/ui/IntentLink";
 import { useMemo } from "react";
-import type { FeedItemSummary } from "@aihot/contracts/site";
+import type { PoolResponse, TimelineFilters } from "@aihot/contracts/site";
 import { IconChevronRight } from "../../components/icons";
 import { beijingDate } from "@aihot/contracts/time";
 import { markRead, useReadSet } from "../../lib/local-state";
 import { DayHeader, TimelineSlot } from "./Timeline";
 import { FeedItem } from "./FeedItem";
 
-export function DayList({ items, todayCount = null, headerAside }: { items: FeedItemSummary[]; todayCount?: number | null; headerAside?: React.ReactNode }) {
+export function DayList({ items, filters, todayCount = null, headerAside }: { items: PoolResponse["items"]; filters?: TimelineFilters; todayCount?: number | null; headerAside?: React.ReactNode }) {
   const readSet = useReadSet();
   const today = beijingDate(Date.now());
   const days = useMemo(() => {
-    const out: Array<{ day: string; items: FeedItemSummary[] }> = [];
+    const out: Array<{ day: string; items: PoolResponse["items"] }> = [];
     for (const it of items) {
-      const d = beijingDate(it.timelineAt);
+      const d = beijingDate(it.anchorAt ?? it.timelineAt);
       const last = out[out.length - 1];
       if (last && last.day === d) last.items.push(it);
       else out.push({ day: d, items: [it] });
@@ -25,12 +25,12 @@ export function DayList({ items, todayCount = null, headerAside }: { items: Feed
   return (
     <div>
       {days.map(({ day, items: list }, i) => (
-        <section key={day} aria-label={day}>
+        <section key={`${day}:${list[0]?.id}`} aria-label={day}>
           <DayHeader day={day} today={today} count={day === today ? todayCount : null} aside={i === 0 ? headerAside : undefined} />
           <ol className="lg:pt-1">
             {list.map((it) => (
-              <TimelineSlot key={it.id} at={it.timelineAt}>
-                <FeedItem item={it} read={readSet.has(it.id)} onOpen={markRead} showTags at={it.timelineAt} />
+              <TimelineSlot key={it.id} at={it.anchorAt ?? it.timelineAt}>
+                <FeedItem item={it} group={it.group} filters={filters} read={readSet.has(it.id)} onOpen={markRead} showTags at={it.anchorAt ?? it.timelineAt} />
               </TimelineSlot>
             ))}
           </ol>

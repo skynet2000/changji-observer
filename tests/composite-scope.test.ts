@@ -5,10 +5,14 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
-import { latestCompositeCondition } from "@aihot/backend/publication/scope";
+import { latestCompositeCondition, compositeCondition, ownFactEvidenceCondition } from "@aihot/backend/publication/scope";
 import { candidateViews } from "@aihot/backend/events/recall";
+import { overrideFields } from "@aihot/backend/admin/content";
+import { moveToFact } from "@aihot/backend/events/corrections";
+import { publishArticle } from "@aihot/backend/publication/publish";
+import { stopBoss } from "@aihot/backend/jobs/queue";
 
-after(closeDb);
+after(async () => { await stopBoss(); await closeDb(); });
 
 test("latest scope stays correlated to an outer x membership and candidate counts", async () => {
   const source = `scope-${tag()}`;
@@ -40,4 +44,34 @@ test("latest scope stays correlated to an outer x membership and candidate count
   const [candidate] = await candidateViews([{ factId:fact!.id,storyId:story!.id,factTitle:'An occurrence',score:1 }]);
   assert.equal(candidate!.members,3,"only the composite is excluded; missing and unknown scope remain reports");
   assert.equal(candidate!.storyRoot,true);
+});
+
+test("audited scope corrections survive reanalysis and can be cleared without rewriting model history", async () => {
+  const id = `scope-edit-${tag()}`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${id},'Scope editor','rss','T1','editorial')`;
+  await sql`INSERT INTO articles (id,source_id,identity_key,url,title,discovered_at,timeline_at)
+    VALUES (${id},${id},${id},${`https://example.org/${id}`},'融资报道与历史背景',now(),now())`;
+  const [story] = await sql`INSERT INTO stories (public_id,title) VALUES (${randomUUID()},'融资事件') RETURNING id`;
+  const factPublicId = randomUUID();
+  await sql`INSERT INTO facts (public_id,story_id,title) VALUES (${factPublicId},${story!.id},'本轮融资')`;
+  const analysis = () => sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,summary_zh,output)
+    VALUES (${id},1,'rule','pass','一笔新融资，其他投资为历史背景','{"scope":"composite"}')`;
+  await analysis();
+  await publishArticle(id);
+  const scope = async () => (await sql`SELECT ${compositeCondition()} AS composite, ${ownFactEvidenceCondition()} AS evidence
+    FROM publications p WHERE article_id=${id}`)[0]!;
+  assert.equal((await scope()).composite,true);
+  await overrideFields(id,{ fields:{scope:'single'},version:0,reason:'核对原文，仅有一笔当期融资，其余为背景' },'scope-test');
+  await moveToFact(id,factPublicId,'核对融资主体与轮次','scope-test');
+  assert.deepEqual(await scope(),{composite:false,evidence:true});
+  await analysis();
+  await publishArticle(id);
+  assert.deepEqual(await scope(),{composite:false,evidence:true},'later model output cannot undo the correction');
+  await assert.rejects(overrideFields(id,{fields:{scope:'composite'},version:0,reason:'stale'},'scope-test'),{code:'conflict'});
+  await overrideFields(id,{fields:{},clear:['scope'],version:1,reason:'撤销人工范围校正'},'scope-test');
+  assert.deepEqual(await scope(),{composite:true,evidence:false});
+  const history = await sql`SELECT output->>'scope' AS scope FROM analyses WHERE article_id=${id}`;
+  assert.ok(history.every(r=>r.scope==='composite'),'model records are immutable');
+  const audit = await sql`SELECT 1 FROM audit_log WHERE subject=${`content:${id}`} AND action='content.override'`;
+  assert.equal(audit.length,2);
 });

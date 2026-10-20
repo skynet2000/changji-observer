@@ -2,6 +2,7 @@
 // once. Refuses to overwrite an existing .env.   node scripts/init-env.ts [--llm-key <key>]
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 
 if (existsSync(".env")) {
   console.error(".env 已经存在，没有覆盖。要重新生成，先把它改名或删掉。");
@@ -10,13 +11,19 @@ if (existsSync(".env")) {
 const password = randomBytes(12).toString("base64url");
 const keyAt = process.argv.indexOf("--llm-key");
 const llmKey = keyAt > 0 ? (process.argv[keyAt + 1] ?? "") : "";
-const text = readFileSync(".env.example", "utf8")
+const sample = readFileSync(".env.example", "utf8");
+const defaults = parseEnv(sample);
+// Reuse the key only when both configured endpoints are the same official DeepSeek endpoint.
+const scoreKey = defaults.LLM_BASE_URL === "https://api.deepseek.com/v1" && defaults.DEEPSEEK_BASE_URL === defaults.LLM_BASE_URL ? llmKey : "";
+const text = sample
   .replace(/^ADMIN_PASSWORD=$/m, `ADMIN_PASSWORD=${password}`)
   .replace(/^SESSION_SECRET=$/m, `SESSION_SECRET=${randomBytes(32).toString("hex")}`)
   .replace(/^IMG_PROXY_SIGN_SECRET=$/m, `IMG_PROXY_SIGN_SECRET=${randomBytes(32).toString("hex")}`)
   .replace(/^POSTGRES_PASSWORD=$/m, `POSTGRES_PASSWORD=${randomBytes(18).toString("hex")}`)
-  .replace(/^LLM_API_KEY=$/m, `LLM_API_KEY=${llmKey}`);
+  .replace(/^LLM_API_KEY=$/m, `LLM_API_KEY=${llmKey}`)
+  .replace(/^DEEPSEEK_API_KEY=$/m, `DEEPSEEK_API_KEY=${scoreKey}`);
 writeFileSync(".env", text, { mode: 0o600 });
 console.log("已生成 .env。");
 console.log(`管理员密码：${password}（也写在 .env 的 ADMIN_PASSWORD 里）`);
 if (!llmKey) console.log("还差一步：在 .env 里填上 LLM_API_KEY（以及 LLM_BASE_URL、LLM_MODEL，默认是 DeepSeek）。");
+if (!scoreKey) console.log("精选评分还需在 .env 里填写 DEEPSEEK_API_KEY；通用模型也是 DeepSeek 时可使用同一个 Key。");

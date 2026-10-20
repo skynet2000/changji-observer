@@ -1,68 +1,22 @@
-// Selected news timeline: ordinary reports fold by fact; standalone and independent-source articles
-// keep their own cards. Each ordinary fact stays at its first appearance.
-import type { GroupInfo, TimelineCard, TimelineFilters, TimelineResponse } from "@aihot/contracts/site";
+// Selected and all-news share event grouping, representative choice and publication chronology.
+import type { TimelineFilters, TimelineResponse, TimelineCard } from "@aihot/contracts/site";
 import { beijingDate, beijingMidnight } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { cachedByKey } from "../lib/cache.ts";
-import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeRow } from "./representative.ts";
 import { decodeCursor, encodeCursor, InvalidCursorError, queryBinding } from "../lib/cursor.ts";
-import {
-  ITEM_COLUMNS, ITEM_FROM, categoryCondition, channelCondition, tagCondition, toFeedItemSummary,
-  type ItemRow,
-} from "./items.ts";
-import { evidenceCondition, foldableSelectionCondition, listedCondition, ownFactEvidenceCondition, selectedCondition } from "./scope.ts";
+import { ITEM_COLUMNS, ITEM_FROM, categoryCondition, channelCondition, tagCondition, toFeedItemSummary, type ItemRow } from "./items.ts";
+import { foldableSelectionCondition, listedCondition, selectedCondition, ownFactEvidenceCondition } from "./scope.ts";
+import { eventEntries } from "./event-entries.ts";
 
-export interface TimelineQuery extends TimelineFilters {
-  cursor?: string | null;
-  limit?: number;
-  now?: Date;
-}
-
-interface GroupRow {
-  gk: string;
-  anchor_at: Date;
-}
-
-function filterSql(q: TimelineQuery) {
-  return sql`${channelCondition(q.channel)} ${categoryCondition(q.category)} ${tagCondition(q.tag)}`;
-}
-
-function binding(q: TimelineQuery): string {
-  return queryBinding({ c: q.channel, k: q.category, t: q.tag });
-}
-
-/**
- * Public pool reports linked to the given facts, under the same
- * filters (non-selected included): the sets "另有 N 家信源报道" expands and the group counts come from.
- */
-async function groupPool(q: TimelineQuery, now: Date, factIds: number[]) {
-  if (!factIds.length) return [];
-  return sql<{ fact_id: number; article_id: string; source_id: string }[]>`
-    SELECT DISTINCT f.id AS fact_id, p.article_id, p.source_id
-    FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
-    WHERE f.id IN ${sql(factIds)}
-      AND ${evidenceCondition()} AND ${listedCondition(now)} ${filterSql(q)}`;
-}
-
-/**
- * The selected set grouped into cards (fact or standalone item) with their anchor times, newest
- * first. Every timeline page and its day counts read this list; it is kept for five seconds per
- * filter scope (a newly selected report appears at most that much later).
- */
+export interface TimelineQuery extends TimelineFilters { cursor?: string | null; limit?: number; now?: Date }
+function filterSql(q: TimelineQuery) { return sql`${channelCondition(q.channel)} ${categoryCondition(q.category)} ${tagCondition(q.tag)}`; }
+function binding(q: TimelineQuery) { return queryBinding({ c: q.channel, k: q.category, t: q.tag }); }
 const groupedAnchors = cachedByKey(binding, (q: TimelineQuery) => queryGroupedAnchors(q, new Date()), { freshMs: 5000, maxStaleMs: 5000, maxKeys: 50 });
-
 async function queryGroupedAnchors(q: TimelineQuery, now: Date) {
-  const rows = (
-    await sql<{ gk: string; anchor_at: Date }[]>`
-      WITH base AS MATERIALIZED (
-        SELECT p.sort_at, CASE WHEN p.fact_id IS NOT NULL AND ${ownFactEvidenceCondition()} AND ${foldableSelectionCondition()}
-          THEN 'f' || p.fact_id::text ELSE 'a' || p.article_id END AS gk
-        FROM publications p
-        WHERE ${selectedCondition(now)} ${filterSql(q)}
-      )
-      SELECT gk, min(sort_at) AS anchor_at FROM base GROUP BY gk ORDER BY anchor_at DESC, gk COLLATE "C" DESC`
-  ).map((r) => ({ gk: r.gk, anchor: r.anchor_at.getTime() }));
-  return rows;
+  const rows = await sql<{ gk: string; article_id: string; story_id: number | null; anchor_at: Date }[]>`
+    WITH ${eventEntries(sql`SELECT p.article_id, 0 AS rel FROM publications p WHERE ${listedCondition(now)} ${filterSql(q)}`)}
+    SELECT gk, article_id, story_id, anchor_at FROM entries WHERE selected ORDER BY anchor_at DESC, gk COLLATE "C" DESC`;
+  return rows.map(r => ({ gk: r.gk, id: r.article_id, storyId: r.story_id, anchor: r.anchor_at.getTime() }));
 }
 
 /** Counts requested Beijing days over anchors already sorted newest first. */
@@ -86,78 +40,38 @@ export function countTimelineDays(grouped: readonly { anchor: number }[], days: 
 }
 
 export async function loadTimeline(q: TimelineQuery): Promise<Omit<TimelineResponse, "hot">> {
-  const now = q.now ?? new Date();
-  const limit = Math.min(Math.max(q.limit ?? 20, 1), 40);
-  const bind = binding(q);
+  const now = q.now ?? new Date(), limit = Math.min(Math.max(q.limit ?? 20, 1), 40), bind = binding(q);
   let after: { a: number; g: string } | null = null;
   if (q.cursor) {
-    const c = decodeCursor<{ a: number; g: string; b: string }>("tl2", q.cursor);
+    const c = decodeCursor<{ a: number; g: string; b: string }>("tl4", q.cursor);
     if (c.b !== bind || typeof c.a !== "number" || typeof c.g !== "string") throw new InvalidCursorError("cursor does not match this query");
     after = { a: c.a, g: c.g };
   }
-
-  // A given clock (tests, replays) reads afresh.
   const grouped = q.now ? await queryGroupedAnchors(q, now) : await groupedAnchors(q);
-  const start = after ? grouped.findIndex((g) => g.anchor < after!.a || (g.anchor === after!.a && g.gk < after!.g)) : 0;
-  const groups: GroupRow[] = (start < 0 ? [] : grouped.slice(start, start + limit + 1)).map((g) => ({ gk: g.gk, anchor_at: new Date(g.anchor) }));
-
-  const page = groups.slice(0, limit);
-  const hasMore = groups.length > limit;
-
-  const factIds = page.filter((g) => g.gk.startsWith("f")).map((g) => Number(g.gk.slice(1)));
-
-  // Read only ranking fields for the whole group; bodies, media and translations are hydrated for this page's representatives.
-  type Member = RepresentativeRow & Pick<ItemRow, "id"> & { fact_id: number };
-  const [members, pool] = await Promise.all([
-    factIds.length
-      ? sql<Member[]>`
-        SELECT p.fact_id, p.article_id AS id, p.body_mode, p.score, p.timeline_at, ${REPRESENTATIVE_COLUMNS}
-        FROM publications p JOIN sources s ON s.id = p.source_id LEFT JOIN facts f ON f.id = p.fact_id
-        WHERE p.fact_id IN ${sql(factIds)}
-          AND ${selectedCondition(now)} AND ${ownFactEvidenceCondition()} AND ${foldableSelectionCondition()} ${filterSql(q)}`
-      : Promise.resolve([] as Member[]),
-    groupPool(q, now, factIds),
-  ]);
-  const factInfo = new Map(
-    factIds.length ? (await sql<{ id: number; public_id: string }[]>`SELECT id, public_id FROM facts WHERE id IN ${sql(factIds)}`).map((f) => [f.id, f]) : [],
-  );
-
-  const planned: Array<{ key: string; anchorAt: string; id: string; group: GroupInfo | null }> = [];
-  for (const g of page) {
-    if (g.gk.startsWith("a")) {
-      planned.push({ key: g.gk, anchorAt: g.anchor_at.toISOString(), id: g.gk.slice(1), group: null });
-      continue;
-    }
-    const factId = Number(g.gk.slice(1));
-    const candidates = members.filter((m) => m.fact_id === factId);
-    if (!candidates.length) continue;
-    const rep = pickRepresentative(candidates);
-    const reports = pool.filter((r) => r.fact_id === factId);
-    const repSource = reports.find((r) => r.article_id === rep.id)?.source_id;
-    const group: GroupInfo = {
-      factId: factInfo.get(factId)?.public_id ?? String(factId),
-      additionalSourceCount: new Set(reports.filter((r) => r.source_id !== repSource).map((r) => r.source_id)).size,
-      reportCount: new Set(reports.map((r) => r.article_id)).size,
-    };
-    const showGroup = group.reportCount > 1;
-    planned.push({ key: g.gk, anchorAt: g.anchor_at.toISOString(), id: rep.id, group: showGroup ? group : null });
-  }
-
-  // Recheck scope when hydrating: a withdrawal may commit after the narrow representative read.
-  const rows = new Map(planned.length ? (await sql<ItemRow[]>`
-    SELECT ${ITEM_COLUMNS} ${ITEM_FROM} WHERE p.article_id IN ${sql(planned.map((p) => p.id))}
-      AND ${selectedCondition(now)} ${filterSql(q)}`).map((row) => [row.id, row]) : []);
-  const cards: TimelineCard[] = planned.flatMap(({ id, key, anchorAt, group }) => {
-    const row = rows.get(id);
-    if (!row) return [];
-    return [{ key, anchorAt, item: toFeedItemSummary(row), group }];
+  const start = after ? grouped.findIndex(g => g.anchor < after!.a || (g.anchor === after!.a && g.gk < after!.g)) : 0;
+  const page = start < 0 ? [] : grouped.slice(start, start + limit);
+  type Row = ItemRow & { fact_public_id: string | null; story_id: number | null; report_count: number; source_count: number; development_count: number };
+  const rows = page.length ? await sql<Row[]>`
+    SELECT ${ITEM_COLUMNS}, f.public_id AS fact_public_id, f.story_id, reports.*
+    ${ITEM_FROM} LEFT JOIN facts f ON f.id = p.fact_id AND ${ownFactEvidenceCondition()} AND ${foldableSelectionCondition()}
+    LEFT JOIN LATERAL (
+      SELECT count(*)::int AS report_count, count(DISTINCT p.source_id)::int AS source_count, count(DISTINCT p.fact_id)::int AS development_count
+      FROM publications p JOIN facts member_fact ON member_fact.id = p.fact_id
+      WHERE (CASE WHEN f.story_id IS NOT NULL THEN member_fact.story_id = f.story_id ELSE p.fact_id = f.id END)
+        AND ${ownFactEvidenceCondition()} AND ${listedCondition(now)} ${filterSql(q)}
+    ) reports ON true
+    WHERE p.article_id IN ${sql(page.map(g => g.id))} AND ${selectedCondition(now)} ${filterSql(q)}` : [];
+  const byId = new Map(rows.map(r => [r.id, r]));
+  const cards: TimelineCard[] = page.flatMap(g => {
+    const r = byId.get(g.id);
+    if (!r) return [];
+    return [{ key: g.gk, anchorAt: new Date(g.anchor).toISOString(), item: toFeedItemSummary(r),
+      group: r.fact_public_id && r.report_count > 1 ? { factId: r.fact_public_id, reportCount: r.report_count,
+        additionalSourceCount: r.source_count - 1,
+        ...(r.story_id !== null ? { scope: "story" as const, developmentCount: r.development_count } : {}) } : null }];
   });
-
-  // Day header counts for the days on this page, over the full grouped set.
-  const days = new Set(page.map((g) => beijingDate(g.anchor_at)));
-  const dayCounts = countTimelineDays(grouped, days);
-
-  const last = page[page.length - 1];
-  const nextCursor = hasMore && last ? encodeCursor("tl2", { a: last.anchor_at.getTime(), g: last.gk, b: bind }) : null;
+  const dayCounts = countTimelineDays(grouped, new Set(page.map(g => beijingDate(g.anchor))));
+  const last = page.at(-1);
+  const nextCursor = start >= 0 && start + limit < grouped.length && last ? encodeCursor("tl4", { a: last.anchor, g: last.gk, b: bind }) : null;
   return { filters: { channel: q.channel, category: q.category, tag: q.tag }, cards, nextCursor, dayCounts };
 }

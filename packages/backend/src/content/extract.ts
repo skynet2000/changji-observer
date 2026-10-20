@@ -3,6 +3,7 @@
 import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import { sql } from "../db.ts";
+import { credential } from "../config.ts";
 import { guardedFetch } from "../lib/http-fetch.ts";
 import { stripTags } from "../lib/text.ts";
 import { isVideoPageUrl } from "../lib/video-url.ts";
@@ -15,6 +16,7 @@ import { onlyXArticleLink, xArticleText } from "../sources/x.ts";
 import { sanitizeBody, trimTrailingChrome } from "./sanitize.ts";
 import { contentHash, fillPublicationTime, reviseMaterial } from "./materials.ts";
 import { markdownBody } from "./markdown.ts";
+import { fromWeiboHtml } from "../sources/weibo.ts";
 
 export interface ExtractedBody {
   html: string;
@@ -99,6 +101,13 @@ function settleInlineVisibility(document: ReturnType<typeof parseHTML>["document
 /** A publication time the page prints without a zone is read in utcOffset (the source's articleUtcOffset). */
 export function readable(html: string, url: string, utcOffset?: string): ExtractedBody | null {
   if (isVideoPageUrl(url)) return null;
+  if (/^(www\.)?weibo\.com$/.test(new URL(url).hostname)) {
+    const canonical = `https://weibo.com${new URL(url).pathname}`;
+    const post = fromWeiboHtml(html, url).find(c => c.url === canonical);
+    return post?.bodyStatus === "ok" && post.bodyText && post.bodyHtml
+      ? { html: post.bodyHtml, text: post.bodyText, images: [], via: "readability", publishedAt: post.publishedAt }
+      : null;
+  }
   const { document } = parseHTML(html);
   try {
     const base = document.createElement("base");
@@ -137,6 +146,9 @@ export async function extractFromUrl(url: string, subject: string, utcOffset?: s
   } catch {
     // fall through to Jina
   }
+  // A generic rendered page may contain login copy or unrelated posts, not this post's body.
+  if (/^(www\.)?weibo\.com$/.test(new URL(url).hostname)) return null;
+  if (!credential("collectors", "JINA_API_KEY")) return null;
   try {
     const page = await jinaRead(url, { purpose: "body_fallback", subject });
     const html = markdownBody(page.markdown, url);

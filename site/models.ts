@@ -36,7 +36,8 @@ export const PRESETS: Record<string, ModelPreset> = {
     extra: { thinking: { type: "disabled" } }, jsonMode: true,
   },
   "deepseek-flash-think": {
-    service: "deepseek", model: "deepseek-flash", baseUrlEnv: "DEEPSEEK_BASE_URL", apiKeyEnv: "DEEPSEEK_API_KEY", reasoningTokens: 4000, jsonMode: true,
+    service: "deepseek", model: "deepseek-flash", baseUrlEnv: "DEEPSEEK_BASE_URL", apiKeyEnv: "DEEPSEEK_API_KEY", reasoningTokens: 12000,
+    extra: { thinking: { type: "enabled" }, reasoning_effort: "low" }, jsonMode: true,
   },
   "qwen3.7-flash": {
     service: "dashscope", model: "qwen3.7-flash", baseUrlEnv: "DASHSCOPE_BASE_URL", apiKeyEnv: "DASHSCOPE_API_KEY",
@@ -60,4 +61,15 @@ export const PRESETS: Record<string, ModelPreset> = {
  * 每一步默认用的模型（步骤见后台“模型与评测”页），值是上面的名字或 default。没写的步骤用 default。
  * 例：{ score: "glm-5.3-flash-selection", groupReview: "mimo-v2.6-flash" }
  */
-export const DEFAULTS: Record<string, string> = {};
+export const DEFAULTS: Record<string, string> = { score: "deepseek-flash-think" };
+
+// 2026-10-13 核验：https://api-docs.deepseek.com/zh-cn/quick_start/pricing
+// 按高峰单价计算上界，不依赖空闲时段折扣；金额限制通过环境变量启用。
+export const MODEL_COST_POLICY = {
+  origin: "https://api.deepseek.com",
+  model: "deepseek-flash",
+  inputPerMillion: 2,
+  cachedInputPerMillion: 0.04,
+  outputPerMillion: 8,
+  maxOutputTokens: 4096,
+} as const;

@@ -223,6 +223,7 @@ const FieldsSchema = z
     score: z.number().min(0).max(100).nullable(),
     selected: z.boolean(),
     silent: z.boolean(),
+    scope: z.enum(["single", "composite", "unknown"]),
   })
   .partial()
   .strict();
@@ -239,6 +240,7 @@ export async function overrideFields(id: string, input: { fields: unknown; clear
     await tx`
       INSERT INTO editorial_overrides (article_id, fields, reason, version, updated_by) VALUES (${id}, ${tx.json(next as never)}, ${input.reason}, 1, ${actor})
       ON CONFLICT (article_id) DO UPDATE SET fields = EXCLUDED.fields, reason = EXCLUDED.reason, version = editorial_overrides.version + 1, updated_by = EXCLUDED.updated_by, updated_at = now()`;
+    if (before.fields.scope !== next.scope) await requestRegroup(id, `scope:${before.version + 1}`, tx);
     const published = await publishArticleTx(tx, id);
     if (published?.changed) {
       await emit("articleChanged", { id, kind: "content", reduced: published.reduced, reason: "manual correction" }, tx);

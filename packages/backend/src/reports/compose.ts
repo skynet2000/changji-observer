@@ -17,6 +17,7 @@ import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
 import { emit } from "../modules.ts";
 import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry } from "./edition.ts";
+import { firstDailyDate } from "./start.ts";
 
 export const REPORT_VERSION = promptVersion("report-period", "report-period-sections", "report-period-no-sections");
 
@@ -91,16 +92,24 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
   if (previous && reason === undefined) return { key: date, entries: previous.entries };
   const end = beijingAt(date, EDITION_TIMES.daily);
   const start = new Date(end.getTime() - 86400000);
-  const edition = await dailyEdition(date, start, end);
+  let edition = await dailyEdition(date, start, end);
+  let backfilled = false;
+  if (edition.entries.length === 0 && edition.stats.judgedReports === 0) {
+    // A local collection gap may be filled later. Only an unpublished issue can use the
+    // source-date window; keep the recovery explicit and never invent a quiet day.
+    const recovered = await dailyEdition(date, start, end, new Date());
+    if (recovered.entries.length > 0 || recovered.stats.judgedReports > 0) { edition = recovered; backfilled = true; }
+  }
   // Nothing judged in the window is a failure upstream, not a quiet day: the run fails and is caught up later.
   if (edition.entries.length === 0 && edition.stats.judgedReports === 0) throw new Error(`daily ${date}: nothing judged in its window`);
   const issue = arrangeDaily(edition.entries);
   const [lead, ...rest] = issue.main;
+  const recoveryNote = backfilled ? "补刊：依据后来采集的原文，按本期发布时间窗口回补。\n\n" : "";
   const content = {
     date,
     lead: lead
-      ? { title: lead.entry.title, leadParagraph: lead.entry.summary }
-      : { title: REPORTS.quiet.title, leadParagraph: REPORTS.quiet.paragraph.replace("{start}", windowPoint(start)).replace("{end}", windowPoint(end)) },
+      ? { title: lead.entry.title, leadParagraph: recoveryNote + lead.entry.summary }
+      : { title: REPORTS.quiet.title, leadParagraph: recoveryNote + REPORTS.quiet.paragraph.replace("{start}", windowPoint(start)).replace("{end}", windowPoint(end)) },
     leadItemId: lead?.entry.itemId ?? null,
     highlights: rest.slice(0, 3).map((e) => e.entry.itemId),
     sections: SECTION_ORDER
@@ -110,7 +119,7 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
     metrics: dailyMetrics(issue.main),
     windowStart: start.toISOString(),
     windowEnd: end.toISOString(),
-    generator: { version: REPORT_VERSION, ...edition.stats, ...issue.stats },
+    generator: { version: REPORT_VERSION, ...edition.stats, ...issue.stats, ...(backfilled ? { backfilled: true, basis: "source-publication" } : {}) },
   };
   await saveReport("daily", date, start, end, content, reason, null, []);
   return { key: date, entries: issue.main.length };
@@ -289,7 +298,7 @@ const nextMonth = (label: string) => {
 /**
  * The scheduled run (every half hour): every issue due by `now` that does not exist yet, oldest first.
  * The newest one appears at the first run after it falls due (above); a long stop or an older gap is
- * filled too. A kind with no issue yet only gets its latest due one. An issue that fails does not hold
+ * filled too. Daily recovery starts at the first live issue, including gaps before the earliest saved issue. An issue that fails does not hold
  * up the others; at most `limit` issues are written per run, the next run continues.
  */
 export async function composeDueReports(now = new Date(), limit = 8): Promise<{ generated: string[]; failed: string[] }> {
@@ -303,9 +312,11 @@ export async function composeDueReports(now = new Date(), limit = 8): Promise<{ 
   // Weeklies and monthlies sum up dailies: a period that ended before the site's first daily has nothing to sum
   // up and is not due (a site started mid-month would otherwise fail that month's issue on every run).
   const [{ first: firstDaily }] = await sql<{ first: string | null }[]>`SELECT min(key) AS first FROM reports WHERE kind = 'daily'`;
+  const firstDue = await firstDailyDate();
   kinds: for (const k of kinds) {
+    if (k.kind === "daily" && (!firstDue || firstDue > k.due)) continue;
     const have = new Set((await sql<{ key: string }[]>`SELECT key FROM reports WHERE kind = ${k.kind}`).map((r) => r.key));
-    const first = [...have].sort()[0] ?? k.due;
+    const first = k.kind === "daily" ? firstDue! : [...have].sort()[0] ?? k.due;
     for (let key = first; key <= k.due; key = k.next(key)) {
       if (have.has(key)) continue;
       if (k.kind !== "daily" && (!firstDaily || k.end(key) < firstDaily)) continue;

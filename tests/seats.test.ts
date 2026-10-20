@@ -80,11 +80,10 @@ test("one fact holds one selected seat on v1, RSS and the sync ledger", async ()
   assert.equal(net.get(official), "upsert");
   assert.equal(net.get(first), "remove");
   assert.ok(!net.has(second) || net.get(second) === "remove");
-  // 全部动态 and the item page list every report; the ones that yield the seat say which report stands
-  // for the fact, and the recommendation reason goes with the seat.
-  const pool = (await get(`/api/site/pool?q=${T}`)).json.items as Array<{ id: string; reason: string | null; sameEvent?: { id: string } | null }>;
-  assert.equal(pool.find((i) => i.id === first)?.sameEvent?.id, official);
-  assert.equal(pool.find((i) => i.id === first)?.reason, null);
+  // 全部动态 folds the fact too; individual report pages still identify the selected representative.
+  const pool = (await get(`/api/site/pool?q=${T}`)).json.items as Array<{ id: string; reason: string | null; sameEvent?: { id: string } | null; group?: { reportCount: number } }>;
+  assert.deepEqual(pool.filter(i => [first, second, official].includes(i.id)).map(i => i.id), [official]);
+  assert.equal(pool.find(i => i.id === official)?.group?.reportCount, 3);
   assert.equal(pool.find((i) => i.id === official)?.sameEvent ?? null, null);
   const detail = (await get(`/api/site/items/${first}`)).json as { reason: string | null; sameEvent?: { id: string } | null };
   assert.equal(detail.sameEvent?.id, official);
@@ -96,18 +95,18 @@ test("one fact holds one selected seat on v1, RSS and the sync ledger", async ()
   const card = home.find((c) => c.item.id === official);
   assert.equal(card?.group?.reportCount, 3);
 
-  // A later evaluation of the same product is another news item in every selected outlet.
-  // It must not replace the launch, inherit its copy, or lift its original timeline position.
+  // A later evaluation stays a separate fact in machine feeds, but shares the website event card.
   const timelineQuery = { channel: "all" as const, category: null, tag: `t-${T}`, now: new Date() };
   const before = await loadTimeline(timelineQuery);
   const [evaluation] = await sql<{ id: number }[]>`INSERT INTO facts (public_id, story_id, title)
     VALUES (${`evaluation-${T}`}, ${story!.id}, 'New evaluation') RETURNING id`;
   const evaluated = await report(MEDIA, evaluation!.id);
   const after = await loadTimeline({ ...timelineQuery, now: new Date() });
-  assert.deepEqual(after.cards.map(c => c.item.id), [evaluated, official]);
-  assert.equal(after.cards.find(c => c.item.id === official)!.anchorAt, before.cards[0]!.anchorAt);
+  assert.deepEqual(after.cards.map(c => c.item.id), [evaluated]);
+  assert.ok(after.cards[0]!.anchorAt >= before.cards[0]!.anchorAt);
   assert.equal(after.cards[0]!.item.source.name, 'Media');
-  assert.equal(after.cards[0]!.group, null, 'one report needs no duplicate-report expansion');
+  assert.equal(after.cards[0]!.group!.reportCount, 4);
+  assert.equal(after.cards[0]!.group!.developmentCount, 2);
   const selected = (await get(`/api/v1/items?mode=selected&window=24h&limit=100&q=${T}`)).json.items as Array<{ id: string }>;
   assert.deepEqual(selected.map(i => i.id), [evaluated, official]);
   const feed = (await get('/feed.xml')).body;

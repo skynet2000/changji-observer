@@ -7,7 +7,7 @@
 | 版本 | 请填写 |
 | 生效日期 | 请填写 |
 | 运营主体 | 请填写 |
-| 联系方式 | 请填写 |
+| 联系方式 | [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com) |
 
 页首说明：
 
@@ -19,7 +19,7 @@
 
 ## 2. 来源方的更正与下架
 
-如果你是来源方，希望更正、下架或调整展示方式，请通过反馈页联系我们，我们会尽快处理。
+如果你是来源方，希望更正、下架或调整展示方式，请通过反馈页或邮件 [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com) 联系我们，我们会尽快处理。
 
 ## 3. 使用本站的数据
 

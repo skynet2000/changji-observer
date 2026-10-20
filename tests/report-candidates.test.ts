@@ -178,3 +178,14 @@ test("daily composition waits for a pre-cutoff release to commit instead of losi
     await Promise.allSettled([publication, report]);
   }
 });
+
+
+test("report entries show source publication time while release still determines the edition",async()=>{
+  const arrival=editionAt("daily","2021-02-02",-120);
+  const release=editionAt("daily","2021-02-02",120);
+  const id=await selected("source-publication-clock",arrival,release);
+  const original=new Date(+arrival-3600000);
+  await sql`UPDATE publications SET published_at=${original} WHERE article_id=${id}`;
+  const rows=await candidates(editionAt("daily","2021-02-02"),editionAt("daily","2021-02-03"));
+  assert.equal(rows.find(r=>r.itemId===id)!.publishedAt,original.toISOString());
+});

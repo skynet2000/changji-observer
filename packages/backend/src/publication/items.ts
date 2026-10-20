@@ -1,6 +1,6 @@
 // Public read layer, item level. Every exit (site API, v1, RSS, MCP, sitemap) reads
 // items through these columns and views; which rows are public is decided by scope.ts.
-import { CATEGORY_KEYS, toPublicApiCategory, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
+import { READER_CATEGORY_OPTIONS, CATEGORY_KEYS, toPublicApiCategory, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import type { FeedItemSummary, ItemSummary, MediaView, XPostView } from "@aihot/contracts/site";
 import { POLICY } from "@aihot/site";
 import { sql, type Db } from "../db.ts";
@@ -82,7 +82,8 @@ export function channelCondition(channel: ChannelKey | null | undefined) {
 /** The website's filter: one of its own categories. */
 export function categoryCondition(category: CategoryKey | null | undefined) {
   if (!category) return sql``;
-  return sql`AND p.category = ${category}`;
+  const group = READER_CATEGORY_OPTIONS.find(c => c.key === category);
+  return group ? sql`AND p.category IN ${sql([...group.members])}` : sql`AND p.category = ${category}`;
 }
 
 /** The public API's, RSS's and MCP's filter: every category the site publishes as this one (PUBLIC_CATEGORIES). */
@@ -212,3 +213,6 @@ export async function seatHolders(rows: ItemRow[], now: Date, db: Db = sql): Pro
   const byFact = new Map(holders.map((h) => [Number(h.fact_id), { id: h.id, title: h.title }]));
   return new Map(yielding.flatMap((r) => (byFact.has(Number(r.fact_id)) ? [[r.id, byFact.get(Number(r.fact_id))!] as const] : [])));
 }
+
+/** Reader-visible chronology: original publication, falling back to collection when unknown. */
+export const reportTime = () => sql`coalesce(p.published_at, p.timeline_at)`;

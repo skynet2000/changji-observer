@@ -43,7 +43,7 @@ async function report(source: string, opts: { selected: boolean; hoursAgo: numbe
   return articleId;
 }
 
-test("a folded card's other sources are those of the fact its representative reports", async () => {
+test("a folded card counts sources across the event and exposes every development", async () => {
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, first_report_at, latest_at) VALUES (${randomUUID()}, ${`S-${T}`}, now(), now()) RETURNING id`;
   const [leak] = await sql<{ id: number; public_id: string }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (${`leak-${T}`}, ${story!.id}, '疑似泄露') RETURNING id, public_id`;
   const [launch] = await sql<{ id: number; public_id: string }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (${`launch-${T}`}, ${story!.id}, '正式发布') RETURNING id, public_id`;
@@ -62,7 +62,7 @@ test("a folded card's other sources are those of the fact its representative rep
   assert.ok(card, "the story has a card");
   assert.equal(card.item.id, official, "first-party representative");
   assert.equal(card.group?.factId, launch!.public_id, "the fact the representative reports");
-  assert.equal(card.group?.additionalSourceCount, 1, "the launch's other source, not the leak's");
+  assert.equal(card.group?.additionalSourceCount, 2, "all sources of the event are counted");
 });
 
 test("a query that names a company also finds the articles about it", async () => {

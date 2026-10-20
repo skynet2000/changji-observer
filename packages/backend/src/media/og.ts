@@ -167,7 +167,7 @@ async function render(file: string, size: { width: number; height: number }, tre
 }
 
 export function ogEtag(card: OgCard): string {
-  return createHash("sha256").update(OG_TEMPLATE_VERSION).update(JSON.stringify(card)).digest("hex").slice(0, 24);
+  return createHash("sha256").update(OG_TEMPLATE_VERSION).update(JSON.stringify([SITE.name, SITE.tagline, SITE_HOST, card])).digest("hex").slice(0, 24);
 }
 
 /** PNG bytes for a card, from the disk cache when this exact card was rendered before. */

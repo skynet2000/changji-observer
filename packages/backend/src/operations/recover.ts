@@ -7,7 +7,7 @@ import { audit, Conflict } from "../audit.ts";
 import { sql } from "../db.ts";
 import { resumeAfterRelease } from "../jobs/content.ts";
 import { sweepUngrouped } from "../jobs/events.ts";
-import { retryReleasedReceiptJobs } from "../jobs/queue.ts";
+import { retryBudgetJobs, retryReleasedReceiptJobs } from "../jobs/queue.ts";
 import { markStaleDeliveries } from "../notify/deliver.ts";
 import { markStalePendingReceipts, releaseUnknownReceipt } from "../providers/receipts.ts";
 
@@ -56,5 +56,5 @@ export async function autoReleaseUnknownReceipts(now = Date.now()) {
 
 /** ops.recover, every 10 minutes. */
 export async function recoverStaleWork() {
-  return { receipts: await markStalePendingReceipts(), released: await autoReleaseUnknownReceipts(), jobs: await retryReleasedReceiptJobs(), grouping: await sweepUngrouped(), deliveries: await markStaleDeliveries() };
+  return { receipts: await markStalePendingReceipts(), released: await autoReleaseUnknownReceipts(), jobs: await retryReleasedReceiptJobs(), budgetJobs: await retryBudgetJobs(), grouping: await sweepUngrouped(), deliveries: await markStaleDeliveries() };
 }

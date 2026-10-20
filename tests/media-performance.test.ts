@@ -14,13 +14,30 @@ process.env.AIHOT_DATA_DIR = dir;
 process.env.ALLOW_PRIVATE_NETWORK_FETCH = "true";
 process.env.MODEL_CALLS_ENABLED = "false";
 const { produceImage } = await import("@aihot/backend/media/images");
-const { renderOg } = await import("@aihot/backend/media/og");
-const { renderPoster } = await import("@aihot/backend/media/poster");
+const { ogEtag, renderOg } = await import("@aihot/backend/media/og");
+const { posterEtag, renderPoster } = await import("@aihot/backend/media/poster");
 const { xView } = await import("@aihot/backend/publication/items");
 
 let imageHits = 0;
 let failureHits = 0;
 let animationHits = 0;
+test("renaming the site invalidates share images whose article content did not change", () => {
+  const card = { kicker: "行业日报", title: "同一篇报道" };
+  const poster = { url: "https://example.com/items/brand", kicker: "行业动态", title: "同一篇报道", summary: null, source: "媒体", date: "2026-10-16", score: null };
+  const before = [ogEtag(card), posterEtag(poster)];
+  const brand = SITE as unknown as { name: string; tagline: string };
+  for (const field of ["name", "tagline"] as const) {
+    const original = brand[field];
+    try {
+      brand[field] = `${original} revised`;
+      assert.notEqual(ogEtag(card), before[0]);
+      assert.notEqual(posterEtag(poster), before[1]);
+    } finally {
+      brand[field] = original;
+    }
+  }
+  assert.deepEqual([ogEtag(card), posterEtag(poster)], before);
+});
 const png = await sharp({ create: { width: 800, height: 400, channels: 3, background: "#176b75" } }).png().toBuffer();
 // Ten noisy 160×120 frames: a GIF that animated WebP clearly beats.
 const frames = await sharp({ create: { width: 160, height: 1200, channels: 3, background: "#808080", noise: { type: "gaussian", mean: 128, sigma: 40 } } }).raw().toBuffer();

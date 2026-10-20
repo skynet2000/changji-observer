@@ -186,6 +186,18 @@ test("noise words match whatever their case", () => {
   assert.equal(noiseFiltered(c("iPhone 18 开售", ""), source), true);
 });
 
+test("broad feeds require a topic match before noise exemptions apply", () => {
+  const source = { config: { ingestNoiseFilter: { requireAnyMatches: ["阿里", "Meta", "大厂"], dropMarkersTitleOnly: ["盘前"], keepIfMatches: ["agent"] } } } as never;
+  const c = (title: string, excerpt = "") => ({ url: "https://example.org/a", title, excerpt }) as never;
+  assert.equal(noiseFiltered(c("世界模型实验室揭牌，Agent技术取得突破"), source), true);
+  assert.equal(noiseFiltered(c("阿里调整事业群与管理层"), source), false);
+  assert.equal(noiseFiltered(c("招聘冻结", "meta 员工称部门暂停招聘"), source), false);
+  assert.equal(noiseFiltered(c("网传大厂调整绩效奖金"), source), false);
+  assert.equal(noiseFiltered(c("阿里盘前下跌"), source), true);
+  assert.equal(noiseFiltered(c("阿里盘前发布 Agent 业务计划"), source), false);
+  assert.equal(noiseFiltered(c("普通文章"), { config: { ingestNoiseFilter: { requireAnyMatches: [] } } } as never), false);
+});
+
 test("a time without a zone is read in the source's offset, in JSON lists and in detail page metadata", async () => {
   const list = async (extra: Record<string, unknown> = {}) => (await fetchJsonList({ id: "test-json", config: { url: `${site}/zoneless.json`, itemsPath: "result", titlePaths: ["title"], urlTemplate: "https://example.org/p/{id}", publishedAtPath: "publishDate", ...extra } } as never))
     .map((c) => c.publishedAt?.toISOString());

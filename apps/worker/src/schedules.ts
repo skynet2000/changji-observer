@@ -23,7 +23,8 @@ import { sourceHealthWeekly } from "@aihot/backend/operations/reports";
 const collecting = process.env.COLLECT_ENABLED === "true";
 
 const ENGINE_SCHEDULES: Scheduled[] = [
-  { name: "content.sweep", cron: "*/5 * * * *", run: sweepUnprocessed },
+  // Minute budgets recover in 60 s; a five-minute sweep left paid capacity idle between bursts.
+  { name: "content.sweep", cron: "* * * * *", run: sweepUnprocessed },
   // Full-text translations of newly selected items (model calls; off with MODEL_CALLS_ENABLED=false).
   { name: "content.translate", cron: "*/5 * * * *", run: () => translatePending() },
   { name: "hot.rank", cron: "*/5 * * * *", run: () => computeHotRanking() },

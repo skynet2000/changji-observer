@@ -12,12 +12,24 @@ const daily = (keys: string[]) => keys.filter(k => k.startsWith("report.daily"))
 async function report(date: string) {
   await sql`INSERT INTO reports(kind,key,window_start,window_end,content,generated_at) VALUES('daily',${date},${new Date(at(date))},${new Date(at(date))},'{}',${new Date(at(date))})`;
 }
-before(async () => { await getBoss(); });
+const source = "daily-alert-start";
+async function start(date: string) {
+  const time = new Date(at(date, "01:00"));
+  await sql`UPDATE articles SET discovered_at=${time}, timeline_at=${time} WHERE id=${source}`;
+}
+before(async () => {
+  await getBoss();
+  await sql`INSERT INTO sources(id,name,kind,participation_mode) VALUES(${source},'Daily start','rss','editorial')`;
+  await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at)
+    VALUES(${source},${source},${source},'https://example.com/start','Start',now(),now())`;
+});
 beforeEach(async () => {
   Object.assign(process.env, { COLLECT_ENABLED: "true", MODEL_CALLS_ENABLED: "true", FEISHU_INTERNAL_ENABLED: "false" });
   await sql`DELETE FROM reports`;
   await sql`DELETE FROM job_runs WHERE job='reports.compose'`;
   await sql`DELETE FROM settings WHERE key IN ('alerts.state','heartbeat.worker')`;
+  await start("2026-10-06");
+  await sql`UPDATE articles SET backfill=false WHERE id=${source}`;
 });
 after(async () => { await stopBoss(); await closeDb(); });
 
@@ -39,6 +51,7 @@ test("midnight preserves a missing edition; each date recovers only when its rep
 });
 
 test("recent gap detection uses report activity and each edition's overdue time", async () => {
+  await start("2026-10-05");
   await sql`INSERT INTO job_runs(job,started_at,status) VALUES('reports.compose',${new Date(at("2026-10-05"))},'failed')`;
   await report("2026-10-06");
   const findings = await collectFindings(at("2026-10-07", "09:59"));
@@ -49,6 +62,7 @@ test("recent gap detection uses report activity and each edition's overdue time"
 });
 
 test("open dates outlive disabled generation or startup grace within the scan window", async () => {
+  await start("2026-10-01");
   await checkAlerts(at("2026-10-01"));
   process.env.MODEL_CALLS_ENABLED = "false";
   let result = await checkAlerts(at("2026-10-07"));
@@ -66,6 +80,7 @@ test("open dates outlive disabled generation or startup grace within the scan wi
 });
 
 test("an edition still missing past the scan window is closed once instead of reminded forever", async () => {
+  await start("2026-10-01");
   await checkAlerts(at("2026-10-01"));
   let result = await checkAlerts(at("2026-10-08"));
   assert.ok(result.sent.includes(`${key("2026-10-01")}:expired`));
@@ -82,4 +97,17 @@ test("legacy alert migrates its date and preserves reminder timing", async () =>
   assert.deepEqual(daily(result.sent), []);
   result = await checkAlerts(at("2026-10-07", "00:31"));
   assert.deepEqual(daily(result.sent), [key("2026-10-06")]);
+});
+
+test("startup archives retire pre-launch false alarms; the first live edition still alerts if missing", async () => {
+  await sql`UPDATE articles SET backfill=true WHERE id=${source}`;
+  await sql`INSERT INTO settings(key,value) VALUES('alerts.state',${sql.json({ [key("2026-10-05")]: {
+    title: "日报还没生成", since: new Date(at("2026-10-05")).toISOString(), sentAt: new Date(at("2026-10-05")).toISOString(),
+  } })})`;
+  const result = await checkAlerts(at("2026-10-06"));
+  assert.deepEqual(daily(result.open), []);
+  assert.deepEqual(daily(result.sent), [], "do not call a pre-launch alarm recovered");
+  await sql`UPDATE articles SET backfill=false, discovered_at=${new Date(at("2026-10-06", "14:00"))} WHERE id=${source}`;
+  assert.deepEqual(daily((await checkAlerts(at("2026-10-06", "23:00"))).open), []);
+  assert.deepEqual(daily((await checkAlerts(at("2026-10-07"))).open), [key("2026-10-07")]);
 });

@@ -1,141 +1,496 @@
 {
-  "$comment": "示范信源：首次启动时导入（scripts/seed.ts），已存在的不会被覆盖。之后在后台“信源”里新建、修改和暂停。字段说明见 docs/customize.md。",
+  "$comment": "厂际观察：已核验的互联网媒体、企业官方与公开社媒来源；宽泛来源先做主题准入，再由模型判断相关性。",
   "sources": [
     {
-      "id": "rss-openai-news",
-      "name": "OpenAI News",
+      "id": "rss-alizila",
+      "name": "Alizila · 阿里巴巴官方新闻",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://openai.com/news/rss.xml",
         "_aihot": {
-          "initialBackfillLimit": 8
-        }
+          "initialBackfillLimit": 3
+        },
+        "feedUrl": "https://www.alizila.com/feed/"
       },
       "tier": "T1",
-      "owner_entity_id": "openai",
+      "owner_entity_id": "alibaba",
+      "signal_group_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "官方"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-google-deepmind",
-      "name": "Google DeepMind",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://deepmind.google/blog/rss.xml",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "google",
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "官方"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-google-research",
-      "name": "Google Research",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://research.google/blog/rss/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "google",
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 60,
       "tags": [
         "官方",
-        "研究"
+        "阿里巴巴",
+        "电商"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": true
     },
     {
-      "id": "rss-hugging-face",
-      "name": "Hugging Face Blog",
-      "kind": "rss",
+      "id": "web-21-company",
+      "name": "21世纪经济报道 · 公司",
+      "kind": "web_list",
       "config": {
-        "feedUrl": "https://huggingface.co/blog/feed.xml",
+        "url": "https://www.21jingji.com/channel/company",
         "_aihot": {
-          "initialBackfillLimit": 8
-        }
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": ".newsDate",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".news > a[href*=\"/article/\"]",
+        "linkSelector": "a",
+        "titleSelector": "h2",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "企业发展",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-huxiu-business",
+      "name": "虎嗅 · 商业消费",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.huxiu.com/channel/103.html",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": "meta[property=\"article:published_time\"]",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".article-item-wrap",
+        "linkSelector": "a[href*=\"/article/\"]",
+        "titleSelector": "h3.channel-title",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "企业发展",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-huxiu-tech",
+      "name": "虎嗅 · 科技与人才",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.huxiu.com/channel/105.html",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": "meta[property=\"article:published_time\"]",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".article-item-wrap",
+        "linkSelector": "a[href*=\"/article/\"]",
+        "titleSelector": "h3.channel-title",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "allowUrlPrefixes": [
+          "https://www.huxiu.com/article/"
+        ],
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-jd-blog",
+      "name": "京东官方博客",
+      "kind": "web_list",
+      "config": {
+        "url": "https://jdcorporateblog.com/",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "parseMode": "html",
+        "itemSelector": ".home-media-slider .post-it",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAtRegex": "([A-Za-z]{3} [0-9]{1,2}, 20[0-9]{2})",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
       },
       "tier": "T1",
-      "owner_entity_id": "hugging-face",
+      "owner_entity_id": "jd",
+      "signal_group_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 60,
       "tags": [
         "官方",
-        "开源"
+        "京东",
+        "企业发展"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": true
     },
     {
-      "id": "rss-microsoft-research",
-      "name": "Microsoft Research",
-      "kind": "rss",
+      "id": "web-jiemian-internet",
+      "name": "界面新闻 · 互联网",
+      "kind": "web_list",
       "config": {
-        "feedUrl": "https://www.microsoft.com/en-us/research/feed/",
+        "url": "https://www.jiemian.com/lists/851.html",
         "_aihot": {
-          "initialBackfillLimit": 8
-        }
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": "p.info-s > span:nth-of-type(2)",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".card-list",
+        "linkSelector": ".card-list__content > a",
+        "titleSelector": "h3.card-list__title",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "企业发展",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-leiphone-cloud",
+      "name": "雷峰网 · 大厂云与组织",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.leiphone.com/category/industrycloud",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": "td.time",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".list li",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "allowUrlPrefixes": [
+          "https://www.leiphone.com/category/industrycloud/"
+        ],
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-meituan-news",
+      "name": "美团官方新闻",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.meituan.com/news",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "parseMode": "html",
+        "itemSelector": "a[href^='/news/NN']",
+        "linkSelector": "a",
+        "titleSelector": "h2",
+        "allowUrlPrefixes": [
+          "https://www.meituan.com/news/NN"
+        ],
+        "publishedAtRegex": "(20[0-9]{2}-[0-9]{2}-[0-9]{2})",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
       },
       "tier": "T1",
-      "owner_entity_id": "microsoft",
+      "owner_entity_id": "meituan",
+      "signal_group_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 60,
       "tags": [
         "官方",
-        "研究"
+        "美团",
+        "本地生活"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": true
     },
     {
-      "id": "rss-nvidia-blog",
-      "name": "NVIDIA Blog",
-      "kind": "rss",
+      "id": "web-pingwest-business",
+      "name": "品玩 · 商业科技",
+      "kind": "web_list",
       "config": {
-        "feedUrl": "https://blogs.nvidia.com/feed/",
+        "url": "https://www.pingwest.com/",
         "_aihot": {
-          "initialBackfillLimit": 8
-        }
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtRegex": "\"pubDate\"\\s*:\\s*\"([^\"\\n]+)\"",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".news-detail, .recommend-news .news-info",
+        "linkSelector": ".title a, a.title",
+        "titleSelector": ".title a, a.title",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
       },
-      "tier": "T1",
-      "owner_entity_id": "nvidia",
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 60,
       "tags": [
-        "官方"
+        "媒体",
+        "企业发展",
+        "行业分析"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-technode-news",
+      "name": "TechNode · 中国企业快讯",
+      "kind": "web_list",
+      "config": {
+        "url": "https://technode.com/category/news-feed/",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "parseMode": "html",
+        "itemSelector": "article",
+        "linkSelector": ".entry-title a",
+        "titleSelector": ".entry-title a",
+        "allowUrlPrefixes": [
+          "https://technode.com/20"
+        ],
+        "sortByPublishedAt": true,
+        "publishedAtSelector": "time.published"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "中国互联网",
+        "企业发展"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-tencent-news",
+      "name": "腾讯官方新闻",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.tencent.com/zh-cn/newsroom/all-news/",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "parseMode": "html",
+        "itemSelector": ".tc-blog-grid",
+        "linkSelector": ".blog-title a",
+        "titleSelector": ".blog-title a",
+        "sortByPublishedAt": true,
+        "publishedAtSelector": ".tc-blogpost-date",
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T1",
+      "owner_entity_id": "tencent",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方",
+        "腾讯",
+        "企业发展"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-tmtpost-company",
+      "name": "钛媒体 · 大公司",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.tmtpost.com/column/2446153",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": ".post_author p.time",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": ".type-post",
+        "linkSelector": "a._tit",
+        "titleSelector": "a._tit",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "企业发展",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-yicai-tech",
+      "name": "第一财经 · 科技",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.yicai.com/news/kechuang/",
+        "_aihot": {
+          "initialBackfillLimit": 1
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": "p.f-cb em.f-fl",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true
+        },
+        "parseMode": "html",
+        "itemSelector": "a.f-db[href^=\"/news/\"]",
+        "linkSelector": "a",
+        "titleSelector": "h2",
+        "publishedAfter": "2026-08-31T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "publishedAtUtcOffset": "+08:00"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "企业发展",
+        "行业分析"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "rss-ars-technica-ai",
+      "name": "Ars Technica · AI",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://arstechnica.com/ai/feed/"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
       "id": "rss-aws-ml",
       "name": "AWS Machine Learning Blog",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://aws.amazon.com/blogs/machine-learning/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://aws.amazon.com/blogs/machine-learning/feed/"
       },
       "tier": "T1",
       "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 120,
       "tags": [
@@ -143,200 +498,134 @@
         "教程"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-github-ai",
-      "name": "GitHub Blog · AI & ML",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://github.blog/ai-and-ml/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "官方"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-mistral",
-      "name": "Mistral AI",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://mistral.ai/news/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "官方"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
       "id": "rss-bair",
       "name": "Berkeley AI Research",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://bair.berkeley.edu/blog/feed.xml",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://bair.berkeley.edu/blog/feed.xml"
       },
       "tier": "T1",
       "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 180,
       "tags": [
         "研究"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
-      "id": "rss-the-verge-ai",
-      "name": "The Verge · AI",
+      "id": "rss-github-ai",
+      "name": "GitHub Blog · AI & ML",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://github.blog/ai-and-ml/feed/"
       },
-      "tier": "T2",
+      "tier": "T1",
       "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "媒体"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-techcrunch-ai",
-      "name": "TechCrunch · AI",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://techcrunch.com/category/artificial-intelligence/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "媒体"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-ars-technica-ai",
-      "name": "Ars Technica · AI",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://arstechnica.com/ai/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "媒体"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-mit-tech-review-ai",
-      "name": "MIT Technology Review · AI",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 120,
       "tags": [
-        "媒体"
+        "官方"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
-      "id": "rss-the-decoder",
-      "name": "The Decoder",
+      "id": "rss-google-deepmind",
+      "name": "Google DeepMind",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://the-decoder.com/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://deepmind.google/blog/rss.xml"
       },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "媒体"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-simon-willison",
-      "name": "Simon Willison",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://simonwillison.net/atom/everything/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
+      "tier": "T1",
+      "owner_entity_id": "google",
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 120,
       "tags": [
-        "个人"
+        "官方"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-google-research",
+      "name": "Google Research",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://research.google/blog/rss/"
+      },
+      "tier": "T1",
+      "owner_entity_id": "google",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-hugging-face",
+      "name": "Hugging Face Blog",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://huggingface.co/blog/feed.xml"
+      },
+      "tier": "T1",
+      "owner_entity_id": "hugging-face",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "开源"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
       "id": "rss-import-ai",
       "name": "Import AI",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://importai.substack.com/feed",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://importai.substack.com/feed"
       },
       "tier": "T2",
       "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 180,
       "tags": [
@@ -344,27 +633,2140 @@
         "周刊"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-ithome",
+      "name": "IT之家",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 3
+        },
+        "feedUrl": "https://www.ithome.com/rss/"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "媒体",
+        "互联网"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
       "id": "rss-latent-space",
       "name": "Latent Space",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.latent.space/feed",
         "_aihot": {
           "initialBackfillLimit": 8
-        }
+        },
+        "feedUrl": "https://www.latent.space/feed"
       },
       "tier": "T2",
       "owner_entity_id": null,
+      "signal_group_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 180,
       "tags": [
         "个人"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-microsoft-research",
+      "name": "Microsoft Research",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://www.microsoft.com/en-us/research/feed/"
+      },
+      "tier": "T1",
+      "owner_entity_id": "microsoft",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-mistral",
+      "name": "Mistral AI",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://mistral.ai/news/rss"
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-mit-tech-review-ai",
+      "name": "MIT Technology Review · AI",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-nvidia-blog",
+      "name": "NVIDIA Blog",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://blogs.nvidia.com/feed/"
+      },
+      "tier": "T1",
+      "owner_entity_id": "nvidia",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-openai-news",
+      "name": "OpenAI News",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://openai.com/news/rss.xml"
+      },
+      "tier": "T1",
+      "owner_entity_id": "openai",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-simon-willison",
+      "name": "Simon Willison",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://simonwillison.net/atom/everything/"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-sspai",
+      "name": "少数派",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 3
+        },
+        "feedUrl": "https://sspai.com/feed"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "媒体",
+        "产品"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-techcrunch-ai",
+      "name": "TechCrunch · AI",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://techcrunch.com/category/artificial-intelligence/feed/"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-the-decoder",
+      "name": "The Decoder",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://the-decoder.com/feed/"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-the-verge-ai",
+      "name": "The Verge · AI",
+      "kind": "rss",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "feedUrl": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-36kr",
+      "name": "36氪 · RSS",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.36kr.com/feed",
+        "fetchPublicContent": true,
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "互联网",
+        "公司发展",
+        "RSS"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "rss-tmtpost",
+      "name": "钛媒体 · RSS",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.tmtpost.com/feed",
+        "fetchPublicContent": true,
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "互联网",
+        "公司发展",
+        "RSS"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "rss-leiphone",
+      "name": "雷峰网 · RSS",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.leiphone.com/feed",
+        "fetchPublicContent": true,
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "互联网",
+        "公司发展",
+        "RSS"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "rss-geekpark",
+      "name": "极客公园 · 互联网公司动态",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.geekpark.net/rss",
+        "fetchPublicContent": true,
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "互联网",
+        "公司发展",
+        "RSS"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "social-jike-fangjian",
+      "name": "互联网坊间八卦 · 即刻公开动态",
+      "kind": "json_list",
+      "config": {
+        "url": "https://m.jellow.club/users/ad2b5e70-3e1a-42ac-8c3f-5ac39b74ff8d",
+        "mode": "html_json_key",
+        "jsonKey": "posts",
+        "titlePaths": [
+          "linkInfo.title",
+          "content"
+        ],
+        "summaryPaths": [
+          "content"
+        ],
+        "summaryIsBody": true,
+        "authorPaths": [
+          "user.screenName"
+        ],
+        "publishedAtPath": "createdAt",
+        "urlTemplate": "https://m.jellow.club/originalPosts/{id}",
+        "requireBoolean": {
+          "path": "type",
+          "equals": "ORIGINAL_POST"
+        },
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "social-jike-panluan",
+      "name": "潘乱（乱翻书）· 即刻公开动态",
+      "kind": "json_list",
+      "config": {
+        "url": "https://m.jellow.club/users/14BE6DDB-0744-477B-AD83-CCCEF5EA4302",
+        "mode": "html_json_key",
+        "jsonKey": "posts",
+        "titlePaths": [
+          "linkInfo.title",
+          "content"
+        ],
+        "summaryPaths": [
+          "content"
+        ],
+        "summaryIsBody": true,
+        "authorPaths": [
+          "user.screenName"
+        ],
+        "publishedAtPath": "createdAt",
+        "urlTemplate": "https://m.jellow.club/originalPosts/{id}",
+        "requireBoolean": {
+          "path": "type",
+          "equals": "ORIGINAL_POST"
+        },
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 1
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-sanyan-workplace",
+      "name": "三言科技 · 职场与组织",
+      "kind": "web_list",
+      "config": {
+        "url": "http://www.sycaijing.com/news_list_index",
+        "method": "POST",
+        "bodyForm": {
+          "page_no": "1",
+          "page_size": "200"
+        },
+        "urlTemplate": "http://www.sycaijing.com/news/details?id={id}",
+        "parseMode": "html",
+        "itemSelector": "li.js_news_item",
+        "titleSelector": "a.title",
+        "allowUrlPrefixes": [
+          "http://www.sycaijing.com/news/details?id="
+        ],
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "全员",
+            "公开信",
+            "内部信",
+            "内部邮件",
+            "裁员",
+            "裁撤",
+            "组织",
+            "架构",
+            "产品部",
+            "人事",
+            "负责人",
+            "离职",
+            "任命",
+            "薪酬",
+            "绩效",
+            "年终奖",
+            "奖金",
+            "竞业",
+            "反舞弊",
+            "员工",
+            "欠薪",
+            "招聘",
+            "管理层",
+            "团队",
+            "致全体",
+            "工作制度",
+            "考勤"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": ".pub_time",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true,
+          "summarySelector": ".article_wrap > .body"
+        },
+        "publishedAfter": "2026-10-07T16:00:00.000Z",
+        "sortByPublishedAt": true
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "组织变动",
+        "职场争议",
+        "薪酬绩效"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "web-bianews-workplace",
+      "name": "鞭牛士 · 职场与组织",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.bianews.com/news_list_index",
+        "method": "POST",
+        "bodyForm": {
+          "page_no": "1",
+          "page_size": "200"
+        },
+        "urlTemplate": "https://www.bianews.com/news/details?id={id}",
+        "parseMode": "html",
+        "itemSelector": "li.js_news_item",
+        "titleSelector": "a.title",
+        "allowUrlPrefixes": [
+          "https://www.bianews.com/news/details?id="
+        ],
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "全员",
+            "公开信",
+            "内部信",
+            "内部邮件",
+            "裁员",
+            "裁撤",
+            "组织",
+            "架构",
+            "产品部",
+            "人事",
+            "负责人",
+            "离职",
+            "任命",
+            "薪酬",
+            "绩效",
+            "年终奖",
+            "奖金",
+            "竞业",
+            "反舞弊",
+            "员工",
+            "欠薪",
+            "招聘",
+            "管理层",
+            "团队",
+            "致全体",
+            "工作制度",
+            "考勤"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        },
+        "detail": {
+          "maxFetches": 20,
+          "publishedAtSelector": ".pub_time",
+          "publishedAtUtcOffset": "+08:00",
+          "publishedAtAuthoritative": true,
+          "summarySelector": ".article_wrap > .body"
+        },
+        "publishedAfter": "2026-10-07T16:00:00.000Z",
+        "sortByPublishedAt": true
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体",
+        "组织变动",
+        "职场争议",
+        "薪酬绩效"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "social-jike-lanxi",
+      "name": "阑夕 · 即刻公开动态",
+      "kind": "json_list",
+      "config": {
+        "url": "https://m.okjike.com/users/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA",
+        "mode": "html_json_key",
+        "jsonKey": "posts",
+        "titlePaths": [
+          "linkInfo.title",
+          "content"
+        ],
+        "summaryPaths": [
+          "content"
+        ],
+        "summaryIsBody": true,
+        "authorPaths": [
+          "user.screenName"
+        ],
+        "publishedAtPath": "createdAt",
+        "urlTemplate": "https://m.jellow.club/originalPosts/{id}",
+        "requireBoolean": {
+          "path": "type",
+          "equals": "ORIGINAL_POST"
+        },
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "social-jike-weixi",
+      "name": "卫夕 · 即刻公开动态",
+      "kind": "json_list",
+      "config": {
+        "url": "https://m.okjike.com/users/D40EFDF2-9C5A-4E1B-90DA-46AEBA421A33",
+        "mode": "html_json_key",
+        "jsonKey": "posts",
+        "titlePaths": [
+          "linkInfo.title",
+          "content"
+        ],
+        "summaryPaths": [
+          "content"
+        ],
+        "summaryIsBody": true,
+        "authorPaths": [
+          "user.screenName"
+        ],
+        "publishedAtPath": "createdAt",
+        "urlTemplate": "https://m.jellow.club/originalPosts/{id}",
+        "requireBoolean": {
+          "path": "type",
+          "equals": "ORIGINAL_POST"
+        },
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-07T16:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台"
+          ],
+          "dropMarkersTitleOnly": [
+            "盘前涨",
+            "盘前跌",
+            "盘前普跌",
+            "盘前普涨",
+            "股票行情",
+            "手机评测",
+            "相机评测",
+            "优惠券",
+            "好物推荐",
+            "评测",
+            "预售福利",
+            "上手",
+            "开箱",
+            "体验"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "external-hubspot-filings",
+      "name": "HubSpot · SEC公开文件",
+      "tier": "T1",
+      "config": {
+        "publisherRole": "organization"
+      },
+      "kind": "external",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "external-eastmoney-workplace",
+      "name": "东方财富 · 界面新闻转载",
+      "tier": "T2",
+      "config": {
+        "publisherRole": "organization"
+      },
+      "kind": "external",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "social-weibo-wangluobei",
+      "name": "王落北 · 微博公开动态",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/yjsxyzp",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/2217035934/"
+        ],
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台",
+            "校招",
+            "裁员",
+            "全员信",
+            "招聘冻结",
+            "骑手",
+            "外卖大战"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "social-weibo-lanxi",
+      "name": "阑夕 · 微博公开动态",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/foxshuo",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1560906700/"
+        ],
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台",
+            "校招",
+            "裁员",
+            "全员信",
+            "招聘冻结",
+            "骑手",
+            "外卖大战"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "social-weibo-panluan",
+      "name": "潘乱 · 微博公开动态",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/panl2nd",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1673951863/"
+        ],
+        "publisherRole": "person",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里",
+            "淘宝",
+            "天猫",
+            "蚂蚁",
+            "支付宝",
+            "千问",
+            "钉钉",
+            "腾讯",
+            "微信",
+            "QQ",
+            "字节",
+            "抖音",
+            "TikTok",
+            "豆包",
+            "飞书",
+            "美团",
+            "Keeta",
+            "京东",
+            "拼多多",
+            "Temu",
+            "快手",
+            "可灵",
+            "百度",
+            "小红书",
+            "哔哩",
+            "B站",
+            "网易",
+            "携程",
+            "滴滴",
+            "货拉拉",
+            "得物",
+            "知乎",
+            "小米",
+            "商汤",
+            "金山",
+            "WPS",
+            "盛大",
+            "爱奇艺",
+            "优酷",
+            "虎牙",
+            "斗鱼",
+            "贝壳",
+            "BOSS直聘",
+            "Boss Zhipin",
+            "微软",
+            "Microsoft",
+            "亚马逊",
+            "Amazon",
+            "谷歌",
+            "Google",
+            "Meta",
+            "Facebook",
+            "苹果",
+            "Apple",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "月之暗面",
+            "Kimi",
+            "MiniMax",
+            "智谱",
+            "互联网",
+            "大厂",
+            "电商平台",
+            "本地生活",
+            "即时零售",
+            "外卖平台",
+            "长视频平台",
+            "短视频平台",
+            "社交平台",
+            "校招",
+            "裁员",
+            "全员信",
+            "招聘冻结",
+            "骑手",
+            "外卖大战"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "职场",
+        "组织人才",
+        "社媒观点"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "official-weibo-alibaba",
+      "name": "阿里巴巴 · 官方微博",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/aligroup",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1897953162/"
+        ],
+        "publisherRole": "organization",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "dropMarkers": [
+            "关注+转发",
+            "关注＋转发",
+            "抽奖",
+            "转发抽",
+            "红包雨",
+            "粉丝福利",
+            "明星周边",
+            "代言人",
+            "限量5折",
+            "大额券",
+            "重阳",
+            "会员权益",
+            "好声音",
+            "校园之星",
+            "免费送",
+            "创造营",
+            "优先抢",
+            "低至",
+            "免息",
+            "美食大赛"
+          ],
+          "keepIfMatches": [
+            "全员信",
+            "公开信",
+            "组织调整",
+            "人事任命",
+            "管理层",
+            "裁员",
+            "招聘",
+            "校招",
+            "薪酬",
+            "福利制度",
+            "财报",
+            "业绩",
+            "营收",
+            "利润",
+            "收购",
+            "合并",
+            "战略合作",
+            "业务调整",
+            "出海",
+            "辟谣",
+            "澄清",
+            "社保",
+            "劳动保障",
+            "骑手保障",
+            "股权",
+            "处罚",
+            "监管",
+            "诉讼",
+            "起诉",
+            "平台规则",
+            "服务故障",
+            "致歉",
+            "补偿"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方动态"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "official-weibo-tencent",
+      "name": "腾讯公司 · 官方微博",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/tencent",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1846456085/"
+        ],
+        "publisherRole": "organization",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "dropMarkers": [
+            "关注+转发",
+            "关注＋转发",
+            "抽奖",
+            "转发抽",
+            "红包雨",
+            "粉丝福利",
+            "明星周边",
+            "代言人",
+            "限量5折",
+            "大额券",
+            "重阳",
+            "会员权益",
+            "好声音",
+            "校园之星",
+            "免费送",
+            "创造营",
+            "优先抢",
+            "低至",
+            "免息",
+            "美食大赛"
+          ],
+          "keepIfMatches": [
+            "全员信",
+            "公开信",
+            "组织调整",
+            "人事任命",
+            "管理层",
+            "裁员",
+            "招聘",
+            "校招",
+            "薪酬",
+            "福利制度",
+            "财报",
+            "业绩",
+            "营收",
+            "利润",
+            "收购",
+            "合并",
+            "战略合作",
+            "业务调整",
+            "出海",
+            "辟谣",
+            "澄清",
+            "社保",
+            "劳动保障",
+            "骑手保障",
+            "股权",
+            "处罚",
+            "监管",
+            "诉讼",
+            "起诉",
+            "平台规则",
+            "服务故障",
+            "致歉",
+            "补偿"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方动态"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "official-weibo-jd",
+      "name": "京东 · 官方微博",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/jingdong",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1717871843/"
+        ],
+        "publisherRole": "organization",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "dropMarkers": [
+            "关注+转发",
+            "关注＋转发",
+            "抽奖",
+            "转发抽",
+            "红包雨",
+            "粉丝福利",
+            "明星周边",
+            "代言人",
+            "限量5折",
+            "大额券",
+            "重阳",
+            "会员权益",
+            "好声音",
+            "校园之星",
+            "免费送",
+            "创造营",
+            "优先抢",
+            "低至",
+            "免息",
+            "美食大赛"
+          ],
+          "keepIfMatches": [
+            "全员信",
+            "公开信",
+            "组织调整",
+            "人事任命",
+            "管理层",
+            "裁员",
+            "招聘",
+            "校招",
+            "薪酬",
+            "福利制度",
+            "财报",
+            "业绩",
+            "营收",
+            "利润",
+            "收购",
+            "合并",
+            "战略合作",
+            "业务调整",
+            "出海",
+            "辟谣",
+            "澄清",
+            "社保",
+            "劳动保障",
+            "骑手保障",
+            "股权",
+            "处罚",
+            "监管",
+            "诉讼",
+            "起诉",
+            "平台规则",
+            "服务故障",
+            "致歉",
+            "补偿"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方动态"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "official-weibo-meituan",
+      "name": "美团 · 官方微博",
+      "kind": "web_list",
+      "config": {
+        "url": "https://weibo.com/meituan",
+        "adapter": "weibo_profile",
+        "allowUrlPrefixes": [
+          "https://weibo.com/1686230250/"
+        ],
+        "publisherRole": "organization",
+        "sortByPublishedAt": true,
+        "publishedAfter": "2026-10-01T00:00:00Z",
+        "ingestNoiseFilter": {
+          "dropMarkers": [
+            "关注+转发",
+            "关注＋转发",
+            "抽奖",
+            "转发抽",
+            "红包雨",
+            "粉丝福利",
+            "明星周边",
+            "代言人",
+            "限量5折",
+            "大额券",
+            "重阳",
+            "会员权益",
+            "好声音",
+            "校园之星",
+            "免费送",
+            "创造营",
+            "优先抢",
+            "低至",
+            "免息",
+            "美食大赛"
+          ],
+          "keepIfMatches": [
+            "全员信",
+            "公开信",
+            "组织调整",
+            "人事任命",
+            "管理层",
+            "裁员",
+            "招聘",
+            "校招",
+            "薪酬",
+            "福利制度",
+            "财报",
+            "业绩",
+            "营收",
+            "利润",
+            "收购",
+            "合并",
+            "战略合作",
+            "业务调整",
+            "出海",
+            "辟谣",
+            "澄清",
+            "社保",
+            "劳动保障",
+            "骑手保障",
+            "股权",
+            "处罚",
+            "监管",
+            "诉讼",
+            "起诉",
+            "平台规则",
+            "服务故障",
+            "致歉",
+            "补偿"
+          ]
+        },
+        "_aihot": {
+          "initialBackfillLimit": 4
+        }
+      },
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方动态"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
     }
   ]
 }

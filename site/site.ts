@@ -9,6 +9,9 @@
  */
 export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
 
+/** 站长确定每小时采集一次，避免每日自适应调频缩短间隔。 */
+export const COLLECTION_INTERVAL_MINUTES = 60;
+
 /** “每天 08:00”“每周一 10:00”“每月 1 日 10:30”：写进句子里的出刊时间。 */
 export const EDITION_WHEN = {
   daily: `每天 ${EDITION_TIMES.daily}`,
@@ -18,16 +21,16 @@ export const EDITION_WHEN = {
 
 export const SITE = {
   /** 站名：导航、页面标题、分享图、RSS、MCP、后台都用它。 */
-  name: "MyHOT",
+  name: "厂际观察",
   /**
    * 行业词：拼进默认说法里，比如“AI 日报”“AI 动态”。
    * 改成“法律”“HR”“黄金”之类，页面上就会变成“法律日报”“法律动态”。
    */
-  subject: "AI",
+  subject: "互联网",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "MyHOT — AI 行业动态 · 每日精选与日报",
+  homeTitle: "厂际观察 — 互联网行业资讯与每日精选",
   /** 主题目录页（/topics）的标题。 */
-  topicsTitle: "AI 主题：公司与模型、技术方向、内容形态的最新动态",
+  topicsTitle: "互联网主题：公司、产品与行业变化",
   /** 反馈表单输入框里的示例。 */
   feedbackExample: "例如：我在搜索某个关键词时遇到……我原本想……",
   /** 反馈页标题下面的一句话。 */
@@ -35,13 +38,13 @@ export const SITE = {
   /** 反馈表单邮箱框里的提示。 */
   feedbackEmailHint: "留下邮箱，我们可以回信联系你",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
-  description: `从一批 AI 信源里挑出值得看的动态，把同一件事的多篇报道归到一起，${EDITION_WHEN.daily} 出一份日报。`,
+  description: `面向互联网中大厂职场人的资讯站，聚焦互联网行业与企业发展，关注公司战略、经营数据、业务布局、产品竞争和资本动作，重点追踪阿里、电商与本地生活，把同一件事的多篇报道归到一起，${EDITION_WHEN.daily} 出一份日报。`,
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
   llmsIntro: null as string | null,
   /** 一行小字：分享图、海报下方。 */
-  tagline: "值得关注的 AI 动态",
+  tagline: "看懂互联网行业与企业发展",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
-  keywords: ["AI 资讯", "AI 新闻", "AI 日报", "AI 行业动态"] as string[],
+  keywords: ["厂际观察", "互联网资讯", "互联网日报", "互联网行业动态", "产品动态", "阿里巴巴", "电商", "本地生活", "即时零售", "组织人才", "职业成长"] as string[],
   /** 网站开始收录的年份（结构化数据的时间范围，选填）。 */
   since: null as string | null,
   /** 界面语言（HTML lang、og:locale）。 */
@@ -51,17 +54,17 @@ export const SITE = {
   /** 标准图标（favicon.ico、icon.png、icon-192.png、apple-icon.png、logo.svg）以外也放在网站根目录的图标，site/brand/ 里的文件名（选填）；manifest.webmanifest 或外站引用了它们时用。 */
   rootIcons: [] as string[],
   /**
-   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 myhot_get_latest、myhot_search……
+   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 tiantianhot_get_latest、tiantianhot_search……
    * 已经有人接入后就不要再改。
    */
-  mcpPrefix: "myhot",
+  mcpPrefix: "tiantianhot",
   /**
    * 公开接口（MCP、OpenAPI、llms.txt）的版本号，只升不降。
    * 改了接口里已有的字段或含义时升主版本，并在部署说明里写清。
    */
   interfaceVersion: "4.0.0",
   /** 对外联系邮箱（选填）：llms.txt 和给 Agent 的使用说明里会写。 */
-  contactEmail: null as string | null,
+  contactEmail: "skynettiantian@gmail.com" as string | null,
   /** 关于页底部的一行小字（选填）。 */
   footerNote: "由 AIHOT 开源框架驱动",
   /** 中国大陆网站的 ICP 备案号（选填），填了就显示在侧栏底部和“我的”页底部，并链接到工信部备案系统。 */
@@ -70,12 +73,12 @@ export const SITE = {
   github: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
   organization: {
-    name: "MyHOT",
+    name: "厂际观察",
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },
   /** 抓取信源时报上的名字和版本（User-Agent 里用），不要冒用别的站。 */
-  crawlerName: "MyHOTBot/1.0",
+  crawlerName: "ChangjiGuanchaBot/1.0",
 } as const;
 
 /** 使用规则和隐私说明两页（正文在 pages/ 里）。 */
@@ -143,7 +146,7 @@ export const ABOUT = {
   /** 页面描述（搜索结果、分享卡片）。 */
   description: `关于 ${SITE.name}：${SITE.description}`,
   /** 大标题：第一行正常颜色，第二行强调色。 */
-  headline: ["AI 圈每天都有新动静，", "值得看的，只有几条。"] as [string, string],
+  headline: ["互联网每天都有新动静，", "值得看的，只有几条。"] as [string, string],
   /** 标题下面的一段话。{sources} 会换成实时的信源数（两边自动加空格，所以 {sources} 两边不写空格）；统计没取到时换成 sourcesFallback。 */
   lead: `${SITE.name} 替你盯着{sources}个信源：抓取、归并、打分、精选，${EDITION_WHEN.daily} 出一份日报。免费，不用注册。`,
   sourcesFallback: "十几",
@@ -210,7 +213,7 @@ export const REPORTS = {
   /** 报告分享图上“共几条”的说法。 */
   shareUnit: "件大事",
   /** 日报时段内有资料经过评判、但没有新大事时的标题与导语。 */
-  quiet: { title: "今日安静，无大事发生", paragraph: `${subjectAfter("北京时间 {start} 至 {end}，没有新的", "大事")}。` },
+  quiet: { title: "本期暂无入选要闻", paragraph: "本站已评判北京时间 {start} 至 {end} 的收录材料，本期暂无符合选稿标准的新要闻。" },
 };
 
 /** 运维告警（只发给站长）里随部署而变的几处说法。 */
@@ -297,6 +300,14 @@ export const FEED_COPY = {
   allLeavesOut: [] as string[],
 };
 
+/** 面向互联网中大厂职场人的阅读栏目；细分类仍用于后台判断和既有订阅。 */
+export const READER_CATEGORIES = [
+  { key: "industry", label: "大厂动态", members: ["industry"] },
+  { key: "career", label: "职场与组织", members: ["career", "tip"] },
+  { key: "ai-products", label: "业务与产品", members: ["ai-products", "ecommerce", "local-life", "ai-models"] },
+  { key: "opinion", label: "行业观察", members: ["opinion", "policy", "paper"] },
+] as const;
+
 /**
  * 公开接口（API、RSS、MCP）里和网页不同的类别（选填）。上线后不要改：接口参数和订阅地址里有类别的 key。
  * merge：并进另一类发布的类别，key 是行业包里的类别，值是它并进的类别（公开接口比网页少一类时用）；
@@ -323,3 +334,18 @@ function spokenTime(time: string): string {
   const [hour, minute] = time.split(":").map(Number) as [number, number];
   return `${hour} 点${minute ? ` ${minute} 分` : ""}`;
 }
+
+/** 首页还没有精选时，给读者一个清晰的内容导览。 */
+export const FEED_WELCOME = {
+  kicker: "互联网中大厂职场人的每日信息站",
+  title: "看懂行业变化，跟踪企业发展。",
+  lead: "关注公司战略、财报、业务布局和竞争动作。重点追踪阿里、电商与本地生活，覆盖腾讯、字节、美团、京东、拼多多等互联网企业。",
+  status: "精选内容尚未发布",
+  statusDetail: "第一批资讯需要完成采集与筛选后才会出现。下面是本站的关注方向。",
+  directions: [
+    { category: "industry", title: "大厂动态", description: "战略、财报、投资并购与竞争格局" },
+    { category: "career", title: "职场与组织", description: "组织调整、裁员招聘、薪酬绩效与职业发展" },
+    { category: "ai-products", title: "业务与产品", description: "产品竞争、电商、本地生活与 AI 业务变化" },
+    { category: "opinion", title: "行业观察", description: "行业趋势、深度分析与影响业务的政策" },
+  ],
+};

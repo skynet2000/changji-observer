@@ -12,6 +12,7 @@ const KEYS: Record<SourceRow["kind"], string[]> = {
   web_list: [
     ...COLLECTED, "url", "baseUrl", "parseMode", "adapter", "cacheToleranceSeconds", "linksStartLine", "preserveUrlFragment",
     "itemSelector", "linkSelector", "titleSelector", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset",
+    "method", "bodyForm", "urlTemplate",
   ],
   json_list: [
     ...COLLECTED, "url", "mode", "method", "headers", "bodyJson", "jsonKey", "windowVar", "itemsPath", "itemsObjectValues",
@@ -27,7 +28,7 @@ const KEYS: Record<SourceRow["kind"], string[]> = {
 // Objects with fixed keys (headers and bodyJson are request data, free-form).
 const NESTED: Record<string, string[]> = {
   _aihot: ["initialBackfillLimit", "initialBackfillMonths"],
-  ingestNoiseFilter: ["dropMarkers", "dropMarkersTitleOnly", "keepIfMatches"],
+  ingestNoiseFilter: ["requireAnyMatches", "dropMarkers", "dropMarkersTitleOnly", "keepIfMatches"],
   itemUrlPrefixRewrite: ["from", "to"],
   requireBoolean: ["path", "equals"],
   minNumeric: ["path", "min"],
@@ -39,7 +40,7 @@ const NESTED: Record<string, string[]> = {
 
 const VALUES: Record<string, string[]> = {
   publisherRole: ["organization", "person"],
-  adapter: ["mimo_home"],
+  adapter: ["mimo_home", "weibo_profile"],
   parseMode: ["html", "markdown", "docusaurus_changelog", "intercom_changelog"],
 };
 
@@ -57,6 +58,9 @@ export function unsupportedConfig(kind: SourceRow["kind"], config: Record<string
     if (!allowed.has(key)) out.push(key);
     else if (key === "publisherRequiresDiscovery" && (typeof value !== "boolean"
       || value && (!Array.isArray(config.publisherUrlPrefixes) || config.publisherUrlPrefixes.length === 0))) out.push(key);
+    else if (kind === "web_list" && key === "method" && !["GET", "POST"].includes(String(value))) out.push(key);
+    else if (kind === "web_list" && key === "bodyForm" && (config.method !== "POST" || !value || typeof value !== "object"
+      || Array.isArray(value) || !Object.values(value).every(v => typeof v === "string"))) out.push(key);
     else if (key === "publishedAfter" && !utcInstant(value)) out.push(key);
     else if (key === "publisherUrlPrefixes" && (!Array.isArray(value) || !value.every((v) => {
       if (typeof v !== "string") return false;

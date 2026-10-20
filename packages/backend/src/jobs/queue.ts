@@ -3,6 +3,7 @@
 // and both sides are checked against JobData, so a payload cannot drift between producer and consumer.
 // A module declares its own queues (modules.ts ModuleQueue), typed by the queue in the same way.
 import { PgBoss, type SendOptions, type WorkOptions } from "pg-boss";
+import { budgetMessage } from "../providers/receipts.ts";
 import { config } from "../config.ts";
 import { sql, type Db } from "../db.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
@@ -156,6 +157,21 @@ export async function retryReleasedReceiptJobs(): Promise<number> {
         AND EXISTS (SELECT 1 FROM audit_log a WHERE a.action = 'receipt.release'
                     AND a.subject = 'receipt:' || (j.output->>'receiptId') AND a.created_at > j.started_on)
       ORDER BY j.completed_on LIMIT 200 FOR UPDATE OF j SKIP LOCKED`;
+    for (const job of jobs) await b.retry(job.name, job.id, { db: queueDb(tx) });
+    return jobs.length;
+  });
+}
+
+/** Budget waits are recoverable, even after queue retries run out. Keep other failures untouched. */
+export async function retryBudgetJobs(): Promise<number> {
+  const b = await getBoss();
+  return sql.begin(async (tx) => {
+    const jobs = await tx<{ id: string; name: string }[]>`
+      SELECT j.id, j.name FROM pgboss.job j
+      WHERE j.state = 'failed' AND j.name IN (${QUEUES.group}, ${QUEUES.digest})
+        AND j.output->>'message' LIKE ${budgetMessage("%", "%")}
+        AND j.completed_on < now() - interval '1 hour'
+      ORDER BY j.completed_on LIMIT 100 FOR UPDATE OF j SKIP LOCKED`;
     for (const job of jobs) await b.retry(job.name, job.id, { db: queueDb(tx) });
     return jobs.length;
   });

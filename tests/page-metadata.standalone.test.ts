@@ -58,7 +58,7 @@ test("filtered feeds keep their exact content address but leave indexing to the 
   for (const base of ["/", "/all"]) for (const query of ["channel=news", "category=ai-models", "tag=Agent", "channel=x&category=paper&tag=Agent"]) {
     const $ = await page(`${base}?${query}&utm_source=fixture&anchorAt=old&deep=1`);
     assert.equal($("meta[name=robots]").attr("content"), "noindex, follow", `${base}?${query}`);
-    assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}${base}?${query}`);
+    assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}${base}?${query.replace("category=ai-models", "category=ai-products").replace("category=paper", "category=opinion")}`);
     assert.ok($("main").text().includes(item.title));
   }
   const $ = await page("/all?q=Claude&tab=relevance&page=2&anchorAt=old");

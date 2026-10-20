@@ -71,6 +71,8 @@ export interface ReceiptRequest {
   requestSummary?: Record<string, unknown>;
   /** Distinguishes an explicit re-run (e.g. admin "re-evaluate") from recovery of the same request. */
   attemptTag?: string;
+  /** Maximum bill for this attempt, reserved before sending; also bounds unknown outcomes. */
+  costBudget?: { maxAmount: number; dailyLimit: number | null; currency: string };
 }
 
 export interface ReceiptResult {
@@ -115,6 +117,24 @@ async function checkBudget(tx: Db, service: string): Promise<void> {
   if (c.day >= budget.per_day) throw new BudgetExceededError(service, "day", 3600);
 }
 
+async function checkCostBudget(tx: Db, req: ReceiptRequest): Promise<void> {
+  const budget = req.costBudget;
+  if (!budget) return;
+  if (!Number.isFinite(budget.maxAmount) || budget.maxAmount <= 0
+    || (budget.dailyLimit !== null && (!Number.isFinite(budget.dailyLimit) || budget.dailyLimit <= 0))) throw new Error("Invalid monetary budget");
+  // An explicitly unlimited day still records reservations and settlements for tomorrow's rolling cap.
+  if (budget.dailyLimit === null) return;
+  // All priced model services share the lock, including concurrent workers and explicit retries.
+  await tx`SELECT pg_advisory_xact_lock(hashtext(${"model-cost:" + budget.currency}))`;
+  const [used] = await tx<{ amount: string; unpriced: number }[]>`
+    SELECT coalesce(sum(cost) FILTER (WHERE currency = ${budget.currency}), 0) AS amount,
+      count(*) FILTER (WHERE cost IS NULL OR currency IS DISTINCT FROM ${budget.currency})::int AS unpriced
+    FROM receipt_attempts WHERE model IS NOT NULL AND origin = 'live' AND started_at > now() - interval '1 day'`;
+  if (used!.unpriced || Math.round(Number(used!.amount) * 1e6) + Math.ceil(budget.maxAmount * 1e6) > Math.floor(budget.dailyLimit * 1e6)) {
+    throw new BudgetExceededError(req.service, "cost/day", 3600);
+  }
+}
+
 /**
  * Runs a paid request at most once per logical key and returns its raw response.
  * A caller persisting business results completes the receipt in the same transaction.
@@ -140,12 +160,14 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
       if (existing.status === "unknown") return { kind: "unknown" as const, row: existing };
       // failed: the provider did not take the request, or its answer was unusable; a new attempt is allowed.
       await checkBudget(tx, req.service);
+      await checkCostBudget(tx, req);
       const [r] = await tx<{ attempts: number }[]>`
         UPDATE receipts SET status = 'pending', attempts = attempts + 1, error = NULL, updated_at = now() WHERE id = ${existing.id} RETURNING attempts`;
       const attemptId = await startAttempt(tx, existing.id, r!.attempts, req);
       return { kind: "call" as const, id: existing.id, attemptId };
     }
     await checkBudget(tx, req.service);
+    await checkCostBudget(tx, req);
     const [row] = await tx<{ id: number }[]>`
       INSERT INTO receipts (logical_key, service, model, purpose, subject, status, request, attempts)
       VALUES (${logicalKey}, ${req.service}, ${req.model ?? null}, ${req.purpose}, ${req.subject ?? null}, 'pending',
@@ -173,6 +195,9 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
     await sql.begin(async (tx) => {
       await tx`UPDATE receipts SET status = ${status}, error = ${message}, updated_at = now() WHERE id = ${receiptId}`;
       await tx`UPDATE receipt_attempts SET status = ${status}, error = ${message}, latency_ms = ${Date.now() - started}, finished_at = now() WHERE id = ${attemptId}`;
+      if (error instanceof ProviderRejectedError && req.costBudget) {
+        await tx`UPDATE receipt_attempts SET cost = 0 WHERE id = ${attemptId}`;
+      }
     });
     // The first transport failure needs the same durable identity as a later unknown-result retry.
     if (status === "unknown") throw new ReceiptUnknownError(receiptId, message, { cause: error });
@@ -180,22 +205,23 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
   }
 
   await sql.begin(async (tx) => {
+    const cost = outcome.cost ?? (req.costBudget ? { amount: req.costBudget.maxAmount, currency: req.costBudget.currency, basis: "estimated" } : null);
     await tx`
       UPDATE receipts SET
         status = 'received',
         response = ${tx.json((outcome.response ?? null) as never)},
         request_id = ${outcome.requestId ?? null},
         usage = ${outcome.usage ? tx.json(outcome.usage as never) : null},
-        cost = ${outcome.cost?.amount ?? null},
-        currency = ${outcome.cost?.currency ?? null},
-        cost_basis = ${outcome.cost?.basis ?? null},
+        cost = ${cost?.amount ?? null},
+        currency = ${cost?.currency ?? null},
+        cost_basis = ${cost?.basis ?? null},
         received_at = now(),
         updated_at = now()
       WHERE id = ${receiptId}`;
     await tx`
       UPDATE receipt_attempts SET
         status = 'received', request_id = ${outcome.requestId ?? null}, usage = ${outcome.usage ? tx.json(outcome.usage as never) : null},
-        cost = ${outcome.cost?.amount ?? null}, currency = ${outcome.cost?.currency ?? null}, cost_basis = ${outcome.cost?.basis ?? null},
+        cost = ${cost?.amount ?? null}, currency = ${cost?.currency ?? null}, cost_basis = ${cost?.basis ?? null},
         latency_ms = ${Date.now() - started}, finished_at = now()
       WHERE id = ${attemptId}`;
   });
@@ -204,7 +230,9 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
 
 async function startAttempt(tx: Db, receiptId: number, attempt: number, req: ReceiptRequest): Promise<number> {
   const [row] = await tx<{ id: number }[]>`
-    INSERT INTO receipt_attempts (receipt_id, attempt, service, model, status) VALUES (${receiptId}, ${attempt}, ${req.service}, ${req.model ?? null}, 'pending')
+    INSERT INTO receipt_attempts (receipt_id, attempt, service, model, status, cost, currency, cost_basis)
+    VALUES (${receiptId}, ${attempt}, ${req.service}, ${req.model ?? null}, 'pending',
+      ${req.costBudget?.maxAmount ?? null}, ${req.costBudget?.currency ?? null}, ${req.costBudget ? "estimated" : null})
     RETURNING id`;
   return row!.id;
 }

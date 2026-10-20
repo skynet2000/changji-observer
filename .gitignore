@@ -6,6 +6,8 @@ dist/
 .cache/
 .DS_Store
 .data/
+outputs/
+*.log
 
 # Web production build
 apps/web/build/

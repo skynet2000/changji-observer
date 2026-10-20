@@ -3,7 +3,7 @@
 //; its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
 import type { ReportDetail, StoryDetail, TimelineFilters } from "@aihot/contracts/site";
-import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
+import { readerCategory, isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { SITE, subjectAfter, withSubject } from "@aihot/site";
 
 /**
@@ -50,7 +50,7 @@ export function readFilters(params: URLSearchParams): TimelineFilters {
   const category = params.get("category");
   return {
     channel: isChannelKey(channel) ? channel : "all",
-    category: category && isCategoryKey(category) ? category : null,
+    category: category && isCategoryKey(category) ? readerCategory(category) : null,
     tag: params.get("tag")?.trim() || null,
   };
 }

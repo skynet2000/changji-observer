@@ -2,13 +2,13 @@
   "groups": [
     {
       "key": "company",
-      "name": "公司与模型",
-      "blurb": "按厂商追踪模型、产品与公司动态"
+      "name": "公司与产品",
+      "blurb": "追踪大厂战略、组织与产品变化"
     },
     {
       "key": "field",
-      "name": "技术方向",
-      "blurb": "按技术领域深挖：Agent、多模态、具身智能……"
+      "name": "业务与职业",
+      "blurb": "业务竞争、组织人才与工作方式"
     },
     {
       "key": "genre",
@@ -17,6 +17,216 @@
     }
   ],
   "topics": [
+    {
+      "slug": "alibaba",
+      "name": "阿里巴巴",
+      "group": "company",
+      "entityId": "alibaba",
+      "definition": "跟踪阿里巴巴公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "taotian",
+      "name": "淘宝天猫",
+      "group": "company",
+      "entityId": "taotian",
+      "definition": "跟踪淘宝天猫公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "alibaba-cloud",
+      "name": "阿里云",
+      "group": "company",
+      "entityId": "alibaba-cloud",
+      "definition": "跟踪阿里云公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "eleme",
+      "name": "饿了么",
+      "group": "company",
+      "entityId": "eleme",
+      "definition": "跟踪饿了么公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "amap",
+      "name": "高德",
+      "group": "company",
+      "entityId": "amap",
+      "definition": "跟踪高德公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "cainiao",
+      "name": "菜鸟",
+      "group": "company",
+      "entityId": "cainiao",
+      "definition": "跟踪菜鸟公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "meituan",
+      "name": "美团",
+      "group": "company",
+      "entityId": "meituan",
+      "definition": "跟踪美团公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "jd",
+      "name": "京东",
+      "group": "company",
+      "entityId": "jd",
+      "definition": "跟踪京东公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "pdd",
+      "name": "拼多多 / PDD",
+      "group": "company",
+      "entityId": "pdd",
+      "definition": "跟踪拼多多 / PDD公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "bytedance",
+      "name": "字节跳动 / 抖音",
+      "group": "company",
+      "entityId": "bytedance",
+      "definition": "跟踪字节跳动 / 抖音公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "xiaohongshu",
+      "name": "小红书",
+      "group": "company",
+      "entityId": "xiaohongshu",
+      "definition": "跟踪小红书公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "tencent",
+      "name": "腾讯",
+      "group": "company",
+      "entityId": "tencent",
+      "definition": "跟踪腾讯公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "kuaishou",
+      "name": "快手",
+      "group": "company",
+      "entityId": "kuaishou",
+      "definition": "跟踪快手公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "amazon",
+      "name": "Amazon / AWS",
+      "group": "company",
+      "entityId": "amazon",
+      "definition": "跟踪Amazon / AWS公开披露的产品、经营、组织和业务进展，保留来源与具体口径。"
+    },
+    {
+      "slug": "organization",
+      "name": "组织与人才",
+      "group": "field",
+      "tags": [
+        "组织变动",
+        "招聘趋势",
+        "薪酬绩效",
+        "工作制度"
+      ],
+      "definition": "公开可核实的组织架构、人才策略与员工制度变化，保留适用范围。"
+    },
+    {
+      "slug": "career-growth",
+      "name": "职业成长",
+      "group": "field",
+      "tags": [
+        "职业发展",
+        "协作管理"
+      ],
+      "definition": "面向互联网员工的产品、技术、运营与协作方法，重视证据和可迁移能力。"
+    },
+    {
+      "slug": "ai-workflow",
+      "name": "AI工作方式",
+      "group": "field",
+      "tags": [
+        "AI工作流",
+        "AI应用"
+      ],
+      "definition": "AI如何改变研发、产品、运营与办公流程，关注方法、效果与使用边界。"
+    },
+    {
+      "slug": "ecommerce",
+      "name": "电商竞争",
+      "group": "field",
+      "tags": [
+        "电商",
+        "商家生态",
+        "流量分发"
+      ],
+      "definition": "从平台员工视角理解电商战略、产品机制、用户增长与商业化竞争。"
+    },
+    {
+      "slug": "local-life",
+      "name": "本地生活",
+      "group": "field",
+      "tags": [
+        "本地生活",
+        "外卖",
+        "到店酒旅"
+      ],
+      "definition": "从业务视角跟踪外卖、到店、即时零售的竞争、用户体验和履约效率。"
+    },
+    {
+      "slug": "instant-retail",
+      "name": "即时零售与履约",
+      "group": "field",
+      "tags": [
+        "即时零售",
+        "物流履约"
+      ],
+      "definition": "关注即时零售与履约的具体变化、公开证据与适用条件。"
+    },
+    {
+      "slug": "platform-rules",
+      "name": "平台规则与补贴",
+      "group": "field",
+      "tags": [
+        "平台规则",
+        "补贴佣金"
+      ],
+      "definition": "关注平台规则与补贴的具体变化、公开证据与适用条件。"
+    },
+    {
+      "slug": "content-commerce",
+      "name": "内容电商",
+      "group": "field",
+      "tags": [
+        "内容电商"
+      ],
+      "definition": "关注内容电商的具体变化、公开证据与适用条件。"
+    },
+    {
+      "slug": "cross-border",
+      "name": "跨境与出海",
+      "group": "field",
+      "tags": [
+        "跨境出海"
+      ],
+      "definition": "关注跨境与出海的具体变化、公开证据与适用条件。"
+    },
+    {
+      "slug": "business-results",
+      "name": "财报与经营",
+      "group": "field",
+      "tags": [
+        "财报",
+        "经营数据"
+      ],
+      "definition": "关注财报与经营的具体变化、公开证据与适用条件。"
+    },
+    {
+      "slug": "cloud-ai",
+      "name": "云与AI应用",
+      "group": "field",
+      "tags": [
+        "云计算",
+        "AI应用"
+      ],
+      "definition": "关注云与AI应用的具体变化、公开证据与适用条件。"
+    },
     {
       "slug": "openai",
       "name": "OpenAI / ChatGPT",
@@ -268,7 +478,7 @@
       "tags": [
         "产品更新"
       ],
-      "definition": "AI 产品与应用的功能上新、改版与商业化动态——谁家的产品变强了、变贵了、能用了。"
+      "definition": "互联网产品、AI应用与云服务的功能、价格、开放范围和商业化变化。"
     },
     {
       "slug": "papers",
@@ -322,7 +532,7 @@
       "tags": [
         "行业动态"
       ],
-      "definition": "AI 行业的商业脉搏：融资并购、人事变动、合作与竞争、政策与市场信号。"
+      "definition": "互联网行业的经营、组织、融资并购、合作与竞争变化。"
     },
     {
       "slug": "policy",
@@ -331,7 +541,7 @@
       "tags": [
         "政策/监管"
       ],
-      "definition": "AI 相关政策法规与政府监管动态：立法进展、出口管制与全球治理框架的追踪。"
+      "definition": "互联网、电商、本地生活与数据治理的政策、监管和司法进展。"
     }
   ]
 }

@@ -2,12 +2,13 @@
 import type { PoolResponse, TimelineFilters } from "@aihot/contracts/site";
 import { beijingDate, beijingMidnight } from "@aihot/contracts/time";
 import { one, sql, withCustomPlans, type Db } from "../db.ts";
-import { cachedByKey, sharedSearch } from "../lib/cache.ts";
+import { sharedSearch } from "../lib/cache.ts";
 import {
-  categoryCondition, channelCondition, ITEM_COLUMNS, ITEM_FROM, seatHolders, tagCondition, toFeedItemSummary,
+  reportTime, categoryCondition, channelCondition, ITEM_COLUMNS, ITEM_FROM, seatHolders, tagCondition, toFeedItemSummary,
   type ItemRow,
 } from "./items.ts";
-import { listedCondition } from "./scope.ts";
+import { foldableSelectionCondition, listedCondition, ownFactEvidenceCondition } from "./scope.ts";
+import { eventEntries } from "./event-entries.ts";
 import { TOPICS } from "./topics.ts";
 
 export const POOL_PAGE_SIZE = 40;
@@ -101,16 +102,6 @@ export function publicMatchCondition(terms: string[]) {
   );
 }
 
-/** The listed items under the filters, up to the pages the pool offers. */
-async function listedCount(f: TimelineFilters, now: Date): Promise<number> {
-  return Number(one(await sql<{ n: number }[]>`
-    SELECT count(*) AS n FROM (SELECT 1 FROM publications p WHERE ${listedCondition(now)}
-      ${channelCondition(f.channel)} ${categoryCondition(f.category)} ${tagCondition(f.tag)} LIMIT ${POOL_MAX_PAGES * POOL_PAGE_SIZE}) t`).n);
-}
-
-/** Without a search the total only sets the page count: it is reused for 30 seconds per filter. */
-const poolTotal = cachedByKey((f: TimelineFilters) => JSON.stringify([f.channel, f.category, f.tag]), (f) => listedCount(f, new Date()), { freshMs: 30_000, maxStaleMs: 30_000, maxKeys: 200 });
-
 export interface PoolQuery extends TimelineFilters {
   q?: string | null;
   tab?: "time" | "relevance";
@@ -142,17 +133,33 @@ async function queryPool(query: PoolQuery, now: Date): Promise<PoolResponse> {
   // table to scan for one- and two-character ones.
   const matchOrSubject = (text: ReturnType<typeof directMatchCondition>) => (entityTag ? sql`AND (p.tags @> ${[entityTag]}::text[] OR (TRUE ${text}))` : text);
   const like = (col: ReturnType<typeof sql>, t: string) => sql`${col} LIKE ${"%" + t + "%"}`;
+  // One entry per confirmed event, led by its latest development. Repeated reports of an older
+  // fact cannot move it ahead; filters and search still choose among matching reports first.
+  type GroupedRow = ItemRow & { anchor_at: Date; group_public_id: string | null; group_story_id: number | null; development_count: number; report_count: number; source_count: number; rel: number };
+  const groupedPage = async (db: Db, candidates: ReturnType<typeof sql>) => {
+    const result = await db<(Omit<GroupedRow, "id"> & { id: string | null; total: number })[]>`
+      WITH ${eventEntries(candidates)}, page AS MATERIALIZED (
+        SELECT * FROM entries ORDER BY rel DESC, anchor_at DESC, article_id DESC
+        LIMIT ${POOL_PAGE_SIZE} OFFSET ${offset}
+      ), total AS (SELECT count(*) AS n FROM (SELECT 1 FROM entries LIMIT ${cap}) capped)
+      SELECT hydrated.*, total.n AS total FROM total LEFT JOIN LATERAL (
+        SELECT ${ITEM_COLUMNS}, page.anchor_at, page.rel, reports.report_count, reports.source_count, reports.development_count,
+          f.public_id AS group_public_id, page.story_id AS group_story_id
+        ${ITEM_FROM} JOIN page ON page.article_id = p.article_id LEFT JOIN facts f ON f.id = p.fact_id AND ${ownFactEvidenceCondition()} AND ${foldableSelectionCondition()}
+        LEFT JOIN LATERAL (
+          SELECT count(*)::int AS report_count, count(DISTINCT p.source_id)::int AS source_count,
+            count(DISTINCT p.fact_id)::int AS development_count
+          FROM publications p JOIN facts member_fact ON member_fact.id = p.fact_id
+          WHERE (CASE WHEN page.story_id IS NOT NULL THEN member_fact.story_id = page.story_id ELSE p.fact_id = f.id END)
+            AND ${ownFactEvidenceCondition()}
+            AND ${listedCondition(now)} ${filters}
+        ) reports ON true
+      ) hydrated ON true ORDER BY hydrated.rel DESC, hydrated.anchor_at DESC, hydrated.id DESC`;
+    return { rows: result.filter((r): r is GroupedRow & { total: number } => r.id !== null), total: Number(result[0]!.total) };
+  };
   const run = async (db: Db) => {
     if (!q) {
-      // Page ids from the timeline index first, then the joins for those rows only.
-      const rows = await db<ItemRow[]>`
-        WITH page AS (
-          SELECT p.article_id FROM publications p WHERE ${listedCondition(now)} ${filters}
-          ORDER BY p.timeline_at DESC, p.article_id DESC LIMIT ${POOL_PAGE_SIZE} OFFSET ${offset})
-        SELECT ${ITEM_COLUMNS} ${ITEM_FROM} WHERE p.article_id IN (SELECT article_id FROM page)
-        ORDER BY p.timeline_at DESC, p.article_id DESC`;
-      // A fixed clock (tests, replays) never shares cached totals.
-      return { rows, total: query.now ? await listedCount(query, now) : await poolTotal(query) };
+      return groupedPage(db, sql`SELECT p.article_id, 0 AS rel FROM publications p WHERE ${listedCondition(now)} ${filters}`);
     }
     if (tab === "relevance") {
       // Rank narrow rows first: no article bodies or translations enter the sort/count. The public
@@ -174,7 +181,6 @@ async function queryPool(query: PoolQuery, now: Date): Promise<PoolResponse> {
         FROM (SELECT article_id FROM pool_search WHERE direct LIKE ${"%" + terms[0]! + "%"}) d
         FULL JOIN (SELECT article_id FROM pool_search WHERE body LIKE ${"%" + terms[0]! + "%"}) b ON b.article_id = d.article_id`
         : sql`SELECT ps.article_id, (${partScore}) AS part FROM pool_search ps WHERE ${anyMatch}`;
-      type RankedRow = Omit<ItemRow, "id"> & { id: string | null; rel: number; total: number };
       // A query naming a company also takes the articles about it, ranked first.
       const scored = entityTag ? sql`
           SELECT p.article_id, p.timeline_at, max(matches.part) + (${titleScore}) + (CASE WHEN p.tags @> ${[entityTag]}::text[] THEN 10 ELSE 0 END) AS rel
@@ -185,44 +191,30 @@ async function queryPool(query: PoolQuery, now: Date): Promise<PoolResponse> {
           SELECT p.article_id, p.timeline_at, matches.part + (${titleScore}) AS rel
           FROM matches JOIN publications p ON p.article_id = matches.article_id JOIN sources s ON s.id = p.source_id
           WHERE ${listedCondition(now)} ${filters}`;
-      const result = await db<RankedRow[]>`
-        WITH matches AS ${splitFields ? sql`MATERIALIZED` : sql`NOT MATERIALIZED`} (${matches}), scored AS MATERIALIZED (${scored}
-        ), page AS MATERIALIZED (
-          SELECT article_id, rel FROM scored ORDER BY rel DESC, timeline_at DESC, article_id DESC
-          LIMIT ${POOL_PAGE_SIZE} OFFSET ${offset}
-        ), total AS (SELECT count(*) AS n FROM (SELECT 1 FROM scored LIMIT ${cap}) capped)
-        SELECT hydrated.*, total.n AS total FROM total LEFT JOIN LATERAL (
-          SELECT ${ITEM_COLUMNS}, page.rel ${ITEM_FROM} JOIN page ON page.article_id = p.article_id
-        ) hydrated ON true ORDER BY hydrated.rel DESC, hydrated.timeline_at DESC, hydrated.id DESC`;
-      const rows = result.filter((r): r is ItemRow & { rel: number; total: number } => r.id !== null);
-      return { rows, total: Number(result[0]!.total) };
+      return groupedPage(db, sql`WITH matches AS ${splitFields ? sql`MATERIALIZED` : sql`NOT MATERIALIZED`} (${matches}) ${scored}`);
     }
-    // Default search: newest first straight from the timeline index; the total from the pool's
-    // search rows, where one- and two-character terms scan a small table instead of every item.
-    const rows = await db<ItemRow[]>`
-      WITH page AS (
-        SELECT p.article_id FROM publications p WHERE ${listedCondition(now)} ${filters} ${matchOrSubject(directMatchCondition(terms))}
-        ORDER BY p.timeline_at DESC, p.article_id DESC LIMIT ${POOL_PAGE_SIZE} OFFSET ${offset})
-      SELECT ${ITEM_COLUMNS} ${ITEM_FROM} WHERE p.article_id IN (SELECT article_id FROM page)
-      ORDER BY p.timeline_at DESC, p.article_id DESC`;
-    const direct = terms.reduce((acc, t) => sql`${acc} AND ${like(sql`ps.direct`, t)}`, sql``);
-    const { n } = one(await db<{ n: number }[]>`
-      SELECT count(*) AS n FROM (SELECT 1 FROM pool_search ps JOIN publications p ON p.article_id = ps.article_id
-        WHERE ${listedCondition(now)} ${filters} ${matchOrSubject(direct)} LIMIT ${cap}) t`);
-    return { rows, total: Number(n) };
+    return groupedPage(db, sql`SELECT p.article_id, 0 AS rel FROM publications p
+      WHERE ${listedCondition(now)} ${filters} ${matchOrSubject(directMatchCondition(terms))}`);
   };
 
   const { rows, total } = q ? await withSearchCapacity(run) : await run(sql);
   const today = beijingDate(now);
   const meta = one(await sql<{ today_count: number; updated_at: Date | null }[]>`
-    SELECT (SELECT count(*) FROM publications p
-      WHERE ${listedCondition(now)} AND p.timeline_at >= ${beijingMidnight(today)} ${filters}) AS today_count,
+    WITH ${eventEntries(sql`SELECT p.article_id, 0 AS rel FROM publications p WHERE ${listedCondition(now)} ${filters}`)}
+    SELECT (SELECT count(*) FROM entries WHERE anchor_at >= ${beijingMidnight(today)}) AS today_count,
       (SELECT max(p.updated_at) FROM publications p WHERE p.eligible) AS updated_at`);
 
   const holders = await seatHolders(rows, now);
   return {
     filters: { channel: query.channel, category: query.category, tag: query.tag, q, tab },
-    items: rows.map((r) => (holders.has(r.id) ? { ...toFeedItemSummary(r), reason: null, sameEvent: holders.get(r.id)! } : toFeedItemSummary(r))),
+    items: rows.map((r) => ({
+      ...(holders.has(r.id) ? { ...toFeedItemSummary(r), reason: null, sameEvent: holders.get(r.id)! } : toFeedItemSummary(r)),
+      anchorAt: r.anchor_at.toISOString(),
+      group: r.group_public_id && r.report_count > 1 ? {
+        factId: r.group_public_id, reportCount: r.report_count, additionalSourceCount: r.source_count - 1,
+        ...(r.group_story_id !== null ? { scope: "story" as const, developmentCount: r.development_count } : {}),
+      } : null,
+    })),
     page,
     pageCount: Math.min(POOL_MAX_PAGES, Math.max(1, Math.ceil(total / POOL_PAGE_SIZE))),
     total,

@@ -14,7 +14,7 @@
 // them list each other as related (linkRelatedStories). A story a regrouped report leaves without
 // reports merges into where it went, so its address keeps working. Discussion posts that found no
 // story get another look when a report founds a fact close to them (rematchSignals); history
-// (isHistorical) founds no event. Runs serially (queue concurrency 1).
+// with a verified date and a single fact can join the archive without adding heat. Runs serially (queue concurrency 1).
 import { modelFor } from "../editorial/models.ts";
 import { beijingDate } from "@aihot/contracts/time";
 import { sql, type Db, type Tx } from "../db.ts";
@@ -25,12 +25,12 @@ import { embeddingsAvailable } from "../providers/embeddings.ts";
 import { isHistorical, STALE_ON_DISCOVERY_MS } from "../content/materials.ts";
 import { enqueue, QUEUES, shutdownSignal } from "../jobs/queue.ts";
 import { publishArticle, publishArticleTx } from "../publication/publish.ts";
-import { latestCompositeCondition } from "../publication/scope.ts";
+import { latestScope } from "../publication/scope.ts";
 import { consolidate, liveStory, type Consolidation } from "./consolidate.ts";
 import { mergeStoryInto } from "./merge.ts";
 import { candidateViews, cosine32, recallFacts, recallSelectedBackground, relatedPosts, vectorsFor } from "./recall.ts";
 import {
-  BATCH_SYSTEM, BATCH_PROMPT_VERSION, BatchSchema, PAIR_SYSTEM, PairSchema, RELATE_PROMPT_VERSION, SIGNAL_SYSTEM, SignalSchema, TIE_MIN_CONFIDENCE,
+  BATCH_SYSTEM, BATCH_PROMPT_VERSION, BatchSchema, PAIR_SYSTEM, PairSchema, RELATE_PROMPT_VERSION, SIGNAL_SYSTEM, SignalSchema, TIE_MIN_CONFIDENCE, GROUP_BODY_CHARS,
   batchUser, completeDecisions, firmlyTied, pairUser, reportText, sameOccurrence, signalTarget, storyForDevelopment, verdictsByFact,
   type CandidateView, type ReadingContext, type Relation, type ReportView, type SelectionValue, type Verdict,
 } from "./relate.ts";
@@ -84,9 +84,16 @@ async function judgeBatch(articleId: string, query: ReportView, cands: Candidate
 
 /** The review model reads both reports on their own; a merge stands only when it agrees. */
 async function confirmMerge(articleId: string, query: ReportView, cand: CandidateView): Promise<{ relation: Relation; receiptId: number }> {
+  // Short summaries can make a cross-published article look like two independent opinions.
+  // Read only the saved pair, within the same evidence limit as the first judgement.
+  const evidence = await sql<{ id: string; text: string | null }[]>`
+    SELECT id, substring(coalesce(nullif(body_text, ''), excerpt) FROM 1 FOR ${GROUP_BODY_CHARS}) AS text
+    FROM articles WHERE id = ANY(${[articleId, cand.articleId].filter((id): id is string => !!id)})`;
+  const bodies = new Map(evidence.map(r => [r.id, r.text]));
   const res = await chatJson({
     model: await modelFor("groupReview"), purpose: "group_review", subject: `article:${articleId}:fact:${cand.factId}`, promptVersion: RELATE_PROMPT_VERSION,
-    system: PAIR_SYSTEM, user: pairUser(query, cand.report), schema: PairSchema, temperature: 0, maxTokens: 400,
+    system: PAIR_SYSTEM, user: pairUser({ ...query, sourceText: bodies.get(articleId) },
+      { ...cand.report, sourceText: cand.articleId ? bodies.get(cand.articleId) : null }), schema: PairSchema, temperature: 0, maxTokens: 400,
   });
   return { relation: res.data.relation, receiptId: res.receiptId };
 }
@@ -276,21 +283,31 @@ async function decide(articleId: string, opts: GroupOptions, revision: number, r
     await markGrouped(articleId, a.revision, { addsValue: true, reason: "人工确认的归属" });
     return { verdict: "manual", factId: manual.factId };
   }
-  const [an] = await sql<{ input_revision: number; relevance: string | null; title_zh: string | null; summary_zh: string | null; output: Record<string, any> | null; composite: boolean }[]>`
-    SELECT input_revision, relevance, title_zh, summary_zh, output, ${latestCompositeCondition(sql`${articleId}`)} AS composite
+  const [an] = await sql<{ input_revision: number; relevance: string | null; title_zh: string | null; summary_zh: string | null; output: Record<string, any> | null; scope: "single" | "composite" | "unknown" | null }[]>`
+    SELECT input_revision, relevance, title_zh, summary_zh, output, ${latestScope(sql`${articleId}`)} AS scope
     FROM analyses WHERE article_id = ${articleId} ORDER BY input_revision DESC, id DESC LIMIT 1`;
   if (an && an.input_revision !== a.revision && a.participation_mode === "editorial") {
     throw new GroupingSupersededError("Current material revision is still waiting for analysis");
   }
-  const composite = an?.composite === true;
-  const unsupported = an?.output?.scope === "unknown" && !an.output.fact;
+  const composite = an?.scope === "composite";
+  const unsupported = an?.scope === "unknown" && !an.output?.fact;
   const historical = isHistorical(a);
+  const archiveIdentity = historical && !!a.published_at && an?.scope === "single" && !!an.output?.fact
+    && a.participation_mode === "editorial" && !opts.signalOnly;
   const left = composite || unsupported || historical
-    ? await sql.begin(async (tx) => { await lockCurrentRevision(tx, articleId, a.revision); return resetAutomatic(tx, articleId); })
+    ? await sql.begin(async (tx) => {
+      await lockCurrentRevision(tx, articleId, a.revision);
+      if (archiveIdentity) {
+        if (!await manualDecision(tx, articleId)) await tx`DELETE FROM story_signals WHERE article_id = ${articleId}`;
+        return [];
+      }
+      return resetAutomatic(tx, articleId);
+    })
     : [];
 
-  // History founds no event and adds no heat (isHistorical); a regroup takes it out of any it joined.
-  if (historical) {
+  // Undated or ambiguous history cannot establish an event. Dated, single-event reports use
+  // the same identity checks as live news, while retaining their original time and no heat.
+  if (historical && !archiveIdentity) {
     await markGrouped(articleId, a.revision, { addsValue: true, reason: "历史资料按原文时间归档" });
     return { verdict: "historical" };
   }
@@ -320,7 +337,7 @@ async function decide(articleId: string, opts: GroupOptions, revision: number, r
   const title = an.title_zh || a.title;
   const query: ReportView = {
     title, source: a.source_name, firstParty: a.first_party, at: observedAt, summary: an.summary_zh,
-    scope: composite ? "composite" : an.output?.scope === "single" ? "single" : "unknown",
+    scope: composite ? "composite" : an.scope === "single" ? "single" : "unknown",
     frame: frame ? { subject: frame.subject, action: frame.action, object: frame.object, occurredAt: frame.occurredAt } : null,
   };
   const newTitle = String(frame?.title || title).slice(0, 60);
@@ -331,7 +348,7 @@ async function decide(articleId: string, opts: GroupOptions, revision: number, r
     factId: sameUrl.fact_id, storyId: sameUrl.story_id, factTitle: sameUrl.fact_title, score: 1,
   }]))[0]?.selected === true;
   const cands = selectedSameUrl ? [] : await candidateViews(await recallFacts(articleId,
-    reportText(title, an.summary_zh), RECALL_MIN_COSINE, RECALL_TOP_FACTS, [...referenced, ...(sameUrl ? [sameUrl] : [])]));
+    reportText(title, an.summary_zh), RECALL_MIN_COSINE, RECALL_TOP_FACTS, [...referenced, ...(sameUrl ? [sameUrl] : [])], query.frame));
   const reading = selectedSameUrl ? [] : await recallSelectedBackground(articleId, reportText(title, an.summary_zh), RECALL_MIN_COSINE);
   let verdicts = new Map<number, Verdict>();
   let selection = NO_SELECTED_COVERAGE;
@@ -454,8 +471,10 @@ async function decide(articleId: string, opts: GroupOptions, revision: number, r
     const [hasPrimary] = await tx<{ n: number }[]>`SELECT count(*) AS n FROM fact_articles WHERE fact_id = ${fact} AND role = 'primary'`;
     const role = a.first_party && Number(hasPrimary?.n ?? 0) === 0 ? "primary" : "report";
     const evidence = [frame?.evidence, ...(Array.isArray(frame?.conditions) ? frame.conditions.map((c: { quote?: string }) => c.quote) : [])].filter((x): x is string => typeof x === "string" && !!x).join("\n") || null;
-    await tx`INSERT INTO fact_articles (fact_id, article_id, role, evidence, created_at) VALUES (${fact}, ${articleId}, ${role}, ${evidence}, ${observedAt}) ON CONFLICT (fact_id, article_id) DO NOTHING`;
-    await recordSignal(tx, story, articleId, source, "editorial", observedAt);
+    await tx`INSERT INTO fact_articles (fact_id, article_id, role, evidence, created_at) VALUES (${fact}, ${articleId}, ${role}, ${evidence}, ${observedAt})
+      ON CONFLICT (fact_id, article_id) DO UPDATE SET role = EXCLUDED.role, evidence = EXCLUDED.evidence, created_at = EXCLUDED.created_at
+      WHERE fact_articles.role = 'mention' AND NOT fact_articles.manual`;
+    if (!historical) await recordSignal(tx, story, articleId, source, "editorial", observedAt);
     await recordDecision(tx, articleId, fact, story, verdict, decisionCandidates, receipts[0] ?? null);
     await markGrouped(articleId, a.revision, selection, tx);
     for (const id of receipts) await completeReceipt(tx, id);
@@ -488,7 +507,7 @@ async function decide(articleId: string, opts: GroupOptions, revision: number, r
     }
   }
   // A new fact may be what discussion posts of the last hours were about before any report came.
-  if (verdict === "new-story" || verdict === "new-fact-in-story") {
+  if (!historical && (verdict === "new-story" || verdict === "new-fact-in-story")) {
     try {
       result.rematched = await rematchSignals(articleId, reportText(title, an.summary_zh));
     } catch (error) {

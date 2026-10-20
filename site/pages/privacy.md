@@ -7,7 +7,7 @@
 | 版本 | 请填写 |
 | 生效日期 | 请填写 |
 | 运营主体 | 请填写 |
-| 联系方式 | 请填写 |
+| 联系方式 | [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com) |
 
 页首说明：
 
@@ -31,4 +31,4 @@
 
 ## 5. 联系我们
 
-请写明联系方式，以及查询、更正或删除反馈资料的方式。
+如需查询、更正或删除你提交的反馈资料，请通过反馈页或邮件 [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com) 联系我们，并提供便于定位该条反馈的信息。

@@ -1,7 +1,7 @@
 // A category filter on the public API, RSS and MCP takes in exactly the categories the site publishes as
 // it (site/site.ts PUBLIC_CATEGORIES), whatever the industry's categories are; the website filters by each
-// of its own. Failure cases: a public filter takes in a category the site publishes on its own (or misses
-// one merged into it); the website's filter merges categories; the exits disagree; HTTP validation,
+// of its reader groups. Failure cases: a public filter takes in a category the site publishes on its own (or misses
+// one merged into it); the website misses a group member; the exits disagree; HTTP validation,
 // Agent search, MCP input schemas or OpenAPI still advertise a retired category list.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
@@ -10,7 +10,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { itemFeed } from "@aihot/backend/publication/feeds";
 import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { v1Items } from "@aihot/backend/publication/v1";
-import { CATEGORY_KEYS, PUBLIC_API_CATEGORY_KEYS, toPublicApiCategory } from "@aihot/contracts/taxonomy";
+import { CATEGORY_KEYS, READER_CATEGORY_OPTIONS, PUBLIC_API_CATEGORY_KEYS, toPublicApiCategory } from "@aihot/contracts/taxonomy";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { MCP_TOOL_NAMES } from "@aihot/contracts/mcp";
 import { buildApp } from "../apps/api/src/app.ts";
@@ -54,7 +54,8 @@ test("a public category takes in the categories the site publishes as it, and on
 test("the website filters by each of its own categories", async () => {
   for (const key of CATEGORY_KEYS) {
     const timeline = await loadTimeline({ channel: "all", category: key, tag: T, limit: 40, now });
-    assert.deepEqual(ours(timeline.cards.map((c) => c.item.title)), [title(key)], key);
+    const members = READER_CATEGORY_OPTIONS.find(c => c.key === key)?.members ?? [key];
+    assert.deepEqual(ours(timeline.cards.map((c) => c.item.title)), [...members].map(title).sort(), key);
   }
 });
 

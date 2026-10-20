@@ -70,6 +70,9 @@ export interface FeedItemSummary extends Pick<ItemSummary, "id" | "title" | "sum
 
 export interface GroupInfo {
   factId: string;
+  /** Website groups include the confirmed event's distinct developments. */
+  scope?: "story";
+  developmentCount?: number;
   /** Other public sources reporting this same news fact, under the current filters. */
   additionalSourceCount: number;
   /** Distinct public reports of this fact. */
@@ -110,7 +113,7 @@ export interface TimelineResponse {
 
 export interface PoolResponse {
   filters: TimelineFilters & { q: string | null; tab: "time" | "relevance" };
-  items: FeedItemSummary[];
+  items: Array<FeedItemSummary & { anchorAt?: string; group?: GroupInfo | null }>;
   page: number;
   pageCount: number;
   total: number;

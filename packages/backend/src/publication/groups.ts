@@ -3,12 +3,13 @@
 import type { CategoryKey, ChannelKey } from "@aihot/contracts/taxonomy";
 import type { GroupReportsResponse } from "@aihot/contracts/site";
 import { sql } from "../db.ts";
-import { categoryCondition, channelCondition, tagCondition } from "./items.ts";
-import { evidenceCondition, listedCondition } from "./scope.ts";
+import { reportTime, categoryCondition, channelCondition, tagCondition } from "./items.ts";
+import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "./scope.ts";
 import { publicSourceName } from "./rules.ts";
 
 export interface GroupReportsQuery {
   factPublicId: string;
+  scope?: "story";
   channel: ChannelKey;
   category: CategoryKey | null;
   tag: string | null;
@@ -20,12 +21,13 @@ const MAX_REPORTS = 100;
 /** The fact's public reports under the filters, newest first; null when it has none. */
 export async function loadGroupReports(q: GroupReportsQuery, now = new Date()): Promise<GroupReportsResponse | null> {
   const members = await sql<{ id: string; title: string; timeline_at: Date; url: string; source_name: string }[]>`
-    SELECT p.article_id AS id, p.title, p.timeline_at, p.url, s.name AS source_name
+    SELECT p.article_id AS id, p.title, ${reportTime()} AS timeline_at, p.url, s.name AS source_name
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
-    WHERE f.public_id = ${q.factPublicId} AND ${evidenceCondition()} AND ${listedCondition(now)}
+    WHERE ${q.scope === "story" ? sql`f.story_id = (SELECT story_id FROM facts WHERE public_id = ${q.factPublicId}) AND f.id = p.fact_id AND ${ownFactEvidenceCondition()}` : sql`f.public_id = ${q.factPublicId}`}
+      AND ${evidenceCondition()} AND ${listedCondition(now)}
       ${channelCondition(q.channel)} ${categoryCondition(q.category)} ${tagCondition(q.tag)}
-    ORDER BY p.timeline_at DESC, p.article_id ASC
+    ORDER BY ${reportTime()} DESC, p.article_id ASC
     LIMIT ${MAX_REPORTS}`;
   if (members.length === 0) return null;
   return {

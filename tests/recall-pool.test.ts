@@ -56,3 +56,44 @@ test("recall preserves window, live-story, membership and latest-analysis eviden
   assert.deepEqual(recalled.map(r => r.factId).sort((a, b) => a - b), expected.sort((a, b) => a - b));
   assert.ok(recalled.every(r => r.score === 1 && r.storyId === live!.id && r.factTitle === title));
 });
+
+test('same-subject same-day facts reach the judge even when incident and compensation wording differ', async () => {
+  const key=`frame-${tag()}`;
+  await sql`INSERT INTO sources(id,name,kind,tier) VALUES (${key},${key},'rss','T2')`;
+  const [story]=await sql`INSERT INTO stories(public_id,title) VALUES (${randomUUID()},'Incident') RETURNING id`;
+  const ids:number[]=[];
+  for(const [index,subject,day,scope] of [[0,key,'2026-10-15','single'],[1,key,'2026-10-14','single'],[2,key+' other','2026-10-15','single'],[3,key,'2026-10-15','composite']] as const){
+    const id=key+index;
+    await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at) VALUES (${id},${key},${id},${'https://example.org/'+id},'网络连接中断',now(),now())`;
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,output) VALUES (${id},1,'rule',${sql.json({scope})})`;
+    const [fact]=await sql`INSERT INTO facts(public_id,story_id,title,subject,occurred_at) VALUES (${id},${story!.id},'网络连接中断',${subject},${day+'T00:00:00+08:00'}) RETURNING id`;
+    await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES (${fact!.id},${id},'report')`;
+    ids.push(Number(fact!.id));
+  }
+  const query='用户获赠代金券，企业致歉承诺整改';
+  const before=await recallFacts(key+'-query',query,0.6,10);
+  assert.ok(!before.some(r=>ids.includes(r.factId)));
+  const after=await recallFacts(key+'-query',query,0.6,10,[],{subject:key,occurredAt:'2026-10-15'});
+  assert.deepEqual(after.filter(r=>ids.includes(r.factId)).map(r=>[r.factId,r.score]),[[ids[0],0]]);
+});
+
+test("archive recall finds old peers by publication date, without recalling another year's identical headline", async () => {
+  const key = `archive-${tag()}`;
+  await sql`INSERT INTO sources(id,name,kind,tier) VALUES (${key},${key},'rss','T2')`;
+  const [story] = await sql`INSERT INTO stories(public_id,title) VALUES (${randomUUID()},${key}) RETURNING id`;
+  const ids: number[] = [];
+  for (const [name, at] of [['peer','2024-04-01'],['other-year','2023-04-01']] as const) {
+    const id = `${key}-${name}`;
+    await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at,published_at)
+      VALUES (${id},${key},${id},${'https://example.org/'+id},${key},'2024-04-02','2024-04-02',${at})`;
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,output) VALUES (${id},1,'rule',${sql.json({scope:'single'})})`;
+    const [fact] = await sql`INSERT INTO facts(public_id,story_id,title) VALUES (${id},${story!.id},${key}) RETURNING id`;
+    await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES (${fact!.id},${id},'report')`;
+    ids.push(Number(fact!.id));
+  }
+  const query = `${key}-query`;
+  await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at,published_at,backfill)
+    VALUES (${query},${key},${query},${'https://example.org/'+query},${key},now(),now(),'2024-04-02',true)`;
+  const result = await recallFacts(query,key,0,1000);
+  assert.deepEqual(result.filter(r=>ids.includes(r.factId)).map(r=>r.factId), [ids[0]]);
+});

@@ -17,7 +17,7 @@ import { cached, type Cached } from "../lib/cache.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { serverModules } from "../modules.ts";
 import { ITEM_COLUMNS, ITEM_FROM, toFeedItemSummary, type ItemRow } from "./items.ts";
-import { evidenceCondition, listedCondition, ownFactEvidenceCondition, seatedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
+import { evidenceCondition, listedCondition, ownFactEvidenceCondition, publicationScope, seatedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
 
 export interface Topic {
   slug: string;
@@ -178,11 +178,10 @@ async function readSeats(now: Date, ids?: string[], topics: Topic[] = TOPICS): P
     WITH seats AS (
       SELECT p.article_id AS id, p.revision, p.timeline_at AS at, p.visible_after AS released, p.title, p.score, (s.tier = 'T1') AS first_party,
         p.category, p.original_title, p.published_at, p.tags, p.fact_id,
-        f.subject AS fact_subject, f.action AS fact_action, f.occurred_at AS fact_occurred_at, a.output->>'scope' AS scope,
+        f.subject AS fact_subject, f.action AS fact_action, f.occurred_at AS fact_occurred_at, ${publicationScope()} AS scope,
         st.public_id::text AS story, ${topicMembership(topics)} AS topics
       FROM publications p JOIN sources s ON s.id = p.source_id
       LEFT JOIN facts f ON f.id = p.fact_id
-      LEFT JOIN analyses a ON a.id = p.analysis_id
       LEFT JOIN stories st ON st.id = p.story_id AND st.merged_into IS NULL
       WHERE ${seatedCondition(now)}
         ${ids ? sql`AND p.article_id = ANY(${[...new Set(ids)]}::text[])` : sql``}

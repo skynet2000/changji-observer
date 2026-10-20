@@ -97,3 +97,69 @@ test("a week or month that ended before the first daily is not due, so a site st
   assert.equal(await report("weekly", "2024-W05"), undefined);
   assert.equal(await report("monthly", "2024-01"), undefined);
 });
+
+test("startup archives and a still-open first live window do not create failed daily jobs", async () => {
+  const now = editionAt("daily", "2024-02-05", 3600);
+  assert.deepEqual(await composeDueReports(now), { generated: [], failed: [] });
+  const archived = await item("2024-02-05");
+  await sql`UPDATE articles SET backfill = true WHERE id = ${archived}`;
+  await sql`UPDATE publications SET backfill = true WHERE article_id = ${archived}`;
+  assert.deepEqual(await composeDueReports(now), { generated: [], failed: [] });
+  await item("2024-02-06");
+  assert.deepEqual(await composeDueReports(now), { generated: [], failed: [] });
+  assert.deepEqual(await composeDueReports(editionAt("daily", "2024-02-06", 3600)),
+    { generated: ["daily:2024-02-06"], failed: [] });
+});
+
+test("live material left unjudged at the first edition remains an upstream failure", async () => {
+  const id = await item("2024-02-05");
+  await sql`DELETE FROM publications WHERE article_id = ${id}`;
+  await assert.rejects(composeDueReports(editionAt("daily", "2024-02-05", 3600)), /daily:2024-02-05 failed/);
+});
+
+
+test("first automatic publication recovers the first live day, even before an existing newer issue",async()=>{
+  await item("2024-02-05");
+  await item("2024-02-06");
+  await composeDaily("2024-02-06");
+  const result=await composeDueReports(editionAt("daily","2024-02-06",3600));
+  assert.deepEqual(result,{generated:["daily:2024-02-05"],failed:[]});
+  assert.ok(await report("daily","2024-02-05"));
+});
+
+
+test("an unpublished collection-gap daily backfills source dates and preserves its published snapshot",async()=>{
+  const id=await item("2024-02-07");
+  const original=editionAt("daily","2024-02-05",-3600);
+  await sql`UPDATE publications SET published_at=${original} WHERE article_id=${id}`;
+  const result=await composeDaily("2024-02-05");
+  assert.equal(result.entries,1);
+  const saved=await report("daily","2024-02-05");
+  assert.equal(saved.content.generator.backfilled,true);
+  assert.match(saved.content.lead.leadParagraph,/补刊/);
+  const later=await item("2024-02-07");
+  await sql`UPDATE publications SET published_at=${original} WHERE article_id=${later}`;
+  await composeDaily("2024-02-05");
+  assert.deepEqual(await report("daily","2024-02-05"),saved);
+  await assert.rejects(composeDaily("2024-02-04"),/nothing judged/);
+});
+
+test("late judged material with no selected news recovers quiet dailies without inventing empty gaps", async () => {
+  for (const date of ["2024-02-05", "2024-02-06"]) {
+    const id = await item("2024-02-07");
+    const original = editionAt("daily", date, -3600);
+    await sql`UPDATE publications SET published_at = ${original}, selected = false, score = 20 WHERE article_id = ${id}`;
+    const calls = provider.hits();
+    assert.deepEqual(await composeDaily(date), { key: date, entries: 0 });
+    const saved = await report("daily", date);
+    assert.equal(saved.content.generator.backfilled, true);
+    assert.equal(saved.content.generator.judgedReports, 1);
+    assert.equal(saved.content.leadItemId, null);
+    assert.match(saved.content.lead.leadParagraph, /补刊/);
+    assert.equal(provider.hits(), calls, "a quiet daily does not call a model");
+    await composeDaily(date);
+    assert.deepEqual(await report("daily", date), saved, "automatic retry preserves the recovered issue");
+  }
+  await assert.rejects(composeDaily("2024-02-04"), /nothing judged/);
+  assert.equal(await report("daily", "2024-02-04"), undefined);
+});

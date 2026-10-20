@@ -12,17 +12,21 @@ import { groupArticle } from "@aihot/backend/events/group";
 import { BatchSchema, PairSchema, verdictsByFact, type CandidateView } from "@aihot/backend/events/relate";
 import { detachFromFact, requestRegroup } from "@aihot/backend/events/corrections";
 import { sweepUngrouped } from "@aihot/backend/jobs/events";
-import { enqueue, getBoss, QUEUES, stopBoss } from "@aihot/backend/jobs/queue";
+import { enqueue, getBoss, QUEUES, retryBudgetJobs, stopBoss } from "@aihot/backend/jobs/queue";
 import { recoverStaleWork, releaseReceipt } from "@aihot/backend/operations/recover";
 import { publishArticle } from "@aihot/backend/publication/publish";
 
 const T = tag();
 const sourceId = `group-reliability-${T}`;
 let response: "complete" | "missing" = "complete";
+const reviewPrompts: string[] = [];
 const provider = await stub((_hit, request) => {
   const body = JSON.parse(request.body);
   const text = body.messages[1].content as string;
-  if (text.includes("【报道 A】")) return { choices: [{ message: { content: JSON.stringify({ a: "发布", b: "发布", relation: "SAME_OCCURRENCE", difference: "", confidence: 1 }) } }] };
+  if (text.includes("【报道 A】")) {
+    reviewPrompts.push(text);
+    return { choices: [{ message: { content: JSON.stringify({ a: "发布", b: "发布", relation: "SAME_OCCURRENCE", difference: "", confidence: 1 }) } }] };
+  }
   const ids = [...text.matchAll(/【候选 (C\d+)】/g)].map(m => m[1]);
   return { choices: [{ message: { content: JSON.stringify({ query: "新模型发布", decisions: (response === "missing" ? [] : ids).map(id => ({ id, relation: "SAME_OCCURRENCE", confidence: 1, note: "" })), selection: { addsValue: true, reason: "fixture news" } }) } }] };
 });
@@ -52,6 +56,24 @@ before(async () => {
   await groupArticle(id);
 });
 after(async () => { await provider.close(); await embeddings.close(); await stopBoss(); await closeDb(); });
+
+test("merge review retains both original texts, including excerpt-only evidence, within its limit", async () => {
+  const id = await report("reprint-evidence");
+  const [root] = await sql`SELECT article_id FROM fact_articles WHERE fact_id=${factId} AND role='primary'`;
+  const [before] = await sql`SELECT body_text FROM articles WHERE id=${root!.article_id}`;
+  await sql`UPDATE articles SET body_text=NULL,excerpt=${'原稿独有证据' + '文'.repeat(10000) + '原稿超限'} WHERE id=${root!.article_id}`;
+  await sql`UPDATE articles SET body_text=${'转载独有证据' + '字'.repeat(10000) + '转载超限'} WHERE id=${id}`;
+  const offset = reviewPrompts.length;
+  try {
+    assert.equal((await groupArticle(id)).verdict, 'same-fact');
+    const prompt = reviewPrompts.slice(offset).find(p => p.includes('转载独有证据'));
+    assert.ok(prompt, 'the merge review must receive the new report body');
+    assert.ok(prompt.includes('原稿独有证据'), 'the representative excerpt is evidence when no body exists');
+    assert.ok(!prompt.includes('原稿超限') && !prompt.includes('转载超限'));
+  } finally {
+    await sql`UPDATE articles SET body_text=${before!.body_text},excerpt=NULL WHERE id=${root!.article_id}`;
+  }
+});
 
 test("missing and invalid identity answers cannot silently assert unrelated", () => {
   assert.equal(BatchSchema.safeParse({}).success, false);
@@ -84,6 +106,20 @@ for (const composite of [false, true]) test(`a ${composite ? "roundup" : "single
 
 // The grouping decision and the paid result it consumes must commit together. Without this,
 // a failed completion can leave an article grouped while its paid response stays "received".
+test("a corrected single-event report upgrades its old mention membership", async () => {
+  const id = await report("scope-reclassified", true);
+  assert.equal((await groupArticle(id)).verdict, "roundup");
+  assert.equal((await sql`SELECT role FROM fact_articles WHERE article_id=${id} AND fact_id=${factId}`)[0]!.role,"mention");
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,title_zh,summary_zh,output)
+    SELECT article_id,input_revision,origin,relevance,title_zh,summary_zh,jsonb_set(output,'{scope}','"single"')
+    FROM analyses WHERE article_id=${id} ORDER BY id DESC LIMIT 1`;
+  assert.equal((await groupArticle(id)).verdict, "same-fact");
+  await publishArticle(id);
+  const [row] = await sql`SELECT p.fact_id,fa.role FROM publications p JOIN fact_articles fa ON fa.article_id=p.article_id AND fa.fact_id=p.fact_id WHERE p.article_id=${id}`;
+  assert.equal(row!.fact_id,factId);
+  assert.equal(row!.role,"report");
+});
+
 for (const kind of ["report", "roundup", "kept"] as const) test(`receipt completion failure rolls back ${kind} grouping and recovery reuses the response`, async () => {
   const id = await report(`receipt-atomic-${kind}`, kind === "roundup");
   if (kind === "kept") {
@@ -218,4 +254,43 @@ for (const change of ["revision", "regroup"] as const) test(`${change} withdraws
   }
   const [current] = await sql`SELECT a.grouping_status,p.selected FROM articles a JOIN publications p ON p.article_id=a.id WHERE a.id=${id}`;
   assert.deepEqual({ ...current }, { grouping_status: "pending", selected: false });
+});
+
+
+test("budget-exhausted event jobs recover after cooldown without reviving other failures", async () => {
+  const boss = await getBoss();
+  const ids: string[] = [];
+  for (const [name, message, old] of [
+    [QUEUES.group, "Budget for llm exhausted (hour)", true],
+    [QUEUES.digest, "Budget for llm exhausted (cost/day)", true],
+    [QUEUES.group, "Budget for llm exhausted (hour)", false],
+    [QUEUES.group, "invalid model response", true],
+  ] as const) {
+    const id = await enqueue(name, name === QUEUES.group ? { articleId: randomUUID() } : { storyId: 123 }, { retryLimit: 0 });
+    ids.push(id!);
+    await sql`UPDATE pgboss.job SET state='failed', output=${sql.json({message})},
+      completed_on=now()-make_interval(hours=>${old ? 2 : 0}) WHERE id=${id!}`;
+  }
+  await retryBudgetJobs();
+  assert.deepEqual((await sql`SELECT id,state FROM pgboss.job WHERE id=ANY(${ids}::uuid[])`).sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)).map(r=>r.state), ['retry','retry','failed','failed']);
+  assert.equal(await retryBudgetJobs(),0,'a waiting job must not be scheduled twice');
+  for (const id of ids) await sql`DELETE FROM pgboss.job WHERE id=${id}`;
+});
+
+test("dated single-event history joins a confirmed fact without adding heat or changing its original date", async () => {
+  const id = await report("archive-duplicate");
+  const at = new Date(Date.now() - 30 * 86400000);
+  await sql`UPDATE articles SET published_at=${at},backfill=true WHERE id=${id}`;
+  const result = await groupArticle(id);
+  assert.equal(result.verdict, "same-fact");
+  assert.equal(result.factId, factId);
+  assert.equal((await sql`SELECT 1 FROM story_signals WHERE article_id=${id}`).length, 0);
+  await publishArticle(id);
+  const [published] = await sql`SELECT published_at,backfill FROM publications WHERE article_id=${id}`;
+  assert.equal(published!.published_at.getTime(), at.getTime());
+  assert.equal(published!.backfill, true);
+  await sql`INSERT INTO story_signals(story_id,article_id,participant_key,source_id,kind,observed_at)
+    VALUES (${result.storyId!},${id},${sourceId},${sourceId},'editorial',now())`;
+  assert.equal((await groupArticle(id)).verdict, "kept", "repeat grouping retains the confirmed archive identity");
+  assert.equal((await sql`SELECT 1 FROM story_signals WHERE article_id=${id}`).length, 0, "stale heat from a formerly fresh report is removed");
 });

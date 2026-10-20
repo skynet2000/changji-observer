@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
-import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
+import { CATEGORY_KEYS, readerCategory } from "@aihot/contracts/taxonomy";
 import { UNSAFE_decodeViaTurboStream } from "react-router";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
@@ -65,7 +65,7 @@ test("public route subsets produce the same complete navigation data; filters st
   const category = CATEGORY_KEYS.at(-1)!;
   const filtered = await fetch(`${origin}/_.data?category=${category}&_routes=root`);
   const body = await filtered.text();
-  assert.ok(body.includes(category));
+  assert.ok(body.includes(readerCategory(category)));
   assert.notEqual(body, answers[0]);
 });
 

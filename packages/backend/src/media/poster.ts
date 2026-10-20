@@ -76,7 +76,7 @@ async function tree(p: Poster): Promise<Node> {
 }
 
 export function posterEtag(p: Poster): string {
-  return createHash("sha256").update(POSTER_TEMPLATE_VERSION).update(JSON.stringify(p)).digest("hex").slice(0, 24);
+  return createHash("sha256").update(POSTER_TEMPLATE_VERSION).update(JSON.stringify([SITE.name, SITE.tagline, SITE_HOST, p])).digest("hex").slice(0, 24);
 }
 
 /** PNG bytes for a poster, from the disk cache when this exact poster was rendered before. */

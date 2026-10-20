@@ -27,6 +27,8 @@ export function normalizeUrl(input: string): string | null {
     }
     u.search = params.toString();
   } else {
+    // These publishers append f=rss to the same article served by their web listings.
+    if (["36kr.com", "huxiu.com"].includes(u.hostname) && u.searchParams.get("f") === "rss") u.searchParams.delete("f");
     for (const key of [...u.searchParams.keys()]) if (TRACKING_PARAMS.test(key)) u.searchParams.delete(key);
     u.searchParams.sort();
   }

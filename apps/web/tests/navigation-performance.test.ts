@@ -29,6 +29,7 @@ const hits: string[] = [];
 let suggestionsVersion=1;
 let failing='';
 let ttl=60;
+let emptyTimeline=false;
 let web:WebServer;
 let origin:string;
 let chrome:Browser;
@@ -48,6 +49,7 @@ const api=createServer((req,res)=>{
   if(p==='/api/site/timeline'){
     res.setHeader('X-Accel-Expires','@'+(Math.floor(Date.now()/1000)+ttl));
     const category=url.searchParams.get('category');
+    if(emptyTimeline) return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[],nextCursor:null,hot:null,dayCounts:{}}));
     const shown={...item,title:category?'分类 '+category:'性能检查文章'};
     if(url.searchParams.get('tag')==='long-reading'){
       const cards=Array.from({length:180},(_,i)=>({key:'long-'+i,anchorAt:i<60?at:'2026-10-03T08:00:00.000Z',item:{...item,id:'long-'+i,title:'长列表文章 '+i,summary:'用于核实深处阅读返回的固定摘要。'.repeat(3)},group:null}));
@@ -57,7 +59,7 @@ const api=createServer((req,res)=>{
   }
   if(p==='/api/site/pool'){
     const page=Number(url.searchParams.get('page')||1);
-    return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:null,q:null,tab:'time'},items:[{...item,title:'全部第 '+page+' 页'}],page,pageCount:3,total:3,todayCount:1,freshness:at}));
+    return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:null,q:null,tab:'time'},items:[{...item,title:'全部第 '+page+' 页',...(url.searchParams.get('tag')==='group-test'?{group:{factId:'group-fixture',scope:'story',developmentCount:3,reportCount:3,additionalSourceCount:0}}:{})}],page,pageCount:3,total:3,todayCount:1,freshness:at}));
   }
   if(p==='/api/site/items/navigation-fixture')return res.end(JSON.stringify(detail));
   if(p==='/api/site/items/navigation-fixture/original')return res.end(JSON.stringify({...detail,body:{zh:null,original:'<p>Original fixture</p>',zhKind:null,complete:true},bodyLanguage:'original'}));
@@ -85,6 +87,27 @@ after(async()=>{
 
 // One engine per behaviour: WebKit for what phone readers do (iPhone Safari), Chromium for desktop-only
 // intent such as hover. The router and caches are the same code in both.
+test('empty home explains its purpose; category navigation preserves the filtered empty state',async()=>{
+  emptyTimeline=true;
+  try{
+    for(const width of [390,1280]){
+      const context=await chrome.newContext({viewport:{width,height:900}});
+      const page=await context.newPage();
+      try{
+        await page.goto(origin+'/');
+        await expect(page.getByRole('status')).toContainText('精选内容尚未发布');
+        await expect(page.getByRole('heading',{name:'职场与组织',exact:true})).toBeVisible();
+        await page.getByRole('link',{name:/职场与组织.*组织调整/}).click();
+        await expect(page).toHaveURL(/category=career/);
+        await expect(page.getByText('这个筛选下还没有精选内容')).toBeVisible();
+        await expect(page.getByRole('heading',{name:'看懂业务变化，找到成长方向。'})).toHaveCount(0);
+        await page.goBack();
+        await expect(page.getByRole('status')).toContainText('精选内容尚未发布');
+      }finally{await context.close();}
+    }
+  }finally{emptyTimeline=false;}
+});
+
 test('SSR list and visited query variants return offline without another read',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
@@ -98,15 +121,15 @@ test('SSR list and visited query variants return offline without another read',a
     await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible({timeout:1500});
     await context.setOffline(false);
     await page.getByRole('button',{name:/^筛选/}).click();
-    await page.getByRole('link',{name:'模型',exact:true}).click();
-    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'大厂动态',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
     await page.getByRole('button',{name:/^筛选/}).click();
-    await page.getByRole('link',{name:'产品',exact:true}).click();
+    await page.getByRole('link',{name:'业务与产品',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
-    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible({timeout:1500});
-    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=ai-models');
+    await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible({timeout:1500});
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=industry');
   }finally{await context.close();}
 });
 
@@ -159,17 +182,17 @@ test('intent on a selected link preserves visited data and the next revisit star
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
     await page.goto(origin+'/');
-    await page.getByRole('link',{name:'模型',exact:true}).click();
-    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'模型',exact:true}).focus();
+    await page.getByRole('link',{name:'大厂动态',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'大厂动态',exact:true}).focus();
     await page.waitForTimeout(150);
-    await page.getByRole('link',{name:'产品',exact:true}).click();
+    await page.getByRole('link',{name:'业务与产品',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'产品',exact:true}).focus();
+    await page.getByRole('link',{name:'业务与产品',exact:true}).focus();
     await page.waitForTimeout(150);
     const before=requests.length;
-    await page.getByRole('link',{name:'模型',exact:true}).click();
-    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'大厂动态',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
     assert.deepEqual(requests.slice(before),[],'neither prefetch nor navigation may evict and reload a still-valid visited page');
   }finally{await context.close();}
 });
@@ -302,4 +325,69 @@ test('deep reading returns to its anchor, including folded dates',async()=>{
     await expect.poll(()=>page.locator(`[data-card-key="${before.key}"]`).evaluate((e,top)=>Math.abs(e.getBoundingClientRect().top-top),before.top)).toBeLessThan(2);
     await expect(page.getByRole('button',{name:'展开10月4日',exact:true})).toBeVisible();
   }finally{await context.close();}
+});
+
+
+test('event reports recover from invalid responses, timeouts and stale refreshes on phone and desktop',async()=>{
+  for(const width of [390,1280]){
+    const context=await chrome.newContext({viewport:{width,height:900}});
+    const page=await context.newPage();
+    let response:'invalid'|'ok'|'error'|'empty'|'timeout'='invalid';
+    let requests=0;
+    try{
+      await page.route('**/api/site/groups/**/reports*',async route=>{
+        requests++;
+        if(response==='timeout'){await route.abort('timedout');return;}
+        await route.fulfill({status:response==='error'?503:200,contentType:'application/json',body:JSON.stringify(
+          response==='invalid'?{reports:[null]}: {factId:'group-fixture',reports:response==='empty'?[]:[
+            {id:'other-report',title:'服务恢复进展',source:{name:'测试媒体'},timelineAt:at,originalUrl:'https://example.org/report'}
+          ]})});
+      });
+      await page.goto(origin+'/all?tag=group-test');
+      const toggle=page.getByRole('button',{name:'3 条进展 · 3 篇报道',exact:true}).filter({visible:true});
+      await toggle.click();
+      const retry=page.getByRole('button',{name:'暂时无法加载，点此重试',exact:true});
+      await expect(retry).toBeVisible();
+      response='timeout';await retry.click();await expect(retry).toBeVisible();
+      response='ok';await retry.click();
+      await expect(page.getByText('服务恢复进展',{exact:true})).toBeVisible();
+      await expect(page.getByText('10月4日 16:00',{exact:true})).toBeVisible();
+      if(width===390){
+        await page.getByRole('dialog').getByRole('button',{name:'关闭',exact:true}).click();
+        response='error';await toggle.click();
+        const staleRetry=page.getByRole('button',{name:'更新失败，当前为上次内容，点此重试',exact:true});
+        await expect(staleRetry).toBeVisible();
+        await expect(page.getByText('服务恢复进展',{exact:true})).toBeVisible();
+        response='empty';await staleRetry.click();
+        await expect(page.getByText('暂无其他可显示的报道',{exact:true})).toBeVisible();
+        await expect(page.getByText('服务恢复进展',{exact:true})).toHaveCount(0);
+      }
+      assert.ok(requests>=3);
+    }finally{await context.close();}
+  }
+});
+
+
+test('reader navigation has four categories on desktop and phone; old model links select business',async()=>{
+  const labels=['全部','大厂动态','职场与组织','业务与产品','行业观察'];
+  for(const width of [390,1280]){
+    const context=await chrome.newContext({viewport:{width,height:900}});
+    const page=await context.newPage();
+    try{
+      await page.goto(origin+'/');
+      if(width===390){
+        await page.getByRole('button',{name:'筛选',exact:true}).click();
+        const dialog=page.getByRole('dialog');
+        for(const label of ['不限',...labels.slice(1)])await expect(dialog.getByRole('link',{name:label,exact:true})).toBeVisible();
+        await expect(dialog.getByRole('link')).toHaveCount(5);
+      }else{
+        const nav=page.getByRole('navigation',{name:'筛选',exact:true});
+        assert.deepEqual(await nav.getByRole('link').allTextContents(),labels);
+      }
+      await page.goto(origin+'/?category=ai-models');
+      await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
+      if(width===390)await expect(page.getByRole('link',{name:'取消筛选：业务与产品',exact:true})).toBeVisible();
+      else await expect(page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'业务与产品',exact:true})).toHaveAttribute('aria-current','page');
+    }finally{await context.close();}
+  }
 });

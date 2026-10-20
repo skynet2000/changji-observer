@@ -1,5 +1,5 @@
 // Failure cases: a composite or mention folding into a fact; stale fact membership still folding;
-// a future/withdrawn/unselected report affecting the anchor; filters choosing an anchor outside their
+// a future/withdrawn report affecting the anchor; filters choosing an anchor outside their
 // own set; a later report moving a fact; equal-time standalone cards changing cursor order.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
@@ -45,7 +45,7 @@ test("timeline grouping preserves evidence scope and filter-local anchors", asyn
   const filters = { channel: "all" as const, category: null, tag: prefix, now };
   const full = await loadTimeline(filters);
   assert.deepEqual(full.cards.map(card => card.key), [...standalone.reverse().map(id => `a${id}`), `f${fact!.id}`]);
-  assert.equal(full.cards.at(-1)!.anchorAt, at.toISOString());
+  assert.equal(full.cards.at(-1)!.anchorAt, new Date(+at - 30_000).toISOString());
   const filtered = await loadTimeline({ ...filters, channel: "x" });
   assert.deepEqual(filtered.cards.map(card => [card.key, card.anchorAt]), [[`f${fact!.id}`, new Date(+at + 10_000).toISOString()]]);
   const paged = [];

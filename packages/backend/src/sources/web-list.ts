@@ -9,6 +9,8 @@ import { sanitizeBody } from "../content/sanitize.ts";
 import { jinaRead } from "../providers/jina.ts";
 import { articleUtcOffset, parseLooseDate } from "./dates.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
+import { renderTemplate } from "./json-list.ts";
+import { fromWeiboHtml } from "./weibo.ts";
 
 const JINA_PREFIX = "https://r.jina.ai/";
 
@@ -107,7 +109,13 @@ async function fetchListingText(source: SourceRow): Promise<{ text: string; viaJ
     const page = await jinaRead(target, { purpose: "source_listing", subject: `source:${source.id}`, cacheToleranceSeconds: source.config.cacheToleranceSeconds, format, perRead: true });
     return { text: page.markdown, viaJina: true, base: source.config.baseUrl ?? target };
   }
-  const res = await fetchListing(url, { headers: { accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8" }, timeoutMs: 25_000 });
+  const form = source.config.bodyForm;
+  const res = await fetchListing(url, {
+    method: source.config.method ?? "GET",
+    headers: { accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8", ...(form ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
+    body: form ? new URLSearchParams(form).toString() : undefined,
+    timeoutMs: 25_000,
+  });
   if (res.status !== 200) throw new FetchError(`HTTP ${res.status}`, res.status);
   return { text: res.text(), viaJina: false, base: source.config.baseUrl ?? res.url };
 }
@@ -163,7 +171,7 @@ export function fromHtml(html: string, base: string, source: SourceRow): Candida
   for (const node of nodes) {
     const el = $(node);
     const linkEl = c.linkSelector ? (el.is(c.linkSelector) ? el : el.find(c.linkSelector).first()) : el.is("a") ? el : el.find("a[href]").first();
-    const url = absolute(linkEl.attr("href"), base);
+    const url = absolute(c.urlTemplate ? renderTemplate(c.urlTemplate, el.attr()) ?? undefined : linkEl.attr("href"), base);
     if (!url || seen.has(url) || !allowed(url, source)) continue;
     if (!sectionsArePosts && listingItself(url, listing)) continue;
     const titleEl = c.titleSelector ? (el.is(c.titleSelector) ? el : el.find(c.titleSelector).first()) : linkEl;
@@ -338,9 +346,10 @@ async function fromMimoHome(html: string, base: string, source: SourceRow): Prom
 
 export async function fetchWebList(source: SourceRow): Promise<Candidate[]> {
   const { text, viaJina, base } = await fetchListingText(source);
-  const mode = source.config.adapter === "mimo_home" ? "mimo_home" : source.config.parseMode ?? (viaJina ? "markdown" : "html");
+  const mode = source.config.adapter ?? source.config.parseMode ?? (viaJina ? "markdown" : "html");
   let out: Candidate[];
-  if (mode === "mimo_home") out = await fromMimoHome(text, base, source);
+  if (mode === "weibo_profile") out = fromWeiboHtml(text, base).filter(c => allowed(c.url, source));
+  else if (mode === "mimo_home") out = await fromMimoHome(text, base, source);
   else if (mode === "markdown") out = fromMarkdown(text, base, source);
   else if (mode === "docusaurus_changelog") out = fromDocusaurusChangelog(text, base, source);
   else if (mode === "intercom_changelog") out = fromIntercomChangelog(text, base, source);
@@ -373,7 +382,7 @@ export async function fetchDetail(url: string, source: SourceRow, need: DetailNe
   let html: string | null = null;
   let body: ExtractedBody | null = null;
   if ((need.date && !dateInJina) || (need.title && !titleInJina) || need.summary) {
-    const res = await guardedFetch(url, { timeoutMs: 20_000 });
+    const res = await fetchListing(url, { timeoutMs: 20_000 });
     if (res.status !== 200) throw new FetchError(`HTTP ${res.status} for detail`, res.status);
     html = res.text();
     if (need.body && /html/.test(res.headers.get("content-type") ?? "")) {

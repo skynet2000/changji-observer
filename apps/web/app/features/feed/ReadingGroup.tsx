@@ -1,4 +1,4 @@
-// Duplicate reports of one news fact. Desktop expands inline; phones use a sheet.
+// Reports and developments of one event. Desktop expands inline; phones use a sheet.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 import { Collapse } from "../../components/ui/Presence";
@@ -10,10 +10,10 @@ import { isReload } from "../../lib/restore";
 import { listPath, filterParams } from "../../lib/seo";
 import { sessionCache } from "../../lib/session-cache";
 
-const reportsUrl = (factId: string, filters: TimelineFilters | undefined) =>
-  listPath(`/api/site/groups/${encodeURIComponent(factId)}/reports`, filters ? filterParams(filters) : {});
+const reportsUrl = (group: GroupInfo, filters: TimelineFilters | undefined) =>
+  listPath(`/api/site/groups/${encodeURIComponent(group.factId)}/reports`, { ...(filters ? filterParams(filters) : {}), scope: group.scope });
 
-const labelOf = (group: GroupInfo) => (group.additionalSourceCount > 0 ? `另有 ${group.additionalSourceCount} 家信源报道` : `${group.reportCount} 篇报道`);
+const labelOf = (group: GroupInfo) => (group.developmentCount ?? 0) > 1 ? `${group.developmentCount} 条进展 · ${group.reportCount} 篇报道` : (group.additionalSourceCount > 0 ? `另有 ${group.additionalSourceCount} 家信源报道` : `${group.reportCount} 篇报道`);
 
 // The groups left open in each history entry, with what they showed (null: still loading): back from an
 // item finds them open again. In memory for back within the app; in session storage for a page the
@@ -45,12 +45,16 @@ function useReports(url: string, saved: GroupReport[] | null = null) {
     const controller = (request.current = new AbortController());
     setState((s) => ({ url, reports: s.url === url ? s.reports : null, loading: true, error: false }));
     try {
-      const res = await fetch(url, { signal: controller.signal });
+      const res = await fetch(url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) });
       if (!res.ok && !(again && res.status === 404)) throw new Error(String(res.status));
       const reports = res.ok ? ((await res.json()) as GroupReportsResponse).reports : [];
+      if (!Array.isArray(reports) || reports.some((r) => !r || typeof r.id !== "string" || typeof r.title !== "string"
+        || typeof r.source?.name !== "string" || typeof r.originalUrl !== "string" || !Number.isFinite(Date.parse(r.timelineAt)))) {
+        throw new Error("Invalid group reports");
+      }
       if (!controller.signal.aborted) setState({ url, reports, loading: false, error: false });
     } catch {
-      if (!controller.signal.aborted) setState((s) => ({ ...s, loading: false, error: !s.reports }));
+      if (!controller.signal.aborted) setState((s) => ({ ...s, loading: false, error: true }));
     }
   };
   const restore = (reports: GroupReport[] | null) => setState({ url, reports, loading: false, error: false });
@@ -85,17 +89,18 @@ function Panel({ open, children }: { open: boolean; children: ReactNode }) {
 
 function LoadState({ loading, error, onRetry, empty }: { loading: boolean; error: boolean; onRetry: () => void; empty: boolean }) {
   if (loading && empty) return <div className="space-y-2 py-1">{[0, 1].map((i) => <div key={i} className="skeleton h-4" />)}</div>;
-  if (error) return <button type="button" onClick={onRetry} className="min-h-11 py-1 text-[12.5px] text-hot lg:min-h-0">暂时无法加载，点此重试</button>;
+  if (error) return <button type="button" onClick={onRetry} className="min-h-11 py-1 text-[12.5px] text-hot lg:min-h-0">{empty ? "暂时无法加载，点此重试" : "更新失败，当前为上次内容，点此重试"}</button>;
+  if (!loading && empty) return <p role="status" className="py-1 text-[12.5px] text-ink-4">暂无其他可显示的报道</p>;
   return null;
 }
 
 /** "另有 N 家信源报道": the other reports of the fact the card stands for, behind a toggle. */
 export function GroupSources({ group, filters, parentId }: { group: GroupInfo; filters?: TimelineFilters; parentId: string }) {
   const entry = useLocation().key;
-  const key = `${group.factId}|${parentId}`;
+  const key = `${group.scope ?? "fact"}|${group.factId}|${parentId}`;
   const saved = openGroups.peek(entry)?.groups[key];
   const [open, setOpen] = useState(saved !== undefined);
-  const reports = useReports(reportsUrl(group.factId, filters), saved);
+  const reports = useReports(reportsUrl(group, filters), saved);
   // Back in this history entry, an open group comes back open and is read once more; so after the browser
   // reloaded the page on back/forward (never on a reader's reload, which asks for a fresh list).
   useEffect(() => {
@@ -127,7 +132,10 @@ export function GroupSources({ group, filters, parentId }: { group: GroupInfo; f
         <ul className="divide-y divide-line-soft">
           {others.map((r) => (
             <li key={r.id} className="flex items-baseline gap-2 py-1.5 text-[13px]">
-              <span className="w-[108px] shrink-0 truncate text-ink-4">{r.source.name}</span>
+              <span className="w-[140px] shrink-0 text-ink-4">
+                <span className="block truncate">{r.source.name}</span>
+                <time dateTime={r.timelineAt} className="num block text-[11px]">{monthDayTime(r.timelineAt)}</time>
+              </span>
               <Link viewTransition to={`/items/${r.id}`} className="min-w-0 flex-1 truncate text-ink-2 hover:text-accent">
                 {r.title}
               </Link>
@@ -176,13 +184,13 @@ function GroupSheet({ open, onClose, group, filters, parentId }: {
   filters?: TimelineFilters;
   parentId: string;
 }) {
-  const reports = useReports(reportsUrl(group.factId, filters));
+  const reports = useReports(reportsUrl(group, filters));
   useEffect(() => {
-    if (open && !reports.reports && !reports.loading && !reports.error) void reports.load();
+    if (open) void reports.load(true);
   }, [open]);
   const others = (reports.reports ?? []).filter((r) => r.id !== parentId);
   return (
-    <Sheet open={open} onClose={onClose} title="同一新闻的其他报道">
+    <Sheet open={open} onClose={onClose} title={group.scope === "story" ? "同一事件的进展与报道" : "同一新闻的其他报道"}>
       <div className="px-5">
         <ul className="divide-y divide-line-soft">
           {others.map((r) => (

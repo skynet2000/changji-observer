@@ -74,7 +74,7 @@ test("real grouped timeline pagination keeps whole-day counts across midnight", 
     const anchor = storyId ? midnight : midnight - 86_400_000;
     await add(`group-${facts.length}-a`, anchor - 1, fact!.id, storyId);
     await add(`group-${facts.length}-b`, anchor, fact!.id, storyId);
-    groups.push({ anchor: anchor - 1, key: `f${fact!.id}` });
+    groups.push({ anchor: anchor - 1, key: storyId ? `s${storyId}` : `f${fact!.id}` });
   }
   groups.sort((a, b) => b.anchor - a.anchor || (a.key < b.key ? 1 : -1));
   const seen: string[] = [];

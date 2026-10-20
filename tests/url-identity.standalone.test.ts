@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { identityKeyForUrl, normalizeUrl, tweetIdFromUrl } from "../packages/backend/src/lib/url.ts";
 
+test("36kr and Huxiu RSS attribution does not duplicate their web articles", () => {
+  for (const url of ["https://36kr.com/p/4026486163984519", "https://www.huxiu.com/article/4897880.html"]) {
+    assert.equal(identityKeyForUrl(`${url}?f=rss`), identityKeyForUrl(url));
+    assert.notEqual(identityKeyForUrl(`${url}?f=other`), identityKeyForUrl(url));
+  }
+  assert.equal(normalizeUrl("https://example.org/post?f=rss"), "https://example.org/post?f=rss");
+});
+
 test("X and Twitter status URL variants keep the same material identity", () => {
   for (const host of ["x.com", "twitter.com", "www.x.com", "www.twitter.com", "mobile.twitter.com", "m.twitter.com"]) {
     for (const path of ["/openai/status/1234567890", "/openai/statuses/1234567890", "/i/status/1234567890"]) {

@@ -45,6 +45,8 @@
 
 ### web_list
 
+默认 GET。公开列表若通过表单 POST 返回 HTML，可设 `method: "POST"` 和 `bodyForm: {"page_no":"1","page_size":"100"}`（值为字符串）。行内没有 href、由脚本根据行属性跳转时，可设 `urlTemplate: "https://example.com/news/details?id={id}"`，占位符从 `itemSelector` 对应元素的属性读取并进行 URL 编码；缺少属性则跳过该行。此配置仅用于已核验的公开列表查询，POST 不自动重试。日期仍通过列表或详情选择器读取原文发布时间。
+
 支持普通 CSS 选择器，`div` 列表也能采集。关键是 `itemSelector` 要选中**每条新闻**，而不是包住所有新闻的容器。例如：
 
 ```html
@@ -256,3 +258,9 @@ Content-Type: application/json
 - `sourceId` 不存在时会自动建一个 `external` 信源，默认不进公开页面：到后台把它的参与方式改成 `editorial` 才会出现在站上。
 - 在后台暂停信源后，推送接口返回 409，不再接收新文章；恢复信源后可以继续推送。
 - 条目的 `raw._aihot.backfill` 为 `true` 时按历史回灌处理（不进入“今天”、不推送）。
+
+### 微博公开原帖（厂际观察）
+
+`web_list` 的 `adapter: "weibo_profile"` 读取已核验账号的服务端 HTML；例如 `url: "https://weibo.com/foxshuo"`，并用 `allowUrlPrefixes: ["https://weibo.com/1560906700/"]` 限定作者。
+
+只读取公开原创文字，按原帖绝对日期与北京时间入库，移除来源追踪参数。列表里的“展开全文”只作摘录，待原帖详情返回完整文字才确认正文；登录页、其他帖子的文字及转发上下文不当成该帖正文。当前不识别配图里的证据，不采转发帖；摘要应保留作者归属和传闻边界。完整文字仍须通过行业预筛和评分，来源可采集不代表每条都公开或精选。无匹配帖子会记为采集失败，进入既有退避和健康检查，不把登录墙算作成功。

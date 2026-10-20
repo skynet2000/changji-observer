@@ -44,7 +44,19 @@ export function seatedCondition(now: Date) {
 
 /** The report was published from a composite (multi-topic) analysis: it only mentions facts. */
 export function compositeCondition() {
-  return sql`EXISTS (SELECT 1 FROM analyses evidence_an WHERE evidence_an.id = p.analysis_id AND evidence_an.output->>'scope' = 'composite')`;
+  return sql`(${publicationScope()} = 'composite') IS TRUE`;
+}
+
+/** Explicit, audited editorial scope corrections take precedence without rewriting model history. */
+export function publicationScope() {
+  return sql`coalesce((SELECT o.fields->>'scope' FROM editorial_overrides o WHERE o.article_id = p.article_id),
+    (SELECT evidence_an.output->>'scope' FROM analyses evidence_an WHERE evidence_an.id = p.analysis_id))`;
+}
+
+export function latestScope(article: ReturnType<typeof sql>) {
+  return sql`coalesce((SELECT o.fields->>'scope' FROM editorial_overrides o WHERE o.article_id = ${article}),
+    (SELECT scope_analysis.output->>'scope' FROM analyses scope_analysis WHERE scope_analysis.article_id = ${article}
+      ORDER BY scope_analysis.input_revision DESC, scope_analysis.id DESC LIMIT 1))`;
 }
 
 /**
@@ -54,9 +66,7 @@ export function compositeCondition() {
  * also meets reports without a publication. Missing scope is unknown, never composite.
  */
 export function latestCompositeCondition(article: ReturnType<typeof sql>) {
-  return sql`(SELECT scope_analysis.output->>'scope' = 'composite' FROM analyses scope_analysis
-    WHERE scope_analysis.article_id = ${article}
-    ORDER BY scope_analysis.input_revision DESC, scope_analysis.id DESC LIMIT 1) IS TRUE`;
+  return sql`(${latestScope(article)} = 'composite') IS TRUE`;
 }
 
 /**

@@ -8,7 +8,7 @@ import { beijingDate } from "@aihot/contracts/time";
 import { sha256 } from "../lib/ids.ts";
 import { embeddingsAvailable, ensureEmbeddings } from "../providers/embeddings.ts";
 import { GROUP_BODY_CHARS, lexicalSimilarity, reportText, type CandidateView, type ReportView, type ReadingContext } from "./relate.ts";
-import { groupingEvidenceCondition, ownFactEvidenceCondition, selectedCondition } from "../publication/scope.ts";
+import { groupingEvidenceCondition, ownFactEvidenceCondition, publicationScope, selectedCondition } from "../publication/scope.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity, type RepresentativeRow } from "../publication/representative.ts";
 
 /** Reports discovered this recently are candidates (keyed on discovery, so an old page found today still meets its peers). */
@@ -19,6 +19,8 @@ export interface PoolRow {
   fact_id: number;
   story_id: number;
   fact_title: string;
+  subject?: string | null;
+  occurred_at?: Date | null;
   revision?: number;
 }
 
@@ -42,17 +44,20 @@ export const rootFactOf = (story: ReturnType<typeof sql> | number) => sql`(
   ORDER BY coalesce(q.published_at, q.discovered_at), y.id
   LIMIT 1)`;
 
-/** Reports of the recall window that belong to a live fact. */
-async function recallPool(): Promise<PoolRow[]> {
+/** Recent reports, plus the publication-time window of an archived query, belonging to live facts. */
+async function recallPool(queryId: string): Promise<PoolRow[]> {
   // Correlate the analysis lookup with articles so its discovery window is applied first.
   return sql<PoolRow[]>`
-    SELECT fa.article_id, fa.fact_id, f.story_id, f.title AS fact_title, coalesce(p.revision, 0) AS revision
+    SELECT fa.article_id, fa.fact_id, f.story_id, f.title AS fact_title, f.subject, f.occurred_at, coalesce(p.revision, 0) AS revision
     FROM fact_articles fa
     JOIN facts f ON f.id = fa.fact_id
     JOIN stories st ON st.id = f.story_id AND st.merged_into IS NULL
     JOIN articles a ON a.id = fa.article_id
     LEFT JOIN publications p ON p.article_id = a.id
-    WHERE fa.role IN ('primary', 'report') AND ${groupingEvidenceCondition(sql`a.id`)} AND a.discovered_at > now() - make_interval(days => ${RECALL_DAYS})`;
+    LEFT JOIN articles q ON q.id = ${queryId} AND q.backfill AND q.published_at IS NOT NULL
+    WHERE fa.role IN ('primary', 'report') AND ${groupingEvidenceCondition(sql`a.id`)} AND (a.discovered_at > now() - make_interval(days => ${RECALL_DAYS})
+      OR a.published_at BETWEEN q.published_at - make_interval(days => ${RECALL_DAYS})
+        AND q.published_at + make_interval(days => ${RECALL_DAYS}))`;
 }
 
 type ReadingRow = ReportView & { article_id: string; revision: number };
@@ -61,8 +66,8 @@ type ReadingRow = ReportView & { article_id: string; revision: number };
 async function selectedReadingPool(): Promise<ReadingRow[]> {
   return sql<ReadingRow[]>`
     SELECT p.article_id, p.revision, p.title, p.summary, s.name AS source, (s.tier = 'T1') AS "firstParty",
-      coalesce(p.published_at, p.discovered_at) AS at, an.output->>'scope' AS scope
-    FROM publications p JOIN sources s ON s.id = p.source_id LEFT JOIN analyses an ON an.id = p.analysis_id
+      coalesce(p.published_at, p.discovered_at) AS at, ${publicationScope()} AS scope
+    FROM publications p JOIN sources s ON s.id = p.source_id
     WHERE p.fact_id IS NULL AND ${selectedCondition(new Date())}
       AND p.discovered_at > now() - make_interval(days => ${RECALL_DAYS})`;
 }
@@ -164,8 +169,8 @@ async function similarReports(queryId: string, queryText: string, pool: Array<{ 
 }
 
 /** The best report of each fact counts; boosted facts (quoted/replied-to posts) are always included. */
-export async function recallFacts(queryId: string, queryText: string, minScore: number, top: number, boost: PoolRow[] = []): Promise<Recalled[]> {
-  const pool = (await recallPool()).filter((r) => r.article_id !== queryId);
+export async function recallFacts(queryId: string, queryText: string, minScore: number, top: number, boost: PoolRow[] = [], frame?: ReportView["frame"]): Promise<Recalled[]> {
+  const pool = (await recallPool(queryId)).filter((r) => r.article_id !== queryId);
   const scores = await similarReports(queryId, queryText, pool, minScore);
   const best = new Map<number, Recalled>();
   const consider = (r: PoolRow, score: number) => {
@@ -175,6 +180,10 @@ export async function recallFacts(queryId: string, queryText: string, minScore: 
   for (const r of pool) {
     const score = scores.get(r.article_id);
     if (score !== undefined) consider(r, score);
+    // A response/compensation can share few words with the incident. Same-subject, same-day facts
+    // are candidates only, at zero confidence: the relation judge must still establish the link.
+    if (frame?.subject?.trim() && frame.occurredAt && r.subject?.trim().toLowerCase() === frame.subject.trim().toLowerCase()
+      && r.occurred_at && beijingDate(r.occurred_at) === frame.occurredAt) consider(r, 0);
   }
   for (const r of boost) consider(r, 1);
   return [...best.values()].sort((a, b) => b.score - a.score).slice(0, top);
@@ -206,10 +215,11 @@ export async function candidateViews(recalled: Recalled[]): Promise<CandidateVie
     fact_id: number; title: string; summary: string | null; source: string; first_party: boolean; at: Date;
   };
   const [rows, selectedRows] = await Promise.all([sql<{
+    article_id: string;
     fact_id: number; story_id: number; fact_title: string; subject: string | null; action: string | null; object: string | null; occurred_at: Date | null;
     title: string; summary: string | null; source: string; first_party: boolean; at: Date; members: number; root_fact_id: number;
   }[]>`
-    SELECT DISTINCT ON (fa.fact_id) fa.fact_id, f.story_id, f.title AS fact_title, f.subject, f.action, f.object, f.occurred_at,
+    SELECT DISTINCT ON (fa.fact_id) p.article_id, fa.fact_id, f.story_id, f.title AS fact_title, f.subject, f.action, f.object, f.occurred_at,
            p.title, p.summary, s.name AS source, (s.tier = 'T1') AS first_party, coalesce(p.published_at, p.discovered_at) AS at,
            (SELECT count(*) FROM fact_articles x WHERE x.fact_id = fa.fact_id AND x.role IN ('primary', 'report') AND ${groupingEvidenceCondition(sql`x.article_id`)}) AS members,
            ${rootFactOf(sql`f.story_id`)} AS root_fact_id
@@ -236,6 +246,7 @@ export async function candidateViews(recalled: Recalled[]): Promise<CandidateVie
     const selected = selectedMembers.length ? pickRepresentative(selectedMembers) : null;
     return [{
       factId: r.factId,
+      articleId: row.article_id,
       storyId: Number(row.story_id),
       factTitle: row.fact_title,
       members: Number(row.members),

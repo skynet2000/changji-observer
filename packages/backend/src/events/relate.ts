@@ -38,6 +38,8 @@ export interface ReadingContext { report: ReportView; sourceText: string | null 
 
 export interface CandidateView {
   factId: number;
+  /** Saved representative used to retrieve original evidence for merge review. */
+  articleId?: string;
   storyId: number;
   factTitle: string;
   /** Reports already attached to the fact. */

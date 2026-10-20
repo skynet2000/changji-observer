@@ -11,12 +11,16 @@
  * feedLabel 是分类 RSS 标题里的名字（不写就用 label）。公开接口、RSS 和 MCP 里要把一类并进另一类发布，写在站点设置里（site/site.ts 的 PUBLIC_CATEGORIES）。
  */
 export const CATEGORIES = [
+  { key: "industry", label: "大厂战略", feedLabel: "大厂战略", section: "大厂战略与经营", guide: "互联网公司的集团战略、财报、业务取舍、投资并购、商业合作和竞争格局。关注对业务方向与资源配置的意义；组织人事与员工制度归组织人才，电商或本地生活的具体业务动作归对应栏目。观点与预测不当作事实。" },
+  { key: "career", label: "组织人才", section: "组织与人才", guide: "互联网公司的裁员、部门撤并、管理层变动、招聘冻结、薪酬绩效、奖金晋升、人才流动、考勤制度和职场争议。保留适用范围与公开出处；员工自述、匿名爆料与未证实的裁员传闻明确归因并标注未证实，不改写成公司已确认事实。不采个人隐私与无出处的人身攻击。个人方法与经验归职业成长，政府劳动政策归政策。" },
+  { key: "ai-products", label: "产品/AI", feedLabel: "产品与AI应用", section: "产品与AI应用", guide: "互联网产品、云服务、AI应用、工具、功能和API的发布更新，重点是用户入口、产品竞争、办公研发流程、价格、开放范围和商业化变化。交易机制或履约变化优先归相应业务栏目；模型本体发布归模型。" },
+  { key: "ecommerce", label: "电商竞争", section: "电商竞争", guide: "货架、内容与跨境电商的业务布局、产品机制、增长、商业化和竞争。平台规则仅在体现业务战略、用户体验或行业结构变化时重点收录；单店投流、选品、开店、佣金操作手册不作为员工核心资讯。即时零售与履约归本地生活。" },
+  { key: "local-life", label: "本地生活", section: "本地生活与即时零售", guide: "外卖、到店、酒旅、即时零售、配送网络的业务竞争、用户体验、增长、成本与履约效率。帮助员工理解公司战略和业务机制；不以商户入驻、店铺经营教程为核心。集团财报归战略，组织调整归组织人才。" },
+  { key: "tip", label: "职业成长", section: "职业成长与工作方法", guide: "面向互联网产品、技术、运营和商业岗位的可迁移方法：产品判断、数据分析、技术实践、跨团队协作、管理、职业规划和AI工作流。要求方法、适用条件与证据；不收成功学、卖课、面试押题营销或商家开店教程。", commentary: true },
+  { key: "opinion", label: "深度分析", section: "行业深度分析", guide: "有公开事实与数据支持的互联网战略、竞争、商业模式、组织管理分析和访谈。帮助大厂员工理解业务，明确区分事实、受访者观点和预测。", commentary: true },
+  { key: "policy", label: "政策监管", section: "政策与行业环境", guide: "对互联网业务与员工有实际影响的监管、反垄断、数据隐私、AI治理与劳动政策。区分征求意见、发布、实施；公司工作制度归组织人才，平台商家规则不冒充政府监管。" },
   { key: "ai-models", label: "模型", feedLabel: "AI 模型", section: "模型发布/更新", guide: "模型本身的发布、版本、权重开放、能力或价格变化，以及既有榜单上的模型成绩。公布一次跑分不是发布新基准，也不是教程。" },
-  { key: "ai-products", label: "产品", feedLabel: "AI 产品", section: "产品发布/更新", guide: "可使用的 AI 产品、功能、应用、工具、API、平台和工程组件的发布更新。模型厂商发布的推理框架、算子库、硬件适配组件仍是产品，不能因为厂商名归成模型。" },
-  { key: "industry", label: "行业", feedLabel: "行业动态", section: "行业动态", guide: "已发生的公司经营、融资并购、人事、合作、诉讼、政策、真实安全事故及调查进展。新闻由当事人发帖、带有态度，也不因此变成观点。" },
-  { key: "paper", label: "论文", feedLabel: "论文", section: "论文研究", guide: "以新研究方法、实验设计与发现为核心的论文、技术报告、新基准或研究数据集。系统性红队实验属于研究；既有榜单成绩归模型，真实事故的新闻调查归行业。" },
-  { key: "tip", label: "教程", section: "技巧与观点", guide: "读者可以照着使用的方法、提示词、工具用法、工程实践复盘与技术讲解。重点是可复用的做法；单纯发布工具归产品，只有态度和预测而无做法归观点。", commentary: true },
-  { key: "opinion", label: "观点", section: "技巧与观点", guide: "重点是作者的解释、判断、主张、预测、评论或访谈观点。讨论市场不自动归行业，作者是名人不自动归观点。", commentary: true },
+  { key: "paper", label: "研究", feedLabel: "研究报告", section: "研究报告", guide: "有明确方法、样本和发现的行业研究、用户行为研究、论文、技术报告或基准。报告推断需保留口径和限制，未经说明的数据不能当事实。" },
 ] as const satisfies ReadonlyArray<{ key: string; label: string; feedLabel?: string; section: string; guide: string; commentary?: true }>;
 
 /**
@@ -27,7 +31,7 @@ export const CATEGORIES = [
 export const RELEASE: { category: string; tag: string; unit: string } | null = { category: "ai-models", tag: "模型发布", unit: "个新模型" };
 
 /** 周报月报的总述可以直接写、不必在报道里找到出处的行业通用词（小写）。站名会自动算进去。 */
-export const PLAIN_TERMS: readonly string[] = ["ai", "api", "llm", "gpu", "agi", "ceo", "ipo"];
+export const PLAIN_TERMS: readonly string[] = ["ai", "api", "llm", "gpu", "agi", "ceo", "ipo", "gmv", "mau", "dau", "roi", "saas", "电商", "本地生活", "即时零售", "互联网"];
 
 /**
  * 内容理解一步给每篇资料判的“内容类型”（写在 prompts/content-understanding.md 里，改了类型要同步改那份提示词）。
@@ -40,16 +44,17 @@ export const ITEM_TYPES = ["model_release", "product_launch", "tool_or_prompt", 
 /** 每篇资料的第一个标签必须是这些“分类标签”之一。 */
 export const CATEGORY_TAGS = [
   "产品更新", "模型发布", "论文/研究", "开源/仓库", "教程/实践", "现象/趋势", "大佬观点", "评测/基准", "安全/对齐", "行业动态", "政策/监管",
-  "非AI/通用工具", "其他",
+  "非AI/通用工具", "其他", "平台规则", "经营数据", "组织战略",
 ] as const;
 
 /** 可选的主题标签。 */
 export const TOPIC_TAGS = [
   "Agent", "编码", "推理", "多模态", "语音", "视频", "图像生成", "RAG", "端侧", "数据/训练", "搜索", "部署/工程", "开源生态", "具身智能", "MCP/工具调用",
+  "电商", "本地生活", "即时零售", "外卖", "到店酒旅", "商家生态", "流量分发", "补贴佣金", "物流履约", "内容电商", "跨境出海", "广告商业化", "用户增长", "财报", "组织变动", "云计算", "AI应用", "数据隐私", "招聘趋势", "薪酬绩效", "工作制度", "职业发展", "协作管理", "AI工作流", "裁员", "人才流动", "职场争议", "未证实",
 ] as const;
 
 /** 可选的实体标签（公司、机构、平台）。 */
-export const ENTITY_TAGS = ["OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv"] as const;
+export const ENTITY_TAGS = ["阿里巴巴", "淘宝天猫", "阿里云", "美团", "京东", "拼多多", "字节跳动", "小红书", "腾讯", "快手", "百度", "Amazon", "OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv"] as const;
 
 /** 模型常写的近义词，统一成词表里的写法。 */
 export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
@@ -72,6 +77,21 @@ export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
  * 把事实的主体对到发布方时也认它们。
  */
 export const ENTITIES: Record<string, { name: string; displayTag: string | null; aliases: string[]; otherNames?: string[] }> = {
+  alibaba: { name: "阿里巴巴", displayTag: "阿里巴巴", aliases: ["阿里巴巴", "Alibaba", "阿里集团", "阿里"], otherNames: ["Alibaba Group", "阿里巴巴集团"] },
+  taotian: { name: "淘宝天猫", displayTag: "淘宝天猫", aliases: ["淘宝", "天猫", "淘天", "Taobao", "Tmall"], otherNames: ["淘天集团", "淘宝闪购"] },
+  "alibaba-cloud": { name: "阿里云", displayTag: "阿里云", aliases: ["阿里云", "Alibaba Cloud", "Aliyun"] },
+  eleme: { name: "饿了么", displayTag: null, aliases: ["饿了么", "Ele.me"] },
+  amap: { name: "高德", displayTag: null, aliases: ["高德", "高德地图", "Amap", "AutoNavi"] },
+  cainiao: { name: "菜鸟", displayTag: null, aliases: ["菜鸟", "菜鸟网络", "Cainiao"] },
+  meituan: { name: "美团", displayTag: "美团", aliases: ["美团", "Meituan"], otherNames: ["大众点评", "美团闪购", "美团外卖", "Keeta"] },
+  jd: { name: "京东", displayTag: "京东", aliases: ["京东", "JD.com"], otherNames: ["京东零售", "京东物流", "京东秒送", "京东外卖"] },
+  pdd: { name: "拼多多 / PDD", displayTag: "拼多多", aliases: ["拼多多", "Pinduoduo", "PDD Holdings"], otherNames: ["Temu"] },
+  bytedance: { name: "字节跳动 / 抖音", displayTag: "字节跳动", aliases: ["字节跳动", "ByteDance", "抖音", "TikTok"], otherNames: ["抖音电商", "抖音生活服务", "火山引擎", "豆包", "Doubao"] },
+  xiaohongshu: { name: "小红书", displayTag: "小红书", aliases: ["小红书", "Xiaohongshu", "RedNote"] },
+  tencent: { name: "腾讯", displayTag: "腾讯", aliases: ["腾讯", "Tencent", "微信", "WeChat"], otherNames: ["微信小店", "视频号"] },
+  kuaishou: { name: "快手", displayTag: "快手", aliases: ["快手", "Kuaishou", "Kwai"] },
+  baidu: { name: "百度", displayTag: "百度", aliases: ["百度", "Baidu", "文心"] },
+  amazon: { name: "Amazon / AWS", displayTag: "Amazon", aliases: ["Amazon", "亚马逊", "AWS"] },
   "world-labs": { name: "World Labs", displayTag: null, aliases: ["World Labs"] },
   "thinking-machines": { name: "Thinking Machines Lab", displayTag: null, aliases: ["Thinking Machines"] },
   amd: { name: "AMD", displayTag: null, aliases: ["AMD", "Advanced Micro Devices"] },
@@ -79,7 +99,7 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
   anthropic: { name: "Anthropic", displayTag: "Anthropic", aliases: ["Anthropic", "Claude"], otherNames: ["Claude Code"] },
   google: { name: "Google", displayTag: "Google", aliases: ["Google", "DeepMind", "Gemini", "谷歌"], otherNames: ["Google DeepMind", "Google Research", "Google AI", "Google Labs", "Google Cloud"] },
   deepseek: { name: "DeepSeek", displayTag: "DeepSeek", aliases: ["DeepSeek", "深度求索"] },
-  qwen: { name: "千问 Qwen", displayTag: null, aliases: ["Qwen", "通义", "阿里"], otherNames: ["通义千问", "千问", "千问APP", "Qwen Team", "通义实验室", "阿里巴巴", "Alibaba", "阿里云", "Alibaba Cloud"] },
+  qwen: { name: "千问 Qwen", displayTag: null, aliases: ["Qwen", "通义", "千问"], otherNames: ["通义千问", "千问APP", "Qwen Team", "通义实验室"] },
   kimi: { name: "Kimi / 月之暗面", displayTag: null, aliases: ["Kimi", "月之暗面", "Moonshot"], otherNames: ["Moonshot AI"] },
   minimax: { name: "MiniMax", displayTag: null, aliases: ["MiniMax", "海螺"], otherNames: ["稀宇科技"] },
   zhipu: { name: "智谱 GLM", displayTag: null, aliases: ["智谱", "GLM", "Z.ai"], otherNames: ["智谱AI", "Zhipu", "Zhipu AI"] },
@@ -97,6 +117,19 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
  * 行业没有这个问题时可以留空数组。
  */
 export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; patterns: RegExp[] }> = [
+  { id: "alibaba", name: "阿里巴巴", patterns: [/阿里(?:巴巴|集团)?|\balibaba\b/i] },
+  { id: "taotian", name: "淘宝天猫", patterns: [/淘宝|天猫|淘天|\btaobao\b|\btmall\b/i] },
+  { id: "alibaba-cloud", name: "阿里云", patterns: [/阿里云|\balibaba\s+cloud\b|\baliyun\b/i] },
+  { id: "eleme", name: "饿了么", patterns: [/饿了么|\bele\.me\b/i] },
+  { id: "amap", name: "高德", patterns: [/高德|\bamap\b|\bautonavi\b/i] },
+  { id: "cainiao", name: "菜鸟", patterns: [/菜鸟|\bcainiao\b/i] },
+  { id: "meituan", name: "美团", patterns: [/美团|大众点评|\bmeituan\b|\bkeeta\b/i] },
+  { id: "jd", name: "京东", patterns: [/京东|\bjd\.com\b/i] },
+  { id: "pdd", name: "拼多多", patterns: [/拼多多|\bpinduoduo\b|\bpdd\b|\btemu\b/i] },
+  { id: "bytedance", name: "字节跳动", patterns: [/字节跳动|抖音|\bbytedance\b|\btiktok\b/i] },
+  { id: "xiaohongshu", name: "小红书", patterns: [/小红书|\bxiaohongshu\b|\brednote\b/i] },
+  { id: "tencent", name: "腾讯", patterns: [/腾讯|微信|\btencent\b|\bwechat\b/i] },
+  { id: "kuaishou", name: "快手", patterns: [/快手|\bkuaishou\b|\bkwai\b/i] },
   { id: "openai", name: "OpenAI", patterns: [/openai|chatgpt|\bgpt-?[o\d]|\bsora\b|\bcodex\b/i] },
   { id: "anthropic", name: "Anthropic", patterns: [/anthropic|\bclaude\b/i, /\b(?:opus|sonnet|haiku)\s*\d+(?:[.\-]\d+)*\b/i, /\bfable\s*\d+(?:[.\-]\d+)*\b|\bmythos\b/i] },
   { id: "google", name: "Google / Gemini", patterns: [/google|deepmind|\bgemini\b|notebooklm|\bveo\s?\d|\bAlphaFold\b|\bAMIE\b/i] },

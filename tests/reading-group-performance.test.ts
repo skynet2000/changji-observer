@@ -32,19 +32,18 @@ for(let f=0;f<2;f++) {
 }
 after(closeDb);
 
-// Failure cases: an old launch lifted by a new evaluation; two news facts hidden in one story card;
+// Failure cases: developments split into duplicate cards;
 // late duplicate reports moving a fact; a representative leaking another fact's sources;
 // a withdrawn representative returned; pagination splitting a fact across pages.
-test('selected news keeps each fact at its first appearance under its representative',async()=>{
+test('selected news folds all developments under the latest selected representative',async()=>{
   const timeline = await loadTimeline({channel:'all',category:null,tag:key,now});
-  assert.deepEqual(timeline.cards.map(c=>c.item.id),[`${key}-1-2`,`${key}-0-2`]);
-  assert.deepEqual(timeline.cards.map(c=>c.anchorAt),[new Date(+now-3600000).toISOString(),new Date(+now-10*86400000).toISOString()]);
-  assert.deepEqual(timeline.cards.map(c=>c.group!.reportCount),[6,6]);
-  assert.deepEqual(timeline.cards.map(c=>c.group!.additionalSourceCount),[1,1]);
-  assert.ok(timeline.cards.every(c=>!('latestDevelopment' in c.group!)&&!('developmentCount' in c.group!)), 'news cards carry no event progress');
+  assert.deepEqual(timeline.cards.map(c=>c.item.id),[`${key}-1-2`]);
+  assert.deepEqual(timeline.cards.map(c=>c.anchorAt),[new Date(+now-3600000).toISOString()]);
+  assert.deepEqual(timeline.cards.map(c=>c.group!.reportCount),[12]);
+  assert.deepEqual(timeline.cards.map(c=>c.group!.additionalSourceCount),[1]);
+  assert.equal(timeline.cards[0]!.group!.developmentCount,2);
   const firstNews=await loadTimeline({channel:'all',category:null,tag:key,now,limit:1});
-  const secondNews=await loadTimeline({channel:'all',category:null,tag:key,now,limit:1,cursor:firstNews.nextCursor});
-  assert.deepEqual([...firstNews.cards,...secondNews.cards].map(c=>c.item.id),timeline.cards.map(c=>c.item.id));
+  assert.equal(firstNews.nextCursor,null,'the event is not split across pages');
   const followups=await loadStoryFollowups(storyPublicId,now);
   assert.deepEqual(followups!.items.map(i=>i.representative.id),[`${key}-1-2`,`${key}-0-2`],'each fact by its representative, the latest first');
   await sql`UPDATE publications SET visibility='withdrawn' WHERE article_id=${key+'-1-2'}`;
