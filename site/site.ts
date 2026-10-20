@@ -338,6 +338,16 @@ function spokenTime(time: string): string {
 }
 
 /** 首页还没有精选时，给读者一个清晰的内容导览。 */
+/** Public feed masthead and reading context, kept with the site's other copy. */
+export const FEED_EDITORIAL = {
+  imprint: "CHANGJI OBSERVER", kicker: "互联网 · 公司 · 人",
+  featuredTitle: "看见大厂的下一步。", allTitle: "行业变化，持续发生。",
+  featuredLead: "追踪企业发展，关注职场处境。把分散的消息，读成有脉络的变化。",
+  allLead: "从业务竞争到组织变动，沿着时间读懂事情的来龙去脉。",
+  contextTitle: "消息之外，看见关联。",
+  contextLead: "同一事件的报道与进展归在一起，保留来源，方便你判断。",
+};
+
 export const FEED_WELCOME = {
   kicker: "互联网中大厂职场人的每日信息站",
   title: "看懂行业变化，跟踪企业发展。",

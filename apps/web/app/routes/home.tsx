@@ -1,3 +1,4 @@
+import { FEED_EDITORIAL } from "@aihot/site";
 import { Text } from "@aihot/web/lib/text";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
@@ -57,7 +58,7 @@ export default function Home() {
         <div className="min-w-0">{data.cards.length === 0 && !hasFeedFilters(filters)
           ? <FeedWelcome />
           : <Timeline initial={data} filters={data.filters} />}</div>
-        {data.hot && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>消息之外，看见关联。</Text></h2><p><Text>同一事件的报道与进展归在一起，保留来源，方便你判断。</Text></p></div></aside>}
+        {data.hot && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>{FEED_EDITORIAL.contextTitle}</Text></h2><p><Text>{FEED_EDITORIAL.contextLead}</Text></p></div></aside>}
       </div>
     </div>
   );
