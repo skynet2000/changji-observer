@@ -101,3 +101,12 @@ test("real translations preserve values across Chinese magnitudes, grouping comm
   assert.equal(validTranslations(["V4.1"], ["V4.10"]), false);
   assert.equal(validTranslations(["10月18日"], ["October 19"]), false);
 });
+
+test("public lookup limits bursts before doing content reads and never starts translation", async () => {
+  const isolated = Fastify(); language.http!(isolated);
+  try {
+    for (let i = 0; i < 60; i++) assert.equal((await isolated.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: [] } })).statusCode, 200);
+    const limited = await isolated.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: [] } });
+    assert.equal(limited.statusCode, 429); assert.equal(limited.headers["retry-after"], "60");
+  } finally { await isolated.close(); }
+});

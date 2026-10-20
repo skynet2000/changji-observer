@@ -60,8 +60,14 @@ export async function translateNextBatch() {
 const language: ServerModule = {
   name: "language",
   http(app) {
+    const attempts = new Map<string, { until: number; count: number }>();
     app.post("/api/language/lookup", { bodyLimit: 128 * 1024 }, async (req, reply) => {
       reply.header("Cache-Control", "no-store");
+      const now = Date.now();
+      for (const [key, value] of attempts) if (value.until <= now) attempts.delete(key);
+      const key = hashText(req.ip), attempt = attempts.get(key) ?? { until: now + 60000, count: 0 };
+      if (attempt.count >= 60 || (!attempts.has(key) && attempts.size >= 10000)) return reply.code(429).header("Retry-After", "60").send({ error: "try_later" });
+      attempt.count++; attempts.set(key, attempt);
       const parsed = z.object({ texts: z.array(z.string().max(20000)).max(64) }).strict().safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: "invalid_texts" });
       // This reads saved translations only. Arbitrary visitor text never reaches a model or a queue.
