@@ -9,6 +9,7 @@
 import { sql, type Db } from "../db.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
+import { beijingDate } from "@aihot/contracts/time";
 
 /** The text of a spent budget's error; with `%` for both parts it is the LIKE pattern that finds every saved one. */
 export const budgetMessage = (service: string, window: string) => `Budget for ${service} exhausted (${window})`;
@@ -96,10 +97,15 @@ interface ReceiptRow {
   updated_at: Date;
 }
 
-async function checkBudget(tx: Db, service: string): Promise<void> {
+async function checkBudget(tx: Db, service: string, model?: string | null): Promise<void> {
   const [budget] = await tx<{ per_minute: number; per_hour: number; per_day: number }[]>`
     SELECT per_minute, per_hour, per_day FROM budgets WHERE service = ${service}`;
   if (!budget) return; // default rows come with the migrations; a service an operator removed is unlimited
+  if (budget.per_minute <= 0 || budget.per_hour <= 0 || budget.per_day <= 0) {
+    throw new BudgetExceededError(service, "stopped", 3600);
+  }
+  // The dated model allowance expires in Beijing time; collection-service limits and manual stops remain.
+  if (model && process.env.LLM_BUDGET_UNLIMITED_DATE === beijingDate(new Date())) return;
   // Every request sent counts, retries of the same logical request included.
   const [counts] = await tx<{ minute: number; hour: number; day: number }[]>`
     SELECT
@@ -109,9 +115,6 @@ async function checkBudget(tx: Db, service: string): Promise<void> {
     FROM receipt_attempts
     WHERE service = ${service} AND origin = 'live' AND started_at > now() - interval '1 day'`;
   const c = counts!;
-  if (budget.per_minute <= 0 || budget.per_hour <= 0 || budget.per_day <= 0) {
-    throw new BudgetExceededError(service, "stopped", 3600);
-  }
   if (c.minute >= budget.per_minute) throw new BudgetExceededError(service, "minute", 60);
   if (c.hour >= budget.per_hour) throw new BudgetExceededError(service, "hour", 600);
   if (c.day >= budget.per_day) throw new BudgetExceededError(service, "day", 3600);
@@ -159,14 +162,14 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
       }
       if (existing.status === "unknown") return { kind: "unknown" as const, row: existing };
       // failed: the provider did not take the request, or its answer was unusable; a new attempt is allowed.
-      await checkBudget(tx, req.service);
+      await checkBudget(tx, req.service, req.model);
       await checkCostBudget(tx, req);
       const [r] = await tx<{ attempts: number }[]>`
         UPDATE receipts SET status = 'pending', attempts = attempts + 1, error = NULL, updated_at = now() WHERE id = ${existing.id} RETURNING attempts`;
       const attemptId = await startAttempt(tx, existing.id, r!.attempts, req);
       return { kind: "call" as const, id: existing.id, attemptId };
     }
-    await checkBudget(tx, req.service);
+    await checkBudget(tx, req.service, req.model);
     await checkCostBudget(tx, req);
     const [row] = await tx<{ id: number }[]>`
       INSERT INTO receipts (logical_key, service, model, purpose, subject, status, request, attempts)

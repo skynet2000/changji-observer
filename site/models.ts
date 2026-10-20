@@ -63,7 +63,8 @@ export const PRESETS: Record<string, ModelPreset> = {
  */
 export const DEFAULTS: Record<string, string> = { score: "deepseek-flash-think" };
 
-// 2026-10-13 核验：https://api-docs.deepseek.com/zh-cn/quick_start/pricing
+// 2026-10-21 核验：https://api-docs.deepseek.com/zh-cn/quick_start/pricing
+// 当前 deepseek-flash 对应官方 V4.1-Flash-1017；官方未公布单独可调用的日期版名称。
 // 按高峰单价计算上界，不依赖空闲时段折扣；金额限制通过环境变量启用。
 export const MODEL_COST_POLICY = {
   origin: "https://api.deepseek.com",

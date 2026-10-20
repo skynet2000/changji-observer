@@ -11,6 +11,7 @@ import { chatJson, ModelOutputError } from "@aihot/backend/providers/llm";
 import { embeddingsAvailable } from "@aihot/backend/providers/embeddings";
 import { BudgetExceededError, logicalKeyFor, markStalePendingReceipts, paidRequest, ReceiptUnknownError } from "@aihot/backend/providers/receipts";
 import { autoReleaseUnknownReceipts } from "@aihot/backend/operations/recover";
+import { beijingDate } from "@aihot/contracts/time";
 
 const usage = { prompt_tokens: 80, completion_tokens: 20, total_tokens: 100 };
 let answer: (hit: number) => string = () => '{"ok":true}';
@@ -30,6 +31,31 @@ test("the migrations seed a budget for every paid service", async () => {
   const rows = await sql<{ service: string }[]>`SELECT service FROM budgets`;
   const services = new Set(rows.map((r) => r.service));
   for (const s of ["jina", "socialdata", "dajiala", "zhipu", "deepseek", "mimo", "dashscope"]) assert.ok(services.has(s), `no budget for ${s}`);
+});
+
+test("the dated unlimited model allowance expires and preserves collection limits and manual stops", async (t) => {
+  const previous = process.env.LLM_BUDGET_UNLIMITED_DATE;
+  t.after(() => {
+    if (previous === undefined) delete process.env.LLM_BUDGET_UNLIMITED_DATE;
+    else process.env.LLM_BUDGET_UNLIMITED_DATE = previous;
+  });
+  process.env.LLM_BUDGET_UNLIMITED_DATE = beijingDate(new Date());
+  const service = `dated-model-${tag()}`;
+  await sql`INSERT INTO budgets (service, per_minute, per_hour, per_day) VALUES (${service}, 1, 1, 1)`;
+  let sent = 0;
+  const send = async () => ({ response: { call: ++sent } });
+  const first = { service, model: "deepseek-flash", purpose: "invariant_test", identity: { date: tag() } };
+  await paidRequest(first, send);
+  await paidRequest({ ...first, identity: { date: tag() } }, send);
+  assert.equal(sent, 2);
+  await assert.rejects(paidRequest({ service, purpose: "invariant_test", identity: { collector: tag() } }, send), BudgetExceededError);
+  process.env.LLM_BUDGET_UNLIMITED_DATE = beijingDate(new Date(Date.now() - 86_400_000));
+  await assert.rejects(paidRequest({ ...first, identity: { expired: tag() } }, send), BudgetExceededError);
+  assert.equal((await paidRequest(first, send)).reused, true);
+  process.env.LLM_BUDGET_UNLIMITED_DATE = beijingDate(new Date());
+  await sql`UPDATE budgets SET per_minute = 0 WHERE service = ${service}`;
+  await assert.rejects(paidRequest({ ...first, identity: { stopped: tag() } }, send), BudgetExceededError);
+  assert.equal(sent, 2);
 });
 
 test("an answer already received is reused instead of bought again", async () => {

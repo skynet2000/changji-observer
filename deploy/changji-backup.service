@@ -1,0 +1,10 @@
+[Unit]
+Description=Changji Observer local verified backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+UMask=0077
+ExecStart=/bin/bash /home/ubuntu/changji-observer/current/deploy/backup-local.sh
