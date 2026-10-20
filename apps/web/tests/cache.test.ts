@@ -89,11 +89,21 @@ test("HTML and navigation share freshness; cookies do not personalize public res
   assert.equal(html.headers.get("X-Accel-Expires"), `@${deadline}`);
   assert.match(await html.text(), /精选/);
   const plain = await fetch(`${origin}/about.data`);
+  // Cross a clock tick so equality cannot depend on the requests arriving in the same second.
+  await new Promise(resolve => setTimeout(resolve, 1005 - Date.now() % 1000));
   const signedIn = await fetch(`${origin}/about.data?_routes=root`, { headers: { cookie: "admin_session=private; reader=returning" } });
   assert.match(plain.headers.get("Cache-Control")!, /^public,/);
   assert.match(plain.headers.get("X-Accel-Expires")!, /^@\d+$/);
   assert.equal(signedIn.headers.get("Set-Cookie"), null);
-  assert.equal(await signedIn.text(), await plain.text());
+  const [anonymousData, signedInData] = await Promise.all([plain, signedIn].map(async res => {
+    const { value } = await UNSAFE_decodeViaTurboStream(res.body!, globalThis);
+    const result = value as Record<string, { data: Record<string, unknown> }>;
+    const about = result["routes/about"]!.data;
+    // This informational page starts its own TTL on each render; verify it before comparing data.
+    assert.equal(about.expiresAt, Number(res.headers.get("X-Accel-Expires")!.slice(1)) * 1000);
+    return { ...result, "routes/about": { ...result["routes/about"], data: { ...about, expiresAt: 0 } } };
+  }));
+  assert.deepEqual(signedInData, anonymousData);
   assert.ok(apiCookies.every((cookie) => !cookie));
 });
 
