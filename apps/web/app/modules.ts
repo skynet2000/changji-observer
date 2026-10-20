@@ -116,6 +116,8 @@ export interface TopicPagePart {
 export interface WebModule {
   /** Its folder under modules/. */
   name: string;
+  /** Presentation text, including saved alternative-language content. The hook returns a pure lookup. */
+  text?: () => (source: string) => string;
   /** Desktop sidebar: entries in a section between the engine's 内容 and 更多; modules naming the same section share it. */
   sidebar?: { section: string; items: NavItem[] };
   /** Phone tab bar: tabs before 我的. */
@@ -136,6 +138,8 @@ export interface WebModule {
   };
   /** Parts of every public page (root.tsx); the admin has its own chrome and gets none of them. */
   root?: {
+    /** Account entry inside the desktop sidebar and phone toolbar. */
+    AccountControl?: ComponentType<{ compact?: boolean }>;
     /** An inline script in <head>, after the theme's: it runs before the page paints. */
     bootScript?: string;
     /** Above the page's content. */

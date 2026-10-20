@@ -2,4 +2,6 @@
 import type { WebModule } from "@aihot/web/modules";
 import reader from "@aihot/reader/web";
 
-export const WEB_MODULES: readonly WebModule[] = [reader];
+import language from "@aihot/language/web";
+
+export const WEB_MODULES: readonly WebModule[] = [reader, language];

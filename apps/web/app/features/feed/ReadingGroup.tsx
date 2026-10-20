@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // Reports and developments of one event. Desktop expands inline; phones use a sheet.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router";
@@ -89,13 +90,14 @@ function Panel({ open, children }: { open: boolean; children: ReactNode }) {
 
 function LoadState({ loading, error, onRetry, empty }: { loading: boolean; error: boolean; onRetry: () => void; empty: boolean }) {
   if (loading && empty) return <div className="space-y-2 py-1">{[0, 1].map((i) => <div key={i} className="skeleton h-4" />)}</div>;
-  if (error) return <button type="button" onClick={onRetry} className="min-h-11 py-1 text-[12.5px] text-hot lg:min-h-0">{empty ? "暂时无法加载，点此重试" : "更新失败，当前为上次内容，点此重试"}</button>;
-  if (!loading && empty) return <p role="status" className="py-1 text-[12.5px] text-ink-4">暂无其他可显示的报道</p>;
+  if (error) return <button type="button" onClick={onRetry} className="min-h-11 py-1 text-[12.5px] text-hot lg:min-h-0"><Text>{empty ? "暂时无法加载，点此重试" : "更新失败，当前为上次内容，点此重试"}</Text></button>;
+  if (!loading && empty) return <p role="status" className="py-1 text-[12.5px] text-ink-4"><Text>暂无其他可显示的报道</Text></p>;
   return null;
 }
 
 /** "另有 N 家信源报道": the other reports of the fact the card stands for, behind a toggle. */
 export function GroupSources({ group, filters, parentId }: { group: GroupInfo; filters?: TimelineFilters; parentId: string }) {
+  const translate = useText();
   const entry = useLocation().key;
   const key = `${group.scope ?? "fact"}|${group.factId}|${parentId}`;
   const saved = openGroups.peek(entry)?.groups[key];
@@ -126,20 +128,20 @@ export function GroupSources({ group, filters, parentId }: { group: GroupInfo; f
           if (!open && !reports.reports && !reports.loading) void reports.load();
         }}
       >
-        {labelOf(group)}
+        <Text>{labelOf(group)}</Text>
       </Toggle>
       <Panel open={open}>
         <ul className="divide-y divide-line-soft">
           {others.map((r) => (
             <li key={r.id} className="flex items-baseline gap-2 py-1.5 text-[13px]">
               <span className="w-[140px] shrink-0 text-ink-4">
-                <span className="block truncate">{r.source.name}</span>
-                <time dateTime={r.timelineAt} className="num block text-[11px]">{monthDayTime(r.timelineAt)}</time>
+                <span className="block truncate"><Text>{r.source.name}</Text></span>
+                <time dateTime={r.timelineAt} className="num block text-[11px]"><Text>{monthDayTime(r.timelineAt)}</Text></time>
               </span>
               <Link viewTransition to={`/items/${r.id}`} className="min-w-0 flex-1 truncate text-ink-2 hover:text-accent">
-                {r.title}
+                <Text>{r.title}</Text>
               </Link>
-              <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label="打开原文" className="shrink-0 text-ink-4 hover:text-accent">
+              <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label={translate("打开原文")} className="shrink-0 text-ink-4 hover:text-accent">
                 <IconArrowUpRight size={13} />
               </a>
             </li>
@@ -169,7 +171,7 @@ export function GroupButton({ group, filters, parentId }: { group: GroupInfo; fi
         aria-haspopup="dialog"
         className="relative z-10 mt-2 flex min-h-11 w-full items-center justify-between rounded-tile bg-bg-sunk px-3 py-2 text-left text-[12.5px] text-ink-4 transition-colors active:bg-bg-muted lg:hidden dark:bg-bg-muted/60 dark:active:bg-bg-muted"
       >
-        {labelOf(group)}
+        <Text>{labelOf(group)}</Text>
         <IconChevronRight size={14} />
       </button>
       {mounted && <GroupSheet open={open} onClose={() => setOpen(false)} group={group} filters={filters} parentId={parentId} />}
@@ -184,24 +186,25 @@ function GroupSheet({ open, onClose, group, filters, parentId }: {
   filters?: TimelineFilters;
   parentId: string;
 }) {
+  const translate = useText();
   const reports = useReports(reportsUrl(group, filters));
   useEffect(() => {
     if (open) void reports.load(true);
   }, [open]);
   const others = (reports.reports ?? []).filter((r) => r.id !== parentId);
   return (
-    <Sheet open={open} onClose={onClose} title={group.scope === "story" ? "同一事件的进展与报道" : "同一新闻的其他报道"}>
+    <Sheet open={open} onClose={onClose} title={translate(group.scope === "story" ? "同一事件的进展与报道" : "同一新闻的其他报道")}>
       <div className="px-5">
         <ul className="divide-y divide-line-soft">
           {others.map((r) => (
             <li key={r.id} className="flex items-start gap-2 py-3">
               <Link viewTransition to={`/items/${r.id}`} className="min-w-0 flex-1 active:opacity-60">
                 <span className="block text-[12.5px] text-ink-4">
-                  {r.source.name} · <span className="num">{monthDayTime(r.timelineAt)}</span>
+                  <Text>{r.source.name}</Text> · <span className="num"><Text>{monthDayTime(r.timelineAt)}</Text></span>
                 </span>
-                <span className="mt-0.5 line-clamp-2 text-[15px] leading-[1.5] text-ink-2">{r.title}</span>
+                <span className="mt-0.5 line-clamp-2 text-[15px] leading-[1.5] text-ink-2"><Text>{r.title}</Text></span>
               </Link>
-              <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label="打开原文" className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full text-ink-4 active:bg-bg-sunk">
+              <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label={translate("打开原文")} className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full text-ink-4 active:bg-bg-sunk">
                 <IconArrowUpRight size={16} />
               </a>
             </li>

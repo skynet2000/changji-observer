@@ -1,3 +1,4 @@
+import { useText } from "@aihot/web/lib/text";
 import { useState, type ReactNode } from "react";
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { BarButton, PhoneBar, type BackTarget } from "../../components/shell/PhoneBar";
@@ -23,13 +24,14 @@ export function ReportLayout({ kind, index, current, today, outline = [], back, 
   title?: string;
   children: ReactNode;
 }) {
+  const translate = useText();
   const [outlineOpen, setOutlineOpen] = useState(false);
   return (
     <div className="report-shell lg:-mx-7 lg:-mb-[72px] lg:-mt-6 lg:flex lg:min-h-dvh">
       <ReportArchive kind={kind} index={index} current={current} />
       <div className="min-w-0 flex-1 pb-6 lg:flex lg:flex-col lg:items-center lg:px-10 lg:pb-16 lg:pt-9">
         {back ? (
-          <PhoneBar back={back} title={title} />
+          <PhoneBar back={back} title={translate(title)} />
         ) : (
           <>
             <PhoneBar
@@ -43,7 +45,7 @@ export function ReportLayout({ kind, index, current, today, outline = [], back, 
               }
             />
             <ReportPhoneNav kind={kind} index={index} current={current} today={today} />
-            {outline.length > 0 && <OutlineSheet title="本期目录" open={outlineOpen} onClose={() => setOutlineOpen(false)} outline={outline} />}
+            {outline.length > 0 && <OutlineSheet title={translate("本期目录")} open={outlineOpen} onClose={() => setOutlineOpen(false)} outline={outline} />}
           </>
         )}
         <div className="w-full lg:max-w-[1160px]">{children}</div>

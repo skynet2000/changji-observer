@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useState } from "react";
 import type { MediaView } from "@aihot/contracts/site";
 import { Lightbox } from "../../components/ui/Lightbox";
@@ -20,6 +21,7 @@ function PlayMark() {
  * a viewer that steps through them; videos are only a still in our data, so they open the original post.
  */
 export function MediaGallery({ media, postUrl }: { media: MediaView[]; postUrl: string }) {
+  const translate = useText();
   const [open, setOpen] = useState<number | null>(null);
   const shown = media.slice(0, 9);
   const images = shown.filter((m) => m.kind !== "video");
@@ -44,13 +46,13 @@ export function MediaGallery({ media, postUrl }: { media: MediaView[]; postUrl: 
             />
           );
           return m.kind === "video" ? (
-            <a key={m.url} href={postUrl} target="_blank" rel="noopener noreferrer" aria-label="打开原推播放视频" className={tile}>
-              {img}
+            <a key={m.url} href={postUrl} target="_blank" rel="noopener noreferrer" aria-label={translate("打开原推播放视频")} className={tile}>
+              <Text>{img}</Text>
               <PlayMark />
             </a>
           ) : (
-            <button key={m.url} type="button" onClick={() => setOpen(images.indexOf(m))} aria-label={m.alt ? `查看大图：${m.alt}` : "查看大图"} className={`${tile} cursor-zoom-in`}>
-              {img}
+            <button key={m.url} type="button" onClick={() => setOpen(images.indexOf(m))} aria-label={translate(m.alt ? `查看大图：${m.alt}` : "查看大图")} className={`${tile} cursor-zoom-in`}>
+              <Text>{img}</Text>
             </button>
           );
         })}

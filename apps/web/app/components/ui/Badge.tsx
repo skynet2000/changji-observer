@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import type { ReactNode } from "react";
 
 type Tone = "selected" | "accent" | "amber" | "hot" | "ok" | "neutral";
@@ -13,8 +14,9 @@ const TONES: Record<Tone, string> = {
 
 /** Small label next to a source or title: 精选, statuses and counts. */
 export function Badge({ tone = "neutral", dot = false, children, className = "", title }: { tone?: Tone; dot?: boolean; children: ReactNode; className?: string; title?: string }) {
+  const translate = useText();
   return (
-    <span title={title} className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-medium leading-none ${TONES[tone]} ${className}`}>
+    <span title={translate(title)} className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-medium leading-none ${TONES[tone]} ${className}`}>
       {dot && <span className="size-[5px] rounded-full bg-current" aria-hidden="true" />}
       {children}
     </span>
@@ -24,13 +26,14 @@ export function Badge({ tone = "neutral", dot = false, children, className = "",
 /** The "精选" mark on a report. */
 export function SelectedBadge() {
   return (
-    <Badge tone="selected" dot>
+    <Badge tone="selected" dot><Text>
       精选
-    </Badge>
+    </Text></Badge>
   );
 }
 
 /** A selected report whose fact is shown by another report (the one holding its selected seat). */
 export function SameEventBadge() {
-  return <Badge title="同一新闻已有精选代表">同新闻</Badge>;
+  const translate = useText();
+  return <Badge title={translate("同一新闻已有精选代表")}><Text>同新闻</Text></Badge>;
 }

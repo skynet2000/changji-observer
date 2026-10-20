@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // Phones: the article's own bottom toolbar in place of the tab bar — 收藏,
 // 目录 for long reads (components/ui/OutlineSheet), 分享 and 原文 — sliding away while reading down and
 // back on the way up or at the end; and the sheet of the article's further actions.
@@ -44,12 +45,12 @@ function Tool({ icon, label, onClick, href, pressed }: { icon: ReactNode; label:
   return href ? (
     <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
       {icon}
-      {label}
+      <Text>{label}</Text>
     </a>
   ) : (
     <button type="button" onClick={onClick} disabled={!onClick} aria-pressed={pressed} className={cls}>
       {icon}
-      {label}
+      <Text>{label}</Text>
     </button>
   );
 }
@@ -63,11 +64,12 @@ export function ReaderToolbar({ item, originalUrl, originalLabel, onOutline, onS
   onOutline?: () => void;
   onShare: () => void;
 }) {
+  const translate = useText();
   const hidden = useReadingDown();
   const star = useStar(item);
   return (
     <nav
-      aria-label="阅读工具"
+      aria-label={translate("阅读工具")}
       className={`fixed inset-x-0 bottom-0 z-40 bg-surface/90 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-[0_-1px_0_var(--line)] backdrop-blur-xl backdrop-saturate-150 transition-transform duration-300 ease-[var(--ease-out-quart)] lg:hidden ${hidden ? "translate-y-full" : ""}`}
     >
       <div className={`mx-auto grid h-[50px] max-w-[640px] ${onOutline ? "grid-cols-4" : "grid-cols-3"}`}>
@@ -108,8 +110,8 @@ export function ActionsSheet({ open, onClose, rows }: { open: boolean; onClose: 
           <li key={r.key}>
             {r.href ? (
               <a href={r.href} download={r.download} onClick={onClose} className={row}>
-                <span className="text-ink-3">{r.icon}</span>
-                {r.label}
+                <span className="text-ink-3"><Text>{r.icon}</Text></span>
+                <Text>{r.label}</Text>
               </a>
             ) : (
               <button
@@ -120,8 +122,8 @@ export function ActionsSheet({ open, onClose, rows }: { open: boolean; onClose: 
                 }}
                 className={row}
               >
-                <span className="text-ink-3">{r.icon}</span>
-                {r.label}
+                <span className="text-ink-3"><Text>{r.icon}</Text></span>
+                <Text>{r.label}</Text>
               </button>
             )}
           </li>

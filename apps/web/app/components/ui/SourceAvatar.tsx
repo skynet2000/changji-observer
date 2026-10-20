@@ -1,3 +1,4 @@
+import { Text } from "@aihot/web/lib/text";
 import { useState } from "react";
 import { sourceInitial } from "../../lib/format";
 
@@ -30,7 +31,7 @@ export function SourceAvatar({ name, iconUrl, avatarUrl, iconSrcSet, avatarSrcSe
       className="inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
       style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.5)), background: `oklch(0.6 0.07 ${h})` }}
     >
-      {sourceInitial(name)}
+      <Text>{sourceInitial(name)}</Text>
     </span>
   );
 }

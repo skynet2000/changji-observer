@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // The phone's bottom sheet: slides up over a dimmed page, follows the finger down from its handle (or
 // from its content once that is scrolled to the top) and closes when let go far or fast enough. While
 // open the page behind does not scroll, focus stays inside, and Escape or the backdrop closes it.
@@ -20,6 +21,7 @@ export function Sheet({ open, onClose, title, children, label, centered = false 
   /** Accessible name when there is no visible title. */
   label?: string;
 }) {
+  const translate = useText();
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -125,13 +127,13 @@ export function Sheet({ open, onClose, title, children, label, centered = false 
   return createPortal(
     <Presence show={open} enter="anim-fade-in" exit="anim-fade-out" duration={220}>
       <div className={`fixed inset-0 z-[70] flex flex-col justify-end ${centered ? "sm:items-center sm:justify-center sm:p-6" : ""}`}>
-        <button type="button" aria-label="关闭" tabIndex={-1} onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(8,14,15,0.42)]" />
+        <button type="button" aria-label={translate("关闭")} tabIndex={-1} onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(8,14,15,0.42)]" />
         <div
           ref={panel}
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? titleId : undefined}
-          aria-label={title ? undefined : label}
+          aria-label={translate(title ? undefined : label)}
           tabIndex={-1}
           className={`sheet-panel anim-sheet-in relative mx-auto flex max-h-[88dvh] w-full max-w-[640px] flex-col rounded-t-sheet bg-surface shadow-[0_-12px_40px_rgba(0,0,0,0.16)] outline-none ${centered ? "sm:w-auto sm:min-w-[400px] sm:rounded-sheet sm:pb-2" : ""}`}
         >
@@ -140,9 +142,9 @@ export function Sheet({ open, onClose, title, children, label, centered = false 
             {title && (
               <div className="flex min-h-12 items-center gap-3 pl-5 pr-2">
                 <h2 id={titleId} className="min-w-0 flex-1 text-[17px] font-bold leading-snug text-ink">
-                  {title}
+                  <Text>{title}</Text>
                 </h2>
-                <button type="button" aria-label="关闭" onClick={onClose} className="grid size-11 shrink-0 place-items-center rounded-full text-ink-3">
+                <button type="button" aria-label={translate("关闭")} onClick={onClose} className="grid size-11 shrink-0 place-items-center rounded-full text-ink-3">
                   <span className="grid size-[30px] place-items-center rounded-full bg-bg-sunk dark:bg-bg-muted">
                     <IconClose size={15} strokeWidth={2} />
                   </span>

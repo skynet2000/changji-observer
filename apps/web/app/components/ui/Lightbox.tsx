@@ -1,3 +1,4 @@
+import { useText } from "@aihot/web/lib/text";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { Presence } from "./Presence";
@@ -16,6 +17,7 @@ export interface LightboxImage {
  * sideways to the next or previous one, down to close; two fingers zoom as the browser does.
  */
 export function Lightbox({ images, index, onIndex, onClose }: { images: LightboxImage[]; index: number | null; onIndex: (i: number) => void; onClose: () => void }) {
+  const translate = useText();
   const open = index !== null && !!images[index];
   const dialog = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -104,7 +106,7 @@ export function Lightbox({ images, index, onIndex, onClose }: { images: Lightbox
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        aria-label={many && index !== null ? `图片 ${index + 1} / ${images.length}` : "图片"}
+        aria-label={translate(many && index !== null ? `图片 ${index + 1} / ${images.length}` : "图片")}
         onClick={() => {
           if (!tappedAfterDrag()) onClose();
         }}

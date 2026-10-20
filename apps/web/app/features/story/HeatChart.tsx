@@ -1,3 +1,4 @@
+import { useText } from "@aihot/web/lib/text";
 import { useId, useMemo, useState, type ReactNode } from "react";
 import type { HeatPoint } from "@aihot/contracts/site";
 import { monthDayTime } from "../../lib/format";
@@ -70,6 +71,7 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function HeatChart({ points: all }: { points: HeatPoint[] }) {
+  const translate = useText();
   const wash = `heat${useId().replace(/[^\w-]/g, "")}`;
   const [active, setActive] = useState<number | null>(null);
   const ranges = useMemo(() => distinctRanges(all), [all]);
@@ -177,7 +179,7 @@ export function HeatChart({ points: all }: { points: HeatPoint[] }) {
         <div
           className="relative size-full touch-pan-y select-none rounded-mark outline-offset-4"
           role="img"
-          aria-label={`热度走势：当前 ${Math.round(last.p!.heat)}，峰值 ${Math.round(peak.p!.heat)}`}
+          aria-label={translate(`热度走势：当前 ${Math.round(last.p!.heat)}，峰值 ${Math.round(peak.p!.heat)}`)}
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === "ArrowRight") setActive((a) => Math.min(seen.length - 1, a === null ? seen.length - 1 : a + 1));

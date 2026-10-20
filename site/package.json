@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "dependencies": { "@aihot/reader": "*" },
+  "dependencies": { "@aihot/reader": "*", "@aihot/language": "*" },
   "exports": {
     ".": "./site.ts",
     "./models": "./models.ts",

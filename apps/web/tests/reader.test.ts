@@ -86,3 +86,32 @@ test("two devices import deliberately, merge concurrent stars, synchronize remov
     assert.ok(state.read.includes("guest-a") && state.read.includes("guest-b"));
   } finally { await a.close(); await b.close(); }
 });
+
+test("account entries stay in navigation and login choices fit phone, desktop and dark mode", async () => {
+  for (const width of [390, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    try {
+      await page.goto(web.origin + "/more");
+      const entry = page.locator(`[data-reader-entry="${width < 961 ? "toolbar" : "sidebar"}"]`);
+      await expect(entry).toBeVisible();
+      assert.notEqual(await entry.evaluate(el => getComputedStyle(el).position), "fixed");
+      await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/账号入口-${width}-20261021.png`, import.meta.url)), fullPage: true });
+      await entry.click();
+      await expect(page.getByRole("heading", { name: "登录厂际观察", exact: true })).toBeVisible();
+      for (const name of ["Google", "GitHub"]) {
+        const choice = page.getByRole("link", { name: `使用 ${name} 登录`, exact: true });
+        await expect(choice).toBeVisible();
+        const box = await choice.boundingBox();
+        assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= width);
+      }
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/登录改版-${width}-20261021.png`, import.meta.url)), fullPage: true });
+      await page.emulateMedia({ colorScheme: "dark" });
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      await expect(page.getByRole("link", { name: "使用 Google 登录", exact: true })).toBeVisible();
+      await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/登录改版-深色-${width}-20261021.png`, import.meta.url)), fullPage: true });
+    } finally { await context.close(); }
+  }
+});

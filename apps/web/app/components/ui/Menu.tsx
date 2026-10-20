@@ -1,8 +1,10 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Presence } from "./Presence";
 
 /** A small dropdown anchored to a trigger; closes on outside click, Escape or choosing an entry. */
 export function Menu({ trigger, label, children }: { trigger: ReactNode; label: string; children: (close: () => void) => ReactNode }) {
+  const translate = useText();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -22,8 +24,8 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
     <div ref={ref} className="relative">
       <button
         type="button"
-        aria-label={label}
-        title={label}
+        aria-label={translate(label)}
+        title={translate(label)}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -36,7 +38,7 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
           role="menu"
           className="absolute top-10 z-50 min-w-[168px] overflow-hidden rounded-tile border border-line bg-raised py-1 shadow-[var(--shadow-pop)] right-0 origin-top-right"
         >
-          {children(() => setOpen(false))}
+          <Text>{children(() => setOpen(false))}</Text>
         </div>
       </Presence>
     </div>
@@ -49,7 +51,7 @@ export function MenuItem({ icon, children, onSelect, href, download }: { icon?: 
   const inner = (
     <>
       {icon && <span className="text-ink-4">{icon}</span>}
-      {children}
+      <Text>{children}</Text>
     </>
   );
   if (href) {

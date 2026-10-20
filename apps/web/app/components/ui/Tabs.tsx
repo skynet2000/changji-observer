@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { IntentLink } from "./IntentLink";
@@ -75,13 +76,14 @@ export function PillTabs({
   fill?: boolean;
   className?: string;
 }) {
+  const translate = useText();
   const links = items.some((t) => t.to);
   const Track = links ? "nav" : "div";
   return (
     <div className={`scrollbar-none max-w-full overflow-x-auto ${fill ? "w-full" : ""} ${className}`}>
       <Track
         data-pill-track=""
-        aria-label={label}
+        aria-label={translate(label)}
         role={links ? undefined : "tablist"}
         className={`${fill ? "grid w-full" : "inline-flex w-max"} gap-0.5 rounded-full bg-bg-sunk p-0.5 lg:p-[3px] ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60`}
         style={fill ? { gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` } : undefined}
@@ -92,8 +94,8 @@ export function PillTabs({
             <>
               {on && <Thumb id={layoutId} />}
               <span className="relative inline-flex items-center gap-1">
-                {t.label}
-                {t.count !== undefined && t.count !== null && <span className={`num text-[0.86em] font-normal ${on ? "text-ink-3" : "text-ink-4"}`}>{t.count}</span>}
+                <Text>{t.label}</Text>
+                {t.count !== undefined && t.count !== null && <span className={`num text-[0.86em] font-normal ${on ? "text-ink-3" : "text-ink-4"}`}><Text>{t.count}</Text></span>}
               </span>
             </>
           );

@@ -1,8 +1,9 @@
+import { Text } from "@aihot/web/lib/text";
 import { weekdayShort } from "../../lib/format";
 
 /** Release notes carry a little Markdown: **bold** runs. */
 export function Inline({ text }: { text: string }) {
-  return <>{text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i} className="font-semibold text-ink-2">{part}</b> : part))}</>;
+  return <>{text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i} className="font-semibold text-ink-2"><Text>{part}</Text></b> : part))}</>;
 }
 
 export function dateHeading(date: string): { label: string; weekday: string } {

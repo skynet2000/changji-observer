@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useLoaderData } from "react-router";
 import { SITE, subjectAfter, withSubject } from "@aihot/site";
 import type { Route } from "./+types/topics";
@@ -73,21 +74,21 @@ function TopicCard({ t }: { t: TopicSummary }) {
               <BrandMark brand={t.brand} size={22} />
             </span>
           )}
-          {t.name}
+          <Text>{t.name}</Text>
         </span>
         <span className="mt-0.5 line-clamp-1 text-[12.5px] leading-[1.6] text-ink-4 lg:mt-1.5 lg:line-clamp-2 lg:flex-1 lg:text-[13px] lg:leading-[1.65] lg:text-ink-2">
           {t.latest?.title ?? t.definition}
         </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11.5px] text-ink-4 lg:mt-3 lg:justify-between">
-          {t.latest && <time dateTime={t.latest.at} suppressHydrationWarning>{relativeTime(t.latest.at)}</time>}
+          {t.latest && <time dateTime={t.latest.at} suppressHydrationWarning><Text>{relativeTime(t.latest.at)}</Text></time>}
           <span>
-            {t.recent > 0 ? (
-              <>
-                近 30 天 <span className="num font-semibold text-ink-3">{t.recent}</span> 条
-              </>
+            <Text>{t.recent > 0 ? (
+              <><Text>
+                近 30 天 </Text><span className="num font-semibold text-ink-3"><Text>{t.recent}</Text></span><Text> 条
+              </Text></>
             ) : (
               "近 30 天暂无新精选"
-            )}
+            )}</Text>
           </span>
         </span>
       </span>
@@ -97,24 +98,25 @@ function TopicCard({ t }: { t: TopicSummary }) {
 }
 
 export default function TopicsPage() {
+  const translate = useText();
   const { groups, topics } = useLoaderData<typeof loader>();
   return (
     <div className="pb-10">
-      <PhoneBar back={{ to: "/more", label: "我的" }} title="主题" />
+      <PhoneBar back={{ to: "/more", label: "我的" }} title={translate("主题")} />
       <header className="pb-2 pt-3 lg:pt-1">
-        <h1 data-page-title="" className="text-[24px] font-semibold leading-[1.3] text-ink">{subjectAfter("按主题看")}</h1>
+        <h1 data-page-title="" className="text-[24px] font-semibold leading-[1.3] text-ink"><Text>{subjectAfter("按主题看")}</Text></h1>
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">
-          {`按${groups.map((g) => g.name).join("、")}浏览 `}
-          <span className="num">{topics.length}</span> 个主题，追踪最新精选与重要进展。
-        </p>
+          <Text>{`按${groups.map((g) => g.name).join("、")}浏览 `}</Text>
+          <span className="num"><Text>{topics.length}</Text></span><Text> 个主题，追踪最新精选与重要进展。
+        </Text></p>
       </header>
       {groups.map((g) => (
         <section key={g.key} aria-labelledby={`topics-${g.key}`} className="pt-8">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
             <h2 id={`topics-${g.key}`} className="text-[15px] font-bold text-ink">
-              {g.name}
+              <Text>{g.name}</Text>
             </h2>
-            <p className="text-[12px] text-ink-4">{g.blurb}</p>
+            <p className="text-[12px] text-ink-4"><Text>{g.blurb}</Text></p>
           </div>
           <ul className="mt-3 divide-y divide-line-soft overflow-hidden rounded-card border border-line bg-surface lg:mt-3.5 lg:grid lg:grid-cols-3 lg:gap-3 lg:divide-y-0 lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent xl:grid-cols-4">
             {topics

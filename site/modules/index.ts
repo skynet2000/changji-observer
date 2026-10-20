@@ -4,4 +4,6 @@
 import type { ModuleDeclaration } from "@aihot/contracts/modules";
 import reader from "@aihot/reader/module";
 
-export const MODULES: readonly ModuleDeclaration[] = [reader];
+import language from "@aihot/language/module";
+
+export const MODULES: readonly ModuleDeclaration[] = [reader, language];

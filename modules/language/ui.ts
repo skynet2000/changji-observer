@@ -1,0 +1,22 @@
+// Reviewed interface labels. Longer public interface copy is filled by the worker's saved translations.
+export const englishUi: Record<string, string> = {
+  "厂际观察": "厂际观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
+  "热点榜": "Trending", "互联网日报": "Daily brief", "互联网周报": "Weekly brief", "互联网月报": "Monthly brief",
+  "日报": "Daily", "周报": "Weekly", "月报": "Monthly", "主题": "Topics", "收藏": "Saved", "我的": "My reading",
+  "大厂动态": "Companies", "职场与组织": "Work & people", "业务与产品": "Business & products", "行业观察": "Industry",
+  "Agent 接入": "Agent access", "关于": "About", "更新日志": "Changelog", "反馈": "Feedback", "返回": "Back",
+  "星期日": "Sunday", "星期一": "Monday", "星期二": "Tuesday", "星期三": "Wednesday", "星期四": "Thursday", "星期五": "Friday", "星期六": "Saturday",
+  "周日": "Sun", "周一": "Mon", "周二": "Tue", "周三": "Wed", "周四": "Thu", "周五": "Fri", "周六": "Sat",
+  "登录": "Sign in", "登录 / 注册": "Sign in", "登录并同步": "Sign in to sync", "读者账号": "Reader account",
+  "登录厂际观察": "Sign in to 厂际观察", "我的阅读记录": "My reading", "收藏好内容，换台设备接着读。": "Save good stories. Keep reading on any device.",
+  "使用 Google 登录": "Continue with Google", "使用 GitHub 登录": "Continue with GitHub", "无需设置密码 · 首次登录自动创建账号": "No password needed · Your first sign-in creates an account",
+  "我的收藏与同步": "Saved stories & sync", "收藏与已读，随身同步": "Sync your reading", "查看我的收藏": "View saved stories",
+  "立即同步": "Sync now", "退出登录": "Sign out", "返回收藏 →": "Back to saved stories →", "导入本机记录": "Import local reading",
+  "使用规则": "Terms", "隐私说明": "Privacy", "搜索": "Search", "筛选": "Filters", "取消": "Cancel", "确定": "Confirm",
+  "加载更多": "Load more", "加载中…": "Loading…", "暂无内容": "No stories yet", "已读": "Read", "未读": "Unread", "一手": "First-party",
+  "全部互联网动态": "All news", "热点": "Trending", "今天": "Today", "已经到底了": "You're all caught up", "推荐理由：": "Why it matters: ", "往期日报": "Archive",
+  "按原文发布时间排列 · 同一事件合并展示，可展开看进展": "By original publication time · Related reports are grouped; expand to see developments",
+  " 期": "", "第 ": "Issue ", " 条": " items", " 件": " items", "互联网 · 每日要闻": "INTERNET · DAILY BRIEF",
+  "每日08:00出刊": "Published at 08:00 Beijing", "每日 08:00 出刊": "Published at 08:00 Beijing", "（本期完）": "END OF ISSUE",
+  "头条": "Lead story", "头版": "Front page", "本期导读": "In this issue", "本期版面": "Sections", "快讯": "Briefs", "原文": "Original",
+};

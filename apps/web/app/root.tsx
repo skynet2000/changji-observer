@@ -1,3 +1,4 @@
+import { Text } from "@aihot/web/lib/text";
 import {
   isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData,
   type ShouldRevalidateFunction,
@@ -87,9 +88,9 @@ function SiteShell({ changelogVersion, children }: { changelogVersion: string | 
   return (
     <div className="flex min-h-dvh">
       <NavigationProgress active={navigation.state === "loading"} />
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2"><Text>
         跳到正文
-      </a>
+      </Text></a>
       <Sidebar changelogVersion={changelogVersion} />
       {/* Phone shell (≤ 960px): each page's top bar (PhoneBar), one centred column, the tab bar below.
           Desktop: the page fills the main area up to the list width (--page-max-wide), centred beyond it. */}
@@ -144,25 +145,25 @@ export function ErrorBoundary() {
       <div className="max-w-sm text-center">
         <RingMark className="mx-auto mb-5 size-10 text-accent" />
         <div className="mono text-[12px] text-ink-4">{status}</div>
-        <h1 className="mt-1.5 text-[20px] font-bold text-ink">{notFound ? "这里没有内容" : "暂时无法加载"}</h1>
+        <h1 className="mt-1.5 text-[20px] font-bold text-ink"><Text>{notFound ? "这里没有内容" : "暂时无法加载"}</Text></h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-          {notFound ? "你访问的页面不存在，或内容已不再公开。" : "页面暂时无法显示，请重新加载后再试。"}
+          <Text>{notFound ? "你访问的页面不存在，或内容已不再公开。" : "页面暂时无法显示，请重新加载后再试。"}</Text>
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
-          {!notFound && <Link reloadDocument to={pathname + search + hash} className={buttonClass("primary")}>
+          {!notFound && <Link reloadDocument to={pathname + search + hash} className={buttonClass("primary")}><Text>
             重新加载
-          </Link>}
-          <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}>
+          </Text></Link>}
+          <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}><Text>
             回到精选
-          </Link>
-          <Link reloadDocument to="/all" className={buttonClass("secondary")}>
+          </Text></Link>
+          <Link reloadDocument to="/all" className={buttonClass("secondary")}><Text>
             浏览全部动态
-          </Link>
+          </Text></Link>
         </div>
       </div>
     </div>
   );
   // Admin errors stay inside the admin's own chrome.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return body;
-  return <SiteShell changelogVersion={site?.changelogVersion ?? null}>{body}</SiteShell>;
+  return <SiteShell changelogVersion={site?.changelogVersion ?? null}><Text>{body}</Text></SiteShell>;
 }

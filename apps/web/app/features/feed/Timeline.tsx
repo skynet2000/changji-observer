@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // The day-grouped feed (精选 home, topics): a time rail with cards on desktop, rows under grey day bars on
 // phones. Keeps its place across back navigation and loads further pages. There is no "new items"
 // prompt: readers refresh for the latest head — on phones also by tapping the tab again.
@@ -33,20 +34,21 @@ function fromResponse(r: TimelineResponse): ListState {
 
 /** Sticky day header under the phone bar: a quiet row on desktop, a grey full-width bar on phones. */
 export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { day: string; today: string; count: number | null; collapsed?: boolean; onToggle?: () => void; aside?: React.ReactNode }) {
+  const translate = useText();
   const date = monthDay(day);
   const weekday = beijingWeekday(day);
   const short = weekdayShort(day);
   const phoneRow = (
     <>
-      <span className="text-[14px] font-bold text-ink">{day === today ? "今天" : date}</span>
-      {day === today && <span className="text-[12.5px] text-ink-4">{date}</span>}
-      <span className="text-[12.5px] text-ink-4">{short}</span>
+      <span className="text-[14px] font-bold text-ink"><Text>{day === today ? "今天" : date}</Text></span>
+      {day === today && <span className="text-[12.5px] text-ink-4"><Text>{date}</Text></span>}
+      <span className="text-[12.5px] text-ink-4"><Text>{short}</Text></span>
       <span className="ml-auto flex items-center gap-1 text-[12.5px] text-ink-4">
         {aside}
         {count !== null && (
           <span>
-            <span className="num">{count}</span> 条
-          </span>
+            <span className="num">{count}</span><Text> 条
+          </Text></span>
         )}
         {onToggle && <IconChevronDown size={15} className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} />}
       </span>
@@ -56,39 +58,39 @@ export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { d
     <div className="bleed sticky top-[var(--bar-h)] z-20 bg-daybar lg:mx-0 lg:bg-bg lg:px-0">
       {/* Phones: a full-width day bar; on the timeline the whole bar folds the day. */}
       {onToggle ? (
-        <button type="button" onClick={onToggle} aria-expanded={!collapsed} aria-label={`${collapsed ? "展开" : "收起"}${date}`} className="flex h-11 w-full items-center gap-2 text-left lg:hidden">
-          {phoneRow}
+        <button type="button" onClick={onToggle} aria-expanded={!collapsed} aria-label={translate(`${collapsed ? "展开" : "收起"}${date}`)} className="flex h-11 w-full items-center gap-2 text-left lg:hidden">
+          <Text>{phoneRow}</Text>
         </button>
       ) : (
-        <div className="flex h-9 items-center gap-2 lg:hidden">{phoneRow}</div>
+        <div className="flex h-9 items-center gap-2 lg:hidden"><Text>{phoneRow}</Text></div>
       )}
       {/* Desktop: date text shares the page's left edge, regardless of how many digits it has. */}
       <div className="hidden h-11 items-center gap-3 lg:flex">
         {onToggle ? (
           <button type="button" onClick={onToggle} aria-expanded={!collapsed} className="whitespace-nowrap text-left text-[18px] font-semibold leading-6 text-ink">
-            {date}
+            <Text>{date}</Text>
           </button>
         ) : (
-          <time dateTime={day} className="whitespace-nowrap text-[18px] font-semibold leading-6 text-ink">{date}</time>
+          <time dateTime={day} className="whitespace-nowrap text-[18px] font-semibold leading-6 text-ink"><Text>{date}</Text></time>
         )}
         {onToggle ? (
           <button
             type="button"
             onClick={onToggle}
             aria-expanded={!collapsed}
-            aria-label={collapsed ? `展开${date}` : `收起${date}`}
+            aria-label={translate(collapsed ? `展开${date}` : `收起${date}`)}
             className="grid size-6 place-items-center justify-self-center rounded-full text-ink-4 transition-colors hover:bg-bg-sunk hover:text-ink"
           >
             <IconChevronDown size={14} className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} />
           </button>
         ) : null}
         <span className="text-[13px] text-ink-4">
-          {weekday}
+          <Text>{weekday}</Text>
           {count !== null && (
             <>
-              {" · "}
-              <span className="num">{count}</span> 条
-            </>
+              <Text>{" · "}</Text>
+              <span className="num">{count}</span><Text> 条
+            </Text></>
           )}
         </span>
         {aside && <span className="ml-auto text-[12px] text-ink-4">{aside}</span>}
@@ -111,7 +113,7 @@ export function TimelineSlot({ at, children, fresh = false, delay = 0, dataKey }
       {/* Phones: the row without the rail (the item shows its time); a hairline between rows. */}
       <div className="grid grid-cols-[minmax(0,1fr)] border-b border-line-soft py-3.5 group-last/slot:border-b-0 lg:grid-cols-[64px_22px_minmax(0,1fr)] lg:border-b-0 lg:py-0 lg:pb-3 lg:group-last/slot:pb-0">
         <time dateTime={at} className="mono hidden text-ink-3 lg:block lg:pt-[17px] lg:text-[12.5px] lg:font-semibold lg:leading-6">
-          {beijingTime(at)}
+          <Text>{beijingTime(at)}</Text>
         </time>
         <span aria-hidden="true" className="relative hidden lg:block">
           <span className="absolute -bottom-[41px] left-[10.5px] top-[29px] w-px bg-line-strong group-last/slot:hidden" />
@@ -124,6 +126,7 @@ export function TimelineSlot({ at, children, fresh = false, delay = 0, dataKey }
 }
 
 export function Timeline({ initial, filters }: { initial: TimelineResponse; filters: TimelineFilters }) {
+  const translate = useText();
   const location = useLocation();
   const navigation = useNavigation();
   const readSet = useReadSet();
@@ -282,7 +285,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     <div className="relative">
       {days.length === 0 && (
         <div className="lg:card">
-          <EmptyState title="这个筛选下还没有精选内容">换个类别看看，或者去全部动态里找找。</EmptyState>
+          <EmptyState title={translate("这个筛选下还没有精选内容")}><Text>换个类别看看，或者去全部动态里找找。</Text></EmptyState>
         </div>
       )}
 
@@ -290,7 +293,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
         const collapsed = state.collapsed.includes(day);
         const count = state.dayCounts[day] ?? cards.length;
         return (
-          <section key={day} aria-label={day} className="lg:mb-1">
+          <section key={day} aria-label={translate(day)} className="lg:mb-1">
             <DayHeader day={day} today={today} count={count} collapsed={collapsed} onToggle={() => toggleDay(day)} />
             <Collapse open={!collapsed}>
                 <ol className="lg:pt-1">
@@ -321,20 +324,20 @@ function FeedEnd({ loading, error, hasMore, manual, empty, onMore }: { loading: 
     <div className="flex justify-center py-6">
       {loading ? (
         <span className="inline-flex items-center gap-2 text-[12.5px] text-ink-4">
-          <RingMark className="size-4 text-accent" spinning /> 正在加载
-        </span>
+          <RingMark className="size-4 text-accent" spinning /><Text> 正在加载
+        </Text></span>
       ) : error ? (
-        <button type="button" onClick={onMore} className="h-9 rounded-full border border-hot/30 px-4 text-[13px] text-hot hover:bg-hot-soft">
+        <button type="button" onClick={onMore} className="h-9 rounded-full border border-hot/30 px-4 text-[13px] text-hot hover:bg-hot-soft"><Text>
           加载失败，点此重试
-        </button>
+        </Text></button>
       ) : hasMore ? (
         manual && (
-          <button type="button" onClick={onMore} className="h-9 rounded-full border border-line-strong bg-surface px-5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink">
+          <button type="button" onClick={onMore} className="h-9 rounded-full border border-line-strong bg-surface px-5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"><Text>
             加载更多
-          </button>
+          </Text></button>
         )
       ) : (
-        !empty && <span className="text-[12px] text-ink-4">已经到底了</span>
+        !empty && <span className="text-[12px] text-ink-4"><Text>已经到底了</Text></span>
       )}
     </div>
   );

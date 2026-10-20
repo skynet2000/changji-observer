@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // A page of reports grouped by Beijing day with the same rail and rows as the home timeline
 // (全部动态, topics, search results).
 import { IntentLink } from "../../components/ui/IntentLink";
@@ -10,6 +11,7 @@ import { DayHeader, TimelineSlot } from "./Timeline";
 import { FeedItem } from "./FeedItem";
 
 export function DayList({ items, filters, todayCount = null, headerAside }: { items: PoolResponse["items"]; filters?: TimelineFilters; todayCount?: number | null; headerAside?: React.ReactNode }) {
+  const translate = useText();
   const readSet = useReadSet();
   const today = beijingDate(Date.now());
   const days = useMemo(() => {
@@ -25,7 +27,7 @@ export function DayList({ items, filters, todayCount = null, headerAside }: { it
   return (
     <div>
       {days.map(({ day, items: list }, i) => (
-        <section key={`${day}:${list[0]?.id}`} aria-label={day}>
+        <section key={`${day}:${list[0]?.id}`} aria-label={translate(day)}>
           <DayHeader day={day} today={today} count={day === today ? todayCount : null} aside={i === 0 ? headerAside : undefined} />
           <ol className="lg:pt-1">
             {list.map((it) => (
@@ -45,15 +47,16 @@ export function DayList({ items, filters, todayCount = null, headerAside }: { it
  * "2 / 50" and next as large buttons; the numbers stay in the page for crawlers.
  */
 export function Pagination({ page, pageCount, href }: { page: number; pageCount: number; href: (p: number) => string }) {
+  const translate = useText();
   if (pageCount <= 1) return null;
   const pages = [...new Set([1, pageCount, page - 2, page - 1, page, page + 1, page + 2].filter((p) => p >= 1 && p <= pageCount))].sort((a, b) => a - b);
   const btn = "inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2.5 text-[13px] transition-colors";
   return (
-    <nav aria-label="分页" className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:gap-1">
+    <nav aria-label={translate("分页")} className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:gap-1">
       {page > 1 && (
-        <IntentLink to={href(page - 1)} className={`${btn} h-11 border border-line-strong bg-surface px-5 text-[14px] text-ink-2 active:bg-bg-sunk lg:h-9 lg:px-3 lg:text-[13px] lg:text-ink-3 lg:hover:border-ink-4 lg:hover:text-ink`}>
+        <IntentLink to={href(page - 1)} className={`${btn} h-11 border border-line-strong bg-surface px-5 text-[14px] text-ink-2 active:bg-bg-sunk lg:h-9 lg:px-3 lg:text-[13px] lg:text-ink-3 lg:hover:border-ink-4 lg:hover:text-ink`}><Text>
           上一页
-        </IntentLink>
+        </Text></IntentLink>
       )}
       <span className="num px-1 text-[13px] text-ink-4 lg:hidden">
         {page} / {pageCount}
@@ -66,13 +69,13 @@ export function Pagination({ page, pageCount, href }: { page: number; pageCount:
             aria-current={p === page ? "page" : undefined}
             className={`num ${btn} ${p === page ? "bg-ink font-semibold text-bg" : "text-ink-3 hover:bg-bg-sunk hover:text-ink"}`}
           >
-            {p}
+            <Text>{p}</Text>
           </IntentLink>
         </span>
       ))}
       {page < pageCount && (
-        <IntentLink to={href(page + 1)} className={`${btn} h-11 gap-0.5 border border-line-strong bg-surface px-5 text-[14px] text-ink-2 active:bg-bg-sunk lg:h-9 lg:px-3 lg:text-[13px] lg:text-ink-3 lg:hover:border-ink-4 lg:hover:text-ink`}>
-          下一页 <IconChevronRight size={14} />
+        <IntentLink to={href(page + 1)} className={`${btn} h-11 gap-0.5 border border-line-strong bg-surface px-5 text-[14px] text-ink-2 active:bg-bg-sunk lg:h-9 lg:px-3 lg:text-[13px] lg:text-ink-3 lg:hover:border-ink-4 lg:hover:text-ink`}><Text>
+          下一页 </Text><IconChevronRight size={14} />
         </IntentLink>
       )}
     </nav>

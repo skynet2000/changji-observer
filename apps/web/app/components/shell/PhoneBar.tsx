@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // The phone shell's top bar (below lg). Left: where back leads, or the brand; middle: the page's title
 // once its own heading has scrolled up under the bar, or a switch that always shows; right: actions. Tab
 // pages also get a large title under the bar. Desktop pages keep their own headers.
@@ -6,6 +7,7 @@ import { useLocation, useNavigate } from "react-router";
 import { IconChevronLeft } from "../icons";
 import { historyIndex, previousScreen } from "./screens";
 import { markBack } from "./transitions";
+import { webModules } from "../../site-modules";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -39,7 +41,7 @@ export function PhoneBar({ back, title, large = false, sub, leading, center, act
         className={`bleed sticky top-0 z-40 bg-bg/85 backdrop-blur-xl backdrop-saturate-150 transition-shadow duration-200 lg:hidden ${scrolled ? "shadow-[0_1px_0_var(--line-soft)]" : ""}`}
       >
         <div className={`-mx-2.5 grid h-[var(--bar-h)] items-center ${wideCenter ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"}`}>
-          {!wideCenter && <div className="flex min-w-0 items-center">{back ? <BackButton {...back} /> : leading}</div>}
+          {!wideCenter && <div className="flex min-w-0 items-center"><Text>{back ? <BackButton {...back} /> : leading}</Text></div>}
           {/* A title not shown yet takes no width, so the back label is not cut short before it appears. */}
           <div className={`flex min-w-0 justify-center ${wideCenter ? "" : "max-w-[calc(100vw-184px)]"}`} style={!center && !titleShown ? { maxWidth: 0 } : undefined}>
             {center ?? (
@@ -48,20 +50,23 @@ export function PhoneBar({ back, title, large = false, sub, leading, center, act
                   aria-hidden={!titleShown}
                   className={`truncate text-[15.5px] font-semibold text-ink transition-[opacity,transform] duration-200 ${titleShown ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
                 >
-                  {title}
+                  <Text>{title}</Text>
                 </span>
               )
             )}
           </div>
-          <div className="flex min-w-0 items-center justify-end">{actions}</div>
+          <div className="flex min-w-0 items-center justify-end gap-1">
+            <Text>{actions}</Text>
+            {!actions && webModules().map((m) => m.root?.AccountControl && <m.root.AccountControl key={m.name} compact />)}
+          </div>
         </div>
       </header>
       {large && title && (
         <div className="pb-3 pt-0.5 lg:hidden">
           <h1 data-page-title="" className="text-[30px] font-bold leading-[1.25] tracking-[-0.01em] text-ink">
-            {title}
+            <Text>{title}</Text>
           </h1>
-          {sub && <div className="mt-1 text-[12.5px] leading-relaxed text-ink-4">{sub}</div>}
+          {sub && <div className="mt-1 text-[12.5px] leading-relaxed text-ink-4"><Text>{sub}</Text></div>}
         </div>
       )}
     </>
@@ -89,7 +94,7 @@ function BackButton({ to, label }: BackTarget) {
       className="flex h-11 min-w-11 items-center pl-1 pr-2 text-[16px] text-accent transition-opacity active:opacity-50"
     >
       <IconChevronLeft size={25} strokeWidth={2.1} />
-      <span className="max-w-[7em] truncate">{text}</span>
+      <span className="max-w-[7em] truncate"><Text>{text}</Text></span>
     </button>
   );
 }
@@ -99,16 +104,17 @@ export const BarButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTML
   { label, on = false, children, className = "", ...rest },
   ref,
 ) {
+  const translate = useText();
   return (
     <button
       ref={ref}
       type="button"
-      aria-label={label}
-      title={label}
+      aria-label={translate(label)}
+      title={translate(label)}
       className={`relative grid size-11 shrink-0 place-items-center rounded-full transition-colors active:bg-bg-sunk ${on ? "text-accent" : "text-ink-2"} ${className}`}
       {...rest}
     >
-      {children}
+      <Text>{children}</Text>
     </button>
   );
 });

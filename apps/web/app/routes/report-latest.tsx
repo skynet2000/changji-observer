@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useLoaderData } from "react-router";
 import type { Route } from "./+types/report-latest";
 import type { ReportLatestPage } from "@aihot/contracts/site";
@@ -37,10 +38,11 @@ export function meta({ loaderData, location }: Route.MetaArgs) {
 }
 
 export default function ReportLatestPage() {
+  const translate = useText();
   const { kind, report, index, today } = useLoaderData<typeof loader>();
   return (
     <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} outline={report ? reportOutline(report) : []}>
-      {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={subjectAfter("还没有发布", KIND_LABEL[kind])}>第一期发布后会出现在这里。</EmptyState>}
+      {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={translate(subjectAfter("还没有发布", KIND_LABEL[kind]))}><Text>第一期发布后会出现在这里。</Text></EmptyState>}
     </ReportLayout>
   );
 }

@@ -2,4 +2,6 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import reader from "@aihot/reader/server";
 
-export const SERVER_MODULES: readonly ServerModule[] = [reader];
+import language from "@aihot/language/server";
+
+export const SERVER_MODULES: readonly ServerModule[] = [reader, language];

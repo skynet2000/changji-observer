@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { HOT_FACE_LIMIT, type HotParticipant } from "@aihot/contracts/site";
@@ -10,6 +11,7 @@ import { SourceAvatar } from "../../components/ui/SourceAvatar";
  * keyboards reach it too.
  */
 export function Faces({ participants, total, size = 24, interactive = true }: { participants: HotParticipant[]; total: number; size?: number; interactive?: boolean }) {
+  const translate = useText();
   const shown = participants.filter((p) => p.kind === "editorial").slice(0, HOT_FACE_LIMIT);
   const rest = total - shown.length;
   const names = participants.map((p) => p.name).join("、");
@@ -22,22 +24,23 @@ export function Faces({ participants, total, size = 24, interactive = true }: { 
       ))}
       {rest > 0 && (
         <span className="-ml-1.5 inline-flex items-center justify-center rounded-full bg-bg-sunk px-1.5 text-[10.5px] font-medium text-ink-3 ring-2 ring-surface dark:bg-bg-muted" style={{ height: size, minWidth: size }}>
-          +{rest}
+          +<Text>{rest}</Text>
         </span>
       )}
     </>
   );
   if (!interactive) {
     return (
-      <span className="relative z-10 flex shrink-0 items-center" title={names}>
-        {faces}
+      <span className="relative z-10 flex shrink-0 items-center" title={translate(names)}>
+        <Text>{faces}</Text>
       </span>
     );
   }
-  return <FacesButton participants={participants} total={total} names={names}>{faces}</FacesButton>;
+  return <FacesButton participants={participants} total={total} names={names}><Text>{faces}</Text></FacesButton>;
 }
 
 function FacesButton({ participants, total, names, children }: { participants: HotParticipant[]; total: number; names: string; children: React.ReactNode }) {
+  const translate = useText();
   // Where the list opens: under the faces, kept on screen; fixed, so a card's clipping never hides it.
   const [at, setAt] = useState<{ top: number; left: number } | null>(null);
   const open = at !== null;
@@ -69,10 +72,10 @@ function FacesButton({ participants, total, names, children }: { participants: H
     <span ref={root} className="relative z-10 inline-flex shrink-0">
       <button
         type="button"
-        title={names}
+        title={translate(names)}
         aria-expanded={open}
         aria-controls={id}
-        aria-label={`${total} 位参与者，查看名单`}
+        aria-label={translate(`${total} 位参与者，查看名单`)}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -86,20 +89,20 @@ function FacesButton({ participants, total, names, children }: { participants: H
         {children}
       </button>
       {open && createPortal(
-        <span ref={popup} id={id} role="dialog" aria-label="参与讨论的来源" style={at} className="fixed z-50 max-h-[240px] w-[240px] overflow-y-auto rounded-control border border-line bg-raised p-3 text-[12.5px] leading-relaxed text-ink-2 shadow-[var(--shadow-pop)]">
+        <span ref={popup} id={id} role="dialog" aria-label={translate("参与讨论的来源")} style={at} className="fixed z-50 max-h-[240px] w-[240px] overflow-y-auto rounded-control border border-line bg-raised p-3 text-[12.5px] leading-relaxed text-ink-2 shadow-[var(--shadow-pop)]">
           {editorial.length > 0 && (
             <>
-              <span className="block text-[11.5px] font-semibold text-ink-4">精选组</span>
-              <span className="mt-0.5 block">{editorial.map((p) => p.name).join("、")}</span>
+              <span className="block text-[11.5px] font-semibold text-ink-4"><Text>精选组</Text></span>
+              <span className="mt-0.5 block"><Text>{editorial.map((p) => p.name).join("、")}</Text></span>
             </>
           )}
           {signal.length > 0 && (
             <>
-              <span className={`block text-[11.5px] font-semibold text-ink-4 ${editorial.length ? "mt-2" : ""}`}>氛围组</span>
-              <span className="mt-0.5 block">{signal.map((p) => p.name).join("、")}</span>
+              <span className={`block text-[11.5px] font-semibold text-ink-4 ${editorial.length ? "mt-2" : ""}`}><Text>氛围组</Text></span>
+              <span className="mt-0.5 block"><Text>{signal.map((p) => p.name).join("、")}</Text></span>
             </>
           )}
-          {more > 0 && <span className="mt-2 block text-[11.5px] text-ink-4">另有 {more} 位未列出</span>}
+          {more > 0 && <span className="mt-2 block text-[11.5px] text-ink-4"><Text>另有 </Text><Text>{more}</Text><Text> 位未列出</Text></span>}
         </span>, document.body
       )}
     </span>

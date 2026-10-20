@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 // Small building blocks shared by feed items, detail pages and lists.
 import { useState } from "react";
 import type { FeedItemSummary, MediaView } from "@aihot/contracts/site";
@@ -12,12 +13,12 @@ export function SourceLine({ item, className = "" }: { item: Pick<FeedItemSummar
     return (
       <span className={`flex min-w-0 items-center gap-1.5 ${className}`}>
         <SourceAvatar name={item.x.authorName} avatarUrl={item.x.avatarUrl} avatarSrcSet={item.x.avatarSrcSet} size={16} />
-        <span className="truncate text-ink-3">{item.x.authorName}</span>
-        <span className="hidden shrink-0 text-ink-4 min-[400px]:inline">@{item.x.handle}</span>
+        <span className="truncate text-ink-3"><Text>{item.x.authorName}</Text></span>
+        <span className="hidden shrink-0 text-ink-4 min-[400px]:inline">@<Text>{item.x.handle}</Text></span>
       </span>
     );
   }
-  return <span className={`min-w-0 truncate ${className}`}>{item.source.name}</span>;
+  return <span className={`min-w-0 truncate ${className}`}><Text>{item.source.name}</Text></span>;
 }
 
 /** Up to four media thumbnails, kept small in lists (the detail page shows them larger). Videos are stills. */
@@ -69,13 +70,14 @@ export function useStar(item: Starrable) {
 
 /** Bookmark toggle kept in this browser (收藏): 26px, or sized by `size` or by `className`. */
 export function StarButton({ item, size, className = "size-[26px]" }: { item: Starrable; size?: number; className?: string }) {
+  const translate = useText();
   const { on, toggle, pulse } = useStar(item);
   return (
     <button
       type="button"
       aria-pressed={on}
-      aria-label={on ? "取消收藏" : "收藏"}
-      title={on ? "取消收藏" : "收藏"}
+      aria-label={translate(on ? "取消收藏" : "收藏")}
+      title={translate(on ? "取消收藏" : "收藏")}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

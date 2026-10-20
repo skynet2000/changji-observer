@@ -1,3 +1,4 @@
+import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect } from "react";
 import { Link, redirect, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
@@ -67,6 +68,7 @@ function pageHref(params: URLSearchParams, page: number) {
 }
 
 export default function AllPage() {
+  const translate = useText();
   const { data } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const navigation = useNavigation();
@@ -101,7 +103,7 @@ export default function AllPage() {
           center={
             <button type="button" onClick={(event) => openSearch(f.q ?? "", event.currentTarget)} className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-bg-sunk px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60">
               <IconSearch size={16} className="shrink-0 text-ink-4" />
-              <span className="truncate">{f.q}</span>
+              <span className="truncate"><Text>{f.q}</Text></span>
             </button>
           }
         />
@@ -112,14 +114,14 @@ export default function AllPage() {
 
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title ?? ALL_TITLE}</h1>
+        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink"><Text>{title ?? ALL_TITLE}</Text></h1>
         <div className="mb-4 mt-4 flex items-start justify-between gap-4">
           <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
           <SearchField defaultValue={f.q ?? ""} keep={keep} />
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4">按原文发布时间排列 · 同一事件合并展示，可展开查看进展</p>
+      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按原文发布时间排列 · 同一事件合并展示，可展开查看进展</Text></p>
 
       {f.q && (
         <div className="mb-3 mt-1 flex flex-wrap items-center justify-between gap-2 lg:mt-0">
@@ -130,8 +132,8 @@ export default function AllPage() {
             active={f.tab}
             items={(["time", "relevance"] as const).map((t) => ({ key: t, label: t === "time" ? "最新（标题与摘要）" : "全文相关", to: searchTabHref(t) }))}
           />
-          <span className="text-[12px] text-ink-4">
-            找到 <span className="num">{data.total >= 2000 ? "2000+" : data.total}</span> 条 · 更新于 <span className="num">{updated}</span>
+          <span className="text-[12px] text-ink-4"><Text>
+            找到 </Text><span className="num"><Text>{data.total >= 2000 ? "2000+" : data.total}</Text></span><Text> 条 · 更新于 </Text><span className="num"><Text>{updated}</Text></span>
           </span>
         </div>
       )}
@@ -140,16 +142,16 @@ export default function AllPage() {
         {data.items.length === 0 ? (
           <div className="mt-2 lg:card">
             <EmptyState
-              title="没有找到相关内容"
+              title={translate("没有找到相关内容")}
               action={
                 f.q && f.tab === "time" ? (
-                  <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline">
+                  <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline"><Text>
                     试试“全文相关”，连正文一起搜
-                  </Link>
+                  </Text></Link>
                 ) : undefined
               }
             >
-              {f.q ? "换个说法，或者去掉筛选再试。" : "这个筛选下暂时没有内容。"}
+              <Text>{f.q ? "换个说法，或者去掉筛选再试。" : "这个筛选下暂时没有内容。"}</Text>
             </EmptyState>
           </div>
         ) : (
@@ -157,7 +159,7 @@ export default function AllPage() {
         )}
       </div>
       <Pagination page={data.page} pageCount={data.pageCount} href={(p) => pageHref(params, p)} />
-      {data.page >= 50 && <p className="mt-4 text-center text-[12px] text-ink-4">最多提供 50 页，更早的内容请使用搜索或主题页。</p>}
+      {data.page >= 50 && <p className="mt-4 text-center text-[12px] text-ink-4"><Text>最多提供 50 页，更早的内容请使用搜索或主题页。</Text></p>}
     </div>
   );
 }
