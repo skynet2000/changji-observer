@@ -23,6 +23,6 @@
 
 ## 待完成验收
 
-两个真实提供商的应用凭据、Google 应用发布状态和真实授权回调尚需配置。假服务测试只能验证本项目流程，不能当作提供商已接通。当前隐私页说明匿名运行，未经运营者确认增补文本不得开启读者登录。
+两个真实提供商的应用凭据、Google 应用发布状态和真实授权回调尚需配置。假服务测试只能验证本项目流程，不能当作提供商已接通。运营者已于 2026-10-21 确认[隐私增补](reader-privacy-approved.md)，真实提供商验收完成、将增补并入线上隐私页后再开启读者登录，不重复索取相同确认。当前隐私页仍对应匿名运行。
 
 官方协议参考：[Google 网站授权](https://developers.google.com/identity/protocols/oauth2/web-server)、[GitHub 网站授权与 PKCE](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)。
