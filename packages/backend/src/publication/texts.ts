@@ -29,7 +29,7 @@ export async function publicTextValues(wanted?: readonly string[]): Promise<stri
   const rows = await sql`SELECT p.title, p.summary, p.reason, st.title AS story_title
     FROM publications p JOIN sources s ON s.id=p.source_id
     LEFT JOIN stories st ON st.id=p.story_id AND st.merged_into IS NULL
-    WHERE ((${listedCondition(now)}) OR (${selectedCondition(now)}) OR (${storyReportCondition(now)}))
+    WHERE ((${listedCondition(now)}) OR (${selectedCondition(now)}) OR (${storyReportCondition(now)} AND p.story_id IS NOT NULL))
     ${wanted ? sql`AND (p.title=ANY(${[...wanted]}::text[]) OR p.summary=ANY(${[...wanted]}::text[])
       OR p.reason=ANY(${[...wanted]}::text[]) OR st.title=ANY(${[...wanted]}::text[]))` : sql``}
     ORDER BY p.timeline_at DESC`;

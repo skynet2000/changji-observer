@@ -48,8 +48,8 @@ test("report extraction skips withdrawn citations, IDs and URLs; translation che
 test("worker persists translations and completes real receipts; repeating a completed batch cannot pay for it again", async () => {
   const api = await stub((_hit, req) => {
     const input = JSON.parse(req.body);
-    const texts = JSON.parse(input.messages.at(-1).content) as string[];
-    return { choices: [{ message: { content: JSON.stringify({ translations: texts.map(text => `English ${text}`) }) }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 20 } };
+    const texts = JSON.parse(input.messages.at(-1).content) as Array<{ id: number; text: string }>;
+    return { choices: [{ message: { content: JSON.stringify({ translations: texts.map(item => ({ id: item.id, text: `English ${item.text}` })).reverse() }) }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 20 } };
   });
   pointModels(api.url, ["deepseek-flash"]);
   try {
@@ -58,7 +58,8 @@ test("worker persists translations and completes real receipts; repeating a comp
     assert.equal(api.hits(), 1);
     const [receipt] = await sql`SELECT status FROM receipts WHERE purpose='language.english' ORDER BY id DESC LIMIT 1`;
     assert.equal(receipt!.status, "completed");
-    const saved = await sql`SELECT source_hash FROM language_texts WHERE receipt_id>0`;
+    const saved = await sql`SELECT source_hash, source, english FROM language_texts WHERE receipt_id>0`;
+    assert.ok(saved.every(row => row.english === `English ${row.source}`), "reordered response ids cannot attach a translation to the wrong source");
     assert.equal(saved.length, first.translated);
     await translateNextBatch();
     assert.equal(api.hits(), 2, "the second run advances to different source texts");
@@ -69,8 +70,8 @@ test("worker persists translations and completes real receipts; repeating a comp
 
 test("a bad segment remains private and waits before retrying while other segments are saved", async () => {
   const api = await stub((_hit, req) => {
-    const texts = JSON.parse(JSON.parse(req.body).messages.at(-1).content) as string[];
-    return { choices: [{ message: { content: JSON.stringify({ translations: texts.map((text, i) => i === 0 ? "" : `English ${text}`) }) }, finish_reason: "stop" }] };
+    const texts = JSON.parse(JSON.parse(req.body).messages.at(-1).content) as Array<{ id: number; text: string }>;
+    return { choices: [{ message: { content: JSON.stringify({ translations: texts.map((item, i) => ({ id: item.id, text: i === 0 ? "" : `English ${item.text}` })) }) }, finish_reason: "stop" }] };
   });
   pointModels(api.url, ["deepseek-flash"]);
   try {
@@ -81,4 +82,22 @@ test("a bad segment remains private and waits before retrying while other segmen
     const lookup = await app.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: [bad!.source] } });
     assert.deepEqual(lookup.json().translations, {});
   } finally { await api.close(); }
+});
+
+test("real translations preserve values across Chinese magnitudes, grouping commas and English date/number words", () => {
+  const cases = [
+    ["收藏最多500条，已读5000条。", "Up to 500 saved and 5,000 read items."],
+    ["年包最高500万元", "Annual package up to 5 million yuan"],
+    ["从200万元到400万至500万元，去年200万至300万元", "From 2 million yuan to 4 million to 5 million yuan, versus 2 million to 3 million yuan last year"],
+    ["10月18日08:00至10月19日08:00", "08:00 on October 18 to 08:00 on October 19"],
+    ["上线7个月，日活2200万", "Seven months since launch, 22 million daily active users"],
+    ["季度营收168亿美元，环比45%", "Quarterly revenue of $16.8 billion, up 45%"],
+    ["最快1分钟一次", "At most once per minute"],
+  ];
+  for (const [source, english] of cases) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
+  assert.equal(validTranslations(["500万元"], ["50 million yuan"]), false);
+  assert.equal(validTranslations(["500万元"], ["5 billion yuan"]), false);
+  assert.equal(validTranslations(["V4.1"], ["V4.2"]), false);
+  assert.equal(validTranslations(["V4.1"], ["V4.10"]), false);
+  assert.equal(validTranslations(["10月18日"], ["October 19"]), false);
 });
