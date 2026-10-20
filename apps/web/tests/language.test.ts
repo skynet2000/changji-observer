@@ -6,7 +6,7 @@ import { chromium, expect, type Browser } from "@playwright/test";
 import type { FeedItemSummary, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 const at = "2026-10-21T01:00:00Z";
-const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局京东与抖音因采销经理朋友圈互诉", summary: "公司与员工沟通组织调整，涉及十个部门。", reason: "关系员工发展。", source: { name: "测试媒体" },
+const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局京东与抖音因采销经理朋友圈互诉", summary: "公司与员工沟通组织调整，涉及十个部门。", reason: "关系员工发展。", source: { name: "第一财经 · 科技" },
   publishedAt: at, timelineAt: at, category: "career", tags: [], score: 80, selected: true, channel: "news", x: null };
 const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1, title: "互联网日报", generatedAt: at,
   lead: { title: item.title, leadParagraph: "本期关注公司组织调整与岗位变化。" }, leadItemId: null, overview: null, highlights: [],
@@ -56,6 +56,7 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       await expect(page.locator("html")).toHaveAttribute("lang", "en");
       await expect(page.getByRole("heading", { name: translated[item.title], exact: true })).toBeVisible();
       await expect(page.getByText(translated[item.summary!], { exact: true })).toBeVisible();
+      await expect(page.getByText("Yicai · Technology", { exact: true })).toBeVisible();
       assert.ok((await page.locator(`a[href="/items/${item.id}"]`).count()) > 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
       await page.screenshot({ path: `outputs/中英切换-${width}-20261021.png`, fullPage: true });
@@ -72,6 +73,12 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       }
       await page.locator('a[href="/daily"]').filter({ visible: true }).first().click();
       await expect(page.getByText(translated["本期关注公司组织调整与岗位变化。"], { exact: true })).toBeVisible();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "daily layout fits the same viewport");
+      if (width >= 961) {
+        await expect(page.getByRole("navigation", { name: "Main navigation", exact: true }).getByRole("link", { name: "Daily brief", exact: true })).toHaveAttribute("aria-current", "page");
+        const note = await page.getByRole("note").boundingBox(), archive = await page.locator('.report-shell > aside').boundingBox();
+        assert.ok(note && archive && archive.y >= note.y + note.height, "report archive never covers the language notice");
+      }
       await page.screenshot({ path: `outputs/英文日报-${width}-20261021.png`, fullPage: true });
       await page.locator('[data-reader-entry="header"]').click();
       await expect(page.getByRole("link", { name: "Continue with Google", exact: true })).toBeVisible();
@@ -82,6 +89,20 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       await expect(page.getByRole("heading", { name: item.title, exact: true })).toBeVisible();
     } finally { await context.close(); }
   }
+});
+
+test("a new source name uses its saved translation, alongside translated article text", async () => {
+  const original = item.source.name;
+  item.source.name = "测试媒体 · 职场";
+  translated[item.source.name] = "Fixture Media · Careers";
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/");
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+    await expect(page.getByText("Fixture Media · Careers", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Switch to Chinese", exact: true }).click();
+    await expect(page.getByText(item.source.name, { exact: true })).toBeVisible();
+  } finally { item.source.name = original; await context.close(); }
 });
 
 test("unavailable saved translations keep readable Chinese and a pending notice; a failing endpoint cannot cause a request loop", async () => {

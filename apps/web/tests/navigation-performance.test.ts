@@ -56,11 +56,11 @@ const api=createServer((req,res)=>{
       const cards=Array.from({length:180},(_,i)=>({key:'long-'+i,anchorAt:i<60?at:'2026-10-03T08:00:00.000Z',item:{...item,id:'long-'+i,title:'长列表文章 '+i,summary:'用于核实深处阅读返回的固定摘要。'.repeat(3)},group:null}));
       return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:'long-reading'},cards,nextCursor:null,hot:null,dayCounts:{'2026-10-04':60,'2026-10-03':120}}));
     }
-    return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,hot:null,dayCounts:{'2026-10-04':1}}));
+    return res.end(JSON.stringify({filters:{channel:url.searchParams.get('channel')??'all',category,tag:url.searchParams.get('tag')},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,hot:null,dayCounts:{'2026-10-04':1}}));
   }
   if(p==='/api/site/pool'){
     const page=Number(url.searchParams.get('page')||1);
-    return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:null,q:null,tab:'time'},items:[{...item,title:'全部第 '+page+' 页',...(url.searchParams.get('tag')==='group-test'?{group:{factId:'group-fixture',scope:'story',developmentCount:3,reportCount:3,additionalSourceCount:0}}:{})}],page,pageCount:3,total:3,todayCount:1,freshness:at}));
+    return res.end(JSON.stringify({filters:{channel:url.searchParams.get('channel')??'all',category:url.searchParams.get('category'),tag:url.searchParams.get('tag'),q:url.searchParams.get('q'),tab:'time'},items:[{...item,title:'全部第 '+page+' 页',...(url.searchParams.get('tag')==='group-test'?{group:{factId:'group-fixture',scope:'story',developmentCount:3,reportCount:3,additionalSourceCount:0}}:{})}],page,pageCount:3,total:3,todayCount:1,freshness:at}));
   }
   if(p==='/api/site/items/navigation-fixture')return res.end(JSON.stringify(detail));
   if(p==='/api/site/items/navigation-fixture/original')return res.end(JSON.stringify({...detail,body:{zh:null,original:'<p>Original fixture</p>',zhKind:null,complete:true},bodyLanguage:'original'}));
@@ -391,4 +391,56 @@ test('reader navigation has four categories on desktop and phone; old model link
       else await expect(page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'业务与产品',exact:true})).toHaveAttribute('aria-current','page');
     }finally{await context.close();}
   }
+});
+
+test('feed scope keeps the same category, channel and tag on desktop and phones, without carrying search or pages',async()=>{
+  for(const width of [390,1280]){
+    const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();
+    try{
+      await page.goto(origin+'/all?category=career&channel=firstParty&tag=组织调整&q=岗位&tab=relevance&page=2');
+      const featured=width===1280?page.getByRole('navigation',{name:'主导航',exact:true}).getByRole('link',{name:'精选',exact:true}):page.getByRole('navigation',{name:'看精选或全部',exact:true}).getByRole('link',{name:'精选',exact:true});
+      // Search has a back bar on phones; navigate through its bottom tab instead.
+      if(width===390){
+        await page.goto(origin+'/all?category=career&channel=firstParty&tag=组织调整&page=2');
+      }
+      await featured.click();
+      await expect(page).toHaveURL(url=>url.pathname==='/'&&url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tag')==='组织调整'&&!url.searchParams.has('page')&&!url.searchParams.has('q')&&!url.searchParams.has('tab'));
+      const all=width===1280?page.getByRole('navigation',{name:'主导航',exact:true}).getByRole('link',{name:'全部互联网动态',exact:true}):page.getByRole('navigation',{name:'看精选或全部',exact:true}).getByRole('link',{name:'全部',exact:true});
+      await all.click();
+      await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
+      await expect(page.getByRole('link',{name:'取消标签：组织调整',exact:true})).toBeVisible();
+      await page.getByRole('link',{name:'取消筛选：一手',exact:true}).click();
+      await expect(page).toHaveURL(url=>!url.searchParams.has('channel')&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }finally{await context.close();}
+  }
+});
+
+test('category changes reset pagination but keep active source, search and tag; desktop can clear a tag',async()=>{
+  const context=await chrome.newContext({viewport:{width:1024,height:900}}),page=await context.newPage();
+  try{
+    await page.goto(origin+'/all?channel=firstParty&tag=组织调整&q=岗位&page=2&deep=1&anchorAt=old');
+    await page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('q')==='岗位'&&!['page','deep','anchorAt'].some(key=>url.searchParams.has(key)));
+    await page.getByRole('link',{name:'取消标签：组织调整',exact:true}).click();
+    await expect(page).toHaveURL(url=>!url.searchParams.has('tag')&&url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty');
+    await expect(page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true})).toHaveAttribute('aria-current','page');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  }finally{await context.close();}
+});
+
+test('phone search preserves feed filters and can change category without losing its query',async()=>{
+  const context=await safari.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
+  try{
+    await page.goto(origin+'/?category=industry&channel=firstParty&tag=组织调整');
+    await page.getByRole('button',{name:'搜索',exact:true}).click();
+    const search=page.getByRole('dialog',{name:'搜索',exact:true});
+    await search.getByRole('searchbox').fill('岗位');
+    await search.getByRole('searchbox').press('Enter');
+    await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='industry'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tag')==='组织调整');
+    await page.getByRole('button',{name:'筛选（已选）',exact:true}).click();
+    await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('channel')==='firstParty');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  }finally{await context.close();}
 });

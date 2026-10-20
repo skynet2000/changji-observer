@@ -14,7 +14,7 @@ export function Faces({ participants, total, size = 24, interactive = true }: { 
   const translate = useText();
   const shown = participants.filter((p) => p.kind === "editorial").slice(0, HOT_FACE_LIMIT);
   const rest = total - shown.length;
-  const names = participants.map((p) => p.name).join("、");
+  const names = participants.map((p) => translate(p.name)).join(" / ");
   const faces = (
     <>
       {shown.map((p, i) => (
@@ -31,7 +31,7 @@ export function Faces({ participants, total, size = 24, interactive = true }: { 
   );
   if (!interactive) {
     return (
-      <span className="relative z-10 flex shrink-0 items-center" title={translate(names)}>
+      <span className="relative z-10 flex shrink-0 items-center" title={names}>
         <Text>{faces}</Text>
       </span>
     );
@@ -72,7 +72,7 @@ function FacesButton({ participants, total, names, children }: { participants: H
     <span ref={root} className="relative z-10 inline-flex shrink-0">
       <button
         type="button"
-        title={translate(names)}
+        title={names}
         aria-expanded={open}
         aria-controls={id}
         aria-label={translate(`${total} 位参与者，查看名单`)}
@@ -93,13 +93,13 @@ function FacesButton({ participants, total, names, children }: { participants: H
           {editorial.length > 0 && (
             <>
               <span className="block text-[11.5px] font-semibold text-ink-4"><Text>精选组</Text></span>
-              <span className="mt-0.5 block"><Text>{editorial.map((p) => p.name).join("、")}</Text></span>
+              <span className="mt-0.5 block">{editorial.map((p, i) => <span key={p.name}>{i > 0 && " / "}<Text>{p.name}</Text></span>)}</span>
             </>
           )}
           {signal.length > 0 && (
             <>
               <span className={`block text-[11.5px] font-semibold text-ink-4 ${editorial.length ? "mt-2" : ""}`}><Text>氛围组</Text></span>
-              <span className="mt-0.5 block"><Text>{signal.map((p) => p.name).join("、")}</Text></span>
+              <span className="mt-0.5 block">{signal.map((p, i) => <span key={p.name}>{i > 0 && " / "}<Text>{p.name}</Text></span>)}</span>
             </>
           )}
           {more > 0 && <span className="mt-2 block text-[11.5px] text-ink-4"><Text>另有 </Text><Text>{more}</Text><Text> 位未列出</Text></span>}

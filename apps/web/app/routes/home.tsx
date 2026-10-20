@@ -46,9 +46,9 @@ export default function Home() {
       <FeedMasthead />
       <div className="hidden lg:block">
         <h2 className="sr-only"><Text>{title}</Text></h2>
-        <div className="mb-4 mt-4 flex items-start justify-between gap-4">
-          <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
-          <SearchField keep={{ category: filters.category }} />
+        <div className="feed-filter-row">
+          <CategoryTabs base="/" category={filters.category} />
+          <SearchField keep={{ category: filters.category, channel: filters.channel === "all" ? null : filters.channel, tag: filters.tag }} />
         </div>
       </div>
 

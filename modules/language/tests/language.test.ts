@@ -13,24 +13,26 @@ after(async () => { await app.close(); await closeDb(); });
 
 test("English uses current public text only, leaves Chinese untouched, and lookup cannot invoke or enqueue models", async () => {
   const source = "language-fixture";
-  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode) VALUES(${source},'媒体','rss','T1','editorial')`;
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode) VALUES(${source},'测试媒体','rss','T1','editorial')`;
   const { articleId } = await upsertMaterial({ sourceId: source, url: "https://example.com/language", title: "公司公开信", bodyText: "公司公开信正文", via: "fetch", publishedAt: new Date() });
   await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,reason_zh,score,selected)
     VALUES(${articleId},1,'rule','pass','industry','公司公开信','公司宣布组织调整。','影响员工岗位。',80,true)`;
   await publishArticle(articleId);
   assert.ok((await publicTextValues()).includes("公司公开信"));
-  for (const [source, english] of [["公司公开信", "A company-wide letter"], ["机密未公开", "Private"], ["不存在的旧标题", "Old title"]]) {
+  assert.deepEqual(await publicTextValues(["测试媒体"]), ["测试媒体"]);
+  for (const [source, english] of [["公司公开信", "A company-wide letter"], ["测试媒体", "Fixture Media"], ["机密未公开", "Private"], ["不存在的旧标题", "Old title"]]) {
     await sql`INSERT INTO language_texts(source_hash,source,english,receipt_id) VALUES(${hashText(source)},${source},${english},0)`;
   }
   const before = await sql`SELECT count(*)::int AS n FROM receipts`;
-  const result = await app.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: ["公司公开信", "机密未公开", "不存在的旧标题"] } });
+  const result = await app.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: ["公司公开信", "测试媒体", "机密未公开", "不存在的旧标题"] } });
   assert.equal(result.statusCode, 200);
-  assert.deepEqual(result.json().translations, { "公司公开信": "A company-wide letter" });
+  assert.deepEqual(result.json().translations, { "公司公开信": "A company-wide letter", "测试媒体": "Fixture Media" });
   assert.equal(result.headers["cache-control"], "no-store");
   assert.deepEqual(await sql`SELECT count(*)::int AS n FROM receipts`, before);
   assert.equal((await sql`SELECT title FROM publications WHERE article_id=${articleId}`)[0]!.title, "公司公开信");
   await sql`UPDATE publications SET visibility='withdrawn' WHERE article_id=${articleId}`;
   assert.ok(!(await publicTextValues()).includes("公司公开信"));
+  assert.deepEqual(await publicTextValues(["测试媒体"]), [], "a source with no public reports is not exposed");
   assert.equal((await app.inject({ method: "POST", url: "/api/language/lookup", payload: { texts: Array(65).fill("中文") } })).statusCode, 400);
 });
 

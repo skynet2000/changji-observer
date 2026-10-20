@@ -51,7 +51,7 @@ function Voices({ e }: { e: HotEntryView }) {
     <span className="min-w-0 text-[12.5px] leading-snug text-ink-4">
       {/* Lines break between the phrases, never inside one. */}
       <span className="whitespace-nowrap">
-        {names.length > 0 && <span className="text-ink-3"><Text>{names.join("、")}</Text></span>}
+        {names.length > 0 && <span className="text-ink-3">{names.map((name, i) => <span key={name}>{i > 0 && <span> / </span>}<Text>{name}</Text></span>)}</span>}
         <Text>{e.sourceCount > names.length ? ` 等 ${e.sourceCount} 个来源` : names.length ? " 报道" : `${e.sourceCount} 个来源`}</Text>
       </span>
       <span className="mx-1.5 text-line-strong">·</span>

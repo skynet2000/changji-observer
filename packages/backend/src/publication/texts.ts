@@ -4,7 +4,7 @@ import { sql } from "../db.ts";
 import { listedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
 import { loadReport } from "./reports.ts";
 
-const textKeys = new Set(["title", "summary", "reason", "label", "leadParagraph", "overview", "caption", "heading"]);
+const textKeys = new Set(["title", "summary", "reason", "label", "leadParagraph", "overview", "caption", "heading", "source_name", "sourceName"]);
 export function collectPublicText(value: unknown, into = new Set<string>()): Set<string> {
   if (!value || typeof value !== "object") return into;
   if ("available" in value && value.available === false) return into;
@@ -26,12 +26,12 @@ export async function publicTextValues(wanted?: readonly string[]): Promise<stri
     }
   }
   const now = new Date();
-  const rows = await sql`SELECT p.title, p.summary, p.reason, st.title AS story_title
+  const rows = await sql`SELECT p.title, p.summary, p.reason, st.title AS story_title, s.name AS source_name
     FROM publications p JOIN sources s ON s.id=p.source_id
     LEFT JOIN stories st ON st.id=p.story_id AND st.merged_into IS NULL
     WHERE ((${listedCondition(now)}) OR (${selectedCondition(now)}) OR (${storyReportCondition(now)} AND p.story_id IS NOT NULL))
     ${wanted ? sql`AND (p.title=ANY(${[...wanted]}::text[]) OR p.summary=ANY(${[...wanted]}::text[])
-      OR p.reason=ANY(${[...wanted]}::text[]) OR st.title=ANY(${[...wanted]}::text[]))` : sql``}
+      OR p.reason=ANY(${[...wanted]}::text[]) OR st.title=ANY(${[...wanted]}::text[]) OR s.name=ANY(${[...wanted]}::text[]))` : sql``}
     ORDER BY p.timeline_at DESC`;
   for (const row of rows) {
     collectPublicText(row, texts);

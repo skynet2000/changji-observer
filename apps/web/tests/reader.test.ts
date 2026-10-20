@@ -48,7 +48,7 @@ test("login is optional; desktop and phone hide maintenance entries while retain
       await expect(page.getByRole("link", { name: "更新日志", exact: true })).toHaveCount(0);
       await expect(page.locator('a[href="/about"]')).toHaveCount(0);
       await expect(page.getByRole("link", { name: "意见反馈", exact: true })).toBeVisible();
-      await expect(page.getByRole("link", { name: "隐私说明", exact: true })).toBeVisible();
+      await expect(page.locator('#main').getByRole("link", { name: "隐私说明", exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "登录并同步", exact: true })).toHaveCount(0);
       await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/维护导航-${width}-20261021.png`, import.meta.url)), fullPage: true });
     } finally { await context.close(); }
@@ -132,25 +132,21 @@ test("language switching preserves a reader's display name even when it matches 
   } finally { displayName = "测试读者"; await context.close(); }
 });
 
-test("top navigation supports keyboard selection, Escape and focus return", async () => {
+test("desktop sidebar exposes content and tools without a hidden More menu; links support keyboard navigation", async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   try {
     await page.goto(web.origin + "/more");
-    const more = page.locator('[data-site-header]').getByRole("button", { name: "更多", exact: true });
-    await more.focus();
-    await more.press("ArrowDown");
-    const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem").first()).toBeFocused();
-    await page.keyboard.press("End");
-    await expect(menu.getByRole("menuitem").last()).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(menu.getByRole("menuitem").first()).toBeFocused();
-    await page.keyboard.press("ArrowUp");
-    await expect(menu.getByRole("menuitem").last()).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(menu).toBeHidden();
-    await expect(more).toBeFocused();
+    const nav = page.getByRole("navigation", { name: "主导航", exact: true });
+    await expect(nav).toBeVisible();
+    for (const label of ["精选", "全部互联网动态", "热点榜", "互联网日报", "主题", "收藏", "Agent 接入", "反馈"])
+      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /关于|更新日志/ })).toHaveCount(0);
+    await expect(page.locator('[data-site-header]').getByRole("navigation")).toHaveCount(0);
+    const saved = nav.getByRole("link", { name: "收藏", exact: true });
+    await saved.focus();
+    await saved.press("Enter");
+    await expect(page).toHaveURL(/\/starred$/);
+    await expect(saved).toHaveAttribute("aria-current", "page");
   } finally { await context.close(); }
 });

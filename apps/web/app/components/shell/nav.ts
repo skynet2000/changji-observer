@@ -43,6 +43,16 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
 /** Whether an engine page is a way in from the navigation (site.ts NAV.hidden); a hidden page still opens. */
 export const inNav = (to: string) => !(NAV.hidden as readonly string[]).includes(to);
 
+/** Switching feed scope keeps content filters, but never search ranking or pagination. */
+export function feedScopeHref(to: string, params: URLSearchParams): string {
+  const next = new URLSearchParams();
+  for (const key of ["category", "channel", "tag"]) {
+    const value = params.get(key);
+    if (value) next.set(key, value);
+  }
+  return next.size ? `${to}?${next}` : to;
+}
+
 /**
  * The sidebar: the engine's sections with the modules' between 内容 and 更多; a module naming a section
  * that is already there adds to it.

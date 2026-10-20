@@ -8,7 +8,7 @@ import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
-import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { DayList, Pagination } from "../features/feed/DayList";
@@ -76,7 +76,7 @@ export default function AllPage() {
   const f = data.filters;
   const busy = navigation.state === "loading" && navigation.location?.pathname === "/all";
   const { channel, category } = filterParams(f);
-  const keep = { channel, category };
+  const keep = { channel, category, tag: f.tag };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);
     sp.delete("page");
@@ -101,6 +101,7 @@ export default function AllPage() {
       {f.q ? (
         <PhoneBar
           back={{ to: "/all", label: "全部" }}
+          actions={<FilterButton base="/all" category={f.category} channel={f.channel} />}
           center={
             <button type="button" onClick={(event) => openSearch(f.q ?? "", event.currentTarget)} className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-bg-sunk px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60">
               <IconSearch size={16} className="shrink-0 text-ink-4" />
@@ -118,8 +119,8 @@ export default function AllPage() {
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
         <h1 className={title ? "text-[24px] font-semibold leading-[1.3] text-ink" : "sr-only"}><Text>{title ?? ALL_TITLE}</Text></h1>
-        <div className="mb-4 mt-4 flex items-start justify-between gap-4">
-          <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
+        <div className="feed-filter-row">
+          <CategoryTabs base="/all" category={f.category} />
           <SearchField defaultValue={f.q ?? ""} keep={keep} />
         </div>
       </div>

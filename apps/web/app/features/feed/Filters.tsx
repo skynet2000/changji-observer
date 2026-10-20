@@ -7,8 +7,10 @@ import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, CHANNEL_L
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
 import { Sheet } from "../../components/ui/Sheet";
+import { IntentLink } from "../../components/ui/IntentLink";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
+import { feedScopeHref } from "../../components/shell/nav";
 
 /** Same page with some query parameters changed (paging state dropped). */
 function hrefWith(base: string, params: URLSearchParams, patch: Record<string, string | null>) {
@@ -19,26 +21,32 @@ function hrefWith(base: string, params: URLSearchParams, patch: Record<string, s
   }
   sp.delete("page");
   sp.delete("cursor");
+  sp.delete("deep");
+  sp.delete("anchorAt");
   const s = sp.toString();
   return s ? `${base}?${s}` : base;
 }
 
-/** Reader categories shared by 精选 and 全部. Selecting one clears an older channel filter. */
+/** Category, source channel, tag and search are independent filters. */
 function filterOptions(base: string, params: URLSearchParams, noneLabel: string) {
   return [
-    { key: "all", label: noneLabel, to: hrefWith(base, params, { category: null, channel: null }) },
-    ...READER_CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label, to: hrefWith(base, params, { category: key, channel: null }) })),
+    { key: "all", label: noneLabel, to: hrefWith(base, params, { category: null }) },
+    ...READER_CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label, to: hrefWith(base, params, { category: key }) })),
   ];
 }
 
-function filterKey(category: CategoryKey | null, channel: ChannelKey): string {
-  return channel === "firstParty" ? "firstParty" : (category ? readerCategory(category) : "all");
+function filterKey(category: CategoryKey | null): string {
+  return category ? readerCategory(category) : "all";
 }
 
 /** Desktop: the filter as a row of tabs beside the search field. */
-export function CategoryTabs({ base, category, channel = "all", layoutId, className = "" }: { base: string; category: CategoryKey | null; channel?: ChannelKey; layoutId: string; className?: string }) {
+export function CategoryTabs({ base, category, className = "" }: { base: string; category: CategoryKey | null; className?: string }) {
+  const translate = useText();
   const [params] = useSearchParams();
-  return <PillTabs items={filterOptions(base, params, "全部").map(o => ({ ...o, prefetch: 'intent' as const }))} active={filterKey(category, channel)} layoutId={layoutId} label="筛选" className={`[&>nav]:w-fit [&>nav]:flex-wrap [&>nav]:rounded-panel ${className}`} />;
+  return <nav aria-label={translate("筛选")} className={`category-tabs ${className}`}>
+    {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
+      aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}
+  </nav>;
 }
 
 /**
@@ -47,9 +55,7 @@ export function CategoryTabs({ base, category, channel = "all", layoutId, classN
  */
 export function FeedBar({ base, category, channel }: { base: "/" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
   const [params] = useSearchParams();
-  const [sheet, setSheet] = useState(false);
-  const scope = (to: string) => hrefWith(to, params, { q: null, tab: null, search: null });
-  const filtered = filterKey(category, channel) !== "all";
+  const scope = (to: string) => feedScopeHref(to, params);
   return (
     <>
       <PhoneBar
@@ -67,17 +73,27 @@ export function FeedBar({ base, category, channel }: { base: "/" | "/all"; categ
         }
         actions={
           <>
-            <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
-              <IconFilter size={21} />
-              {filtered && <span aria-hidden="true" className="absolute right-[9px] top-[9px] size-[7px] rounded-full bg-accent ring-2 ring-bg" />}
-            </BarButton>
+            <FilterButton base={base} category={category} channel={channel} />
             <SearchButton />
           </>
         }
       />
-      <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category, channel)} />
     </>
   );
+}
+
+/** The same category control is available while reading a feed or searching it. */
+export function FilterButton({ base, category, channel }: { base: string; category: CategoryKey | null; channel: ChannelKey }) {
+  const [params] = useSearchParams();
+  const [sheet, setSheet] = useState(false);
+  const filtered = !!category || channel !== "all" || params.has("tag");
+  return <>
+    <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
+      <IconFilter size={21} />
+      {filtered && <span aria-hidden="true" className="absolute right-[9px] top-[9px] size-[7px] rounded-full bg-accent ring-2 ring-bg" />}
+    </BarButton>
+    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} />
+  </>;
 }
 
 /** Phones: the filter as a sheet of options, the one in use ticked; choosing one applies it. */
@@ -86,7 +102,7 @@ function FilterSheet({ open, onClose, base, active }: { open: boolean; onClose: 
   const [params] = useSearchParams();
   return (
     <Sheet open={open} onClose={onClose} title={translate("筛选")}>
-      <ul className="mx-4 divide-y divide-line-soft">
+      <ul className="mx-4 space-y-1.5 pb-2">
         {filterOptions(base, params, "不限").map((o) => {
           const on = o.key === active;
           return (
@@ -95,7 +111,7 @@ function FilterSheet({ open, onClose, base, active }: { open: boolean; onClose: 
                 to={o.to}
                 onClick={onClose}
                 aria-current={on ? "true" : undefined}
-                className={`-mx-2 flex h-12 items-center justify-between rounded-tile px-2 text-[16px] transition-colors active:bg-bg-sunk ${on ? "font-semibold text-accent" : "text-ink"}`}
+                className={`flex min-h-12 items-center justify-between rounded-tile px-4 text-[15px] transition-colors active:bg-bg-sunk ${on ? "bg-accent-soft font-semibold text-accent" : "text-ink hover:bg-bg-sunk"}`}
               >
                 <Text>{o.label}</Text>
                 {on && <IconCheck size={19} strokeWidth={2.2} />}
@@ -112,17 +128,19 @@ function FilterSheet({ open, onClose, base, active }: { open: boolean; onClose: 
 export function ActiveFilters({ base, category, channel, tag }: { base: string; category: CategoryKey | null; channel: ChannelKey; tag: string | null }) {
   const translate = useText();
   const [params] = useSearchParams();
-  const label = channel === "firstParty" ? CHANNEL_LABELS.firstParty : category ? readerCategoryLabel(category) : null;
-  if (!label && !tag) return null;
+  const label = category ? readerCategoryLabel(category) : null;
+  const sourceLabel = channel !== "all" ? CHANNEL_LABELS[channel] : null;
+  if (!label && !sourceLabel && !tag) return null;
   const chip = "inline-flex min-h-11 max-w-full items-center gap-1 rounded-full bg-accent-soft pl-3 pr-2 text-[13px] font-medium text-accent transition-opacity active:opacity-60";
   return (
-    <div className={`flex flex-wrap gap-2 pb-3 pt-1 ${channel === "firstParty" ? "" : "lg:hidden"}`}>
+    <div className={`flex flex-wrap gap-2 pb-3 pt-1 ${!sourceLabel && !tag ? "lg:hidden" : ""}`}>
       {label && (
-        <Link to={hrefWith(base, params, { category: null, channel: null })} aria-label={translate(`取消筛选：${label}`)} className={chip}><Text>
+        <Link to={hrefWith(base, params, { category: null })} aria-label={translate(`取消筛选：${label}`)} className={`${chip} lg:hidden`}><Text>
           只看</Text><Text>{label}</Text>
           <IconClose size={14} strokeWidth={2} />
         </Link>
       )}
+      {sourceLabel && <Link to={hrefWith(base, params, { channel: null })} aria-label={translate(`取消筛选：${sourceLabel}`)} className={chip}><Text>{sourceLabel}</Text><IconClose size={14} /></Link>}
       {tag && (
         <Link to={hrefWith(base, params, { tag: null })} aria-label={translate(`取消标签：${tag}`)} className={chip}>
           <span className="truncate">#<Text>{tag}</Text></span>
