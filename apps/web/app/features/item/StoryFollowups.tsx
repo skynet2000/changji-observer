@@ -56,7 +56,7 @@ function Followups({items, more, story}: {items: StoryFollowup[]; more: boolean;
             <Link viewTransition to={`/items/${d.representative.id}`} className="group flex flex-col gap-0.5 py-2.5 sm:flex-row sm:items-baseline sm:gap-3">
               <span className="flex min-w-0 flex-1 items-baseline gap-2">
                 <span className="shrink-0 rounded-mark bg-accent-soft px-1 text-[10.5px] leading-[16px] text-accent"><Text>同事件</Text></span>
-                <span className="min-w-0 text-[13.5px] leading-snug text-ink-2 group-hover:text-accent sm:truncate"><Text>{d.representative.title}</Text></span>
+                <span className="min-w-0 text-[13.5px] leading-snug text-ink-2 group-hover:text-accent sm:truncate"><Text content>{d.representative.title}</Text></span>
               </span>
               <span className="shrink-0 pl-[46px] text-[12px] text-ink-4 sm:pl-0" suppressHydrationWarning>
                 <Text>{d.representative.source.name}</Text> · <Text>{relativeTime(d.representative.timelineAt)}</Text>

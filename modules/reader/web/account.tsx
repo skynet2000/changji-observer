@@ -31,11 +31,11 @@ export default function Account() {
   }
   const button = "inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line-strong px-4 py-2 text-[14px] font-medium text-ink transition-colors hover:bg-bg-sunk focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50";
   const unavailable = !reader.enabled || (!reader.user && reader.providers.length === 0);
-  return <div className="mx-auto max-w-[640px] pb-8">
+  return <div className="account-page mx-auto max-w-[640px] pb-8">
     <PhoneBar title={translate("读者账号")} back={{ to: "/", label: "返回阅读" }} />
     <div className="mx-auto max-w-[440px] pt-6 sm:pt-12 lg:pt-14">
       <div className="mb-6 flex items-center justify-center gap-2 text-accent"><RingMark className="size-6" /><span className="text-[15px] font-bold tracking-wide"><Text>{SITE.name}</Text></span></div>
-      <section className="overflow-hidden rounded-sheet border border-line bg-surface shadow-[0_8px_40px_rgba(32,42,48,0.04)]">
+      <section className="account-card overflow-hidden rounded-sheet border border-line bg-surface shadow-[0_16px_64px_rgba(25,36,52,0.06)]">
         <div className="px-6 pb-7 pt-8 sm:px-8">
           <div className="mb-7 text-center">
             {reader.user && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-accent-soft text-[22px] font-semibold text-accent" aria-hidden="true">{Array.from(reader.user.name)[0]}</div>}

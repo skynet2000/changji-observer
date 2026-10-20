@@ -212,7 +212,7 @@ export function SearchOverlay() {
                   <li key={h.to}>
                     <Link viewTransition to={h.to} className="grid h-12 grid-cols-[18px_minmax(0,1fr)] items-center gap-x-3 active:opacity-60">
                       <span className={`num text-center text-[15px] font-black ${RANK_COLOR[i] ?? "text-rank-rest"}`}><Text>{h.rank}</Text></span>
-                      <span className="truncate text-[15px] text-ink"><Text>{h.title}</Text></span>
+                      <span className="truncate text-[15px] text-ink"><Text content>{h.title}</Text></span>
                     </Link>
                   </li>
                 ))}

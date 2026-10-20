@@ -252,17 +252,17 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
             </span>
           )}
         </div>
-        {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink"><Text>{preview.title}</Text></h1>}
+        {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink"><Text content>{preview.title}</Text></h1>}
         {preview.summary && (
           <section className={isX ? "mt-4" : "mt-7"}>
             <div className="mb-2 text-[12px] font-semibold text-accent"><Text>{isX && preview.summary.replace(/\s+/g, " ").trim() === preview.title ? "原文" : "AI 导读"}</Text></div>
-            <p className="text-[18px] leading-[1.7] text-ink"><Text>{preview.summary}</Text></p>
+            <p className="text-[18px] leading-[1.7] text-ink"><Text content>{preview.summary}</Text></p>
           </section>
         )}
         {preview.reason && (
           <section className="mt-6 border-t border-line pt-4">
             <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text>{ITEM_COPY.reasonLabel}</Text></div>
-            <p className="text-[15px] leading-[1.75] text-ink-2"><Text>{preview.reason}</Text></p>
+            <p className="text-[15px] leading-[1.75] text-ink-2"><Text content>{preview.reason}</Text></p>
           </section>
         )}
         <div className="mt-9 space-y-3 border-t border-line pt-6" aria-hidden="true">
@@ -438,7 +438,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
       {item.reason && !summaryOnly ? (
         <RailSection title={translate(ITEM_COPY.reasonLabel)}>
           {verdict && <div className="mb-3"><Text>{verdict}</Text></div>}
-          <p className="text-[13.5px] leading-[1.8] text-ink-2"><Text>{item.reason}</Text></p>
+          <p className="text-[13.5px] leading-[1.8] text-ink-2"><Text content>{item.reason}</Text></p>
         </RailSection>
       ) : (
         verdict && <RailSection title={translate(shownScore(item.score) !== null ? "AI 评分" : undefined)}><Text>{verdict}</Text></RailSection>
@@ -501,7 +501,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
         }
       >
         {/* Between lg and 2xl the left rail is hidden: 返回 stays at the top while reading, as on the original site. */}
-        <div className="sticky top-0 z-20 -mx-2 hidden bg-bg/95 px-2 py-1.5 backdrop-blur lg:block 2xl:hidden"><Text>{backButton}</Text></div>
+        <div className="sticky top-[var(--masthead-h)] z-20 -mx-2 hidden bg-bg/95 px-2 py-1.5 backdrop-blur lg:block 2xl:hidden"><Text>{backButton}</Text></div>
         <article className="pb-6 pt-3 lg:pt-2 2xl:pt-1">
           <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3 2xl:hidden ${isX ? "" : "mb-3"}`}>
             <span className="font-semibold text-ink-2"><Text>{isX ? item.x!.authorName : item.source.name}</Text></span>
@@ -522,20 +522,20 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               </span>
             )}
           </div>
-          {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]"><Text>{item.title}</Text></h1>}
+          {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]"><Text content>{item.title}</Text></h1>}
           {!isX && item.originalTitle && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4"><Text>{item.originalTitle}</Text></p>}
 
           {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
               <div className="mb-2 text-[12px] font-semibold text-accent"><Text>{summaryOnly ? "摘要" : "AI 导读"}</Text></div>
-              <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]"><Text>{item.summary}</Text></p>
+              <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]"><Text content>{item.summary}</Text></p>
             </section>
           )}
 
           {item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
               <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text>{ITEM_COPY.reasonLabel}</Text></div>
-              <p className="text-[15px] leading-[1.75] text-ink-2"><Text>{item.reason}</Text></p>
+              <p className="text-[15px] leading-[1.75] text-ink-2"><Text content>{item.reason}</Text></p>
             </section>
           )}
 
@@ -543,7 +543,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             <p className="mt-5 text-[13px] leading-relaxed text-ink-4"><Text>
               同一新闻，精选展示
               </Text><Link viewTransition to={`/items/${item.sameEvent.id}`} className="text-ink-3 transition-colors hover:text-accent">
-                《<Text>{item.sameEvent.title}</Text>》
+                《<Text content>{item.sameEvent.title}</Text>》
               </Link>
             </p>
           )}
@@ -616,7 +616,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
                 {related.map((s) => (
                   <li key={s.publicId}>
                     <Link viewTransition to={`/story/${s.publicId}`} className="block py-2.5 text-[14px] text-ink-2 hover:text-accent">
-                      <Text>{s.title}</Text>
+                      <Text content>{s.title}</Text>
                     </Link>
                   </li>
                 ))}

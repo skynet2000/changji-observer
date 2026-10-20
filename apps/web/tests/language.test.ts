@@ -6,12 +6,12 @@ import { chromium, expect, type Browser } from "@playwright/test";
 import type { FeedItemSummary, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 const at = "2026-10-21T01:00:00Z";
-const item: FeedItemSummary = { id: "language-fixture", title: "公司发布全员公开信", summary: "公司宣布组织调整，涉及员工岗位。", reason: "关系员工发展。", source: { name: "测试媒体" },
+const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局京东与抖音因采销经理朋友圈互诉", summary: "公司与员工沟通组织调整，涉及十个部门。", reason: "关系员工发展。", source: { name: "测试媒体" },
   publishedAt: at, timelineAt: at, category: "career", tags: [], score: 80, selected: true, channel: "news", x: null };
 const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1, title: "互联网日报", generatedAt: at,
   lead: { title: item.title, leadParagraph: "本期关注公司组织调整与岗位变化。" }, leadItemId: null, overview: null, highlights: [],
   sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null };
-const translated: Record<string, string> = { [item.title]: "Company issues an all-staff letter", [item.summary!]: "The company announces an organisational change affecting employee roles.",
+const translated: Record<string, string> = { [item.title]: "JD and Douyin sue each other over a procurement manager’s social post ahead of Singles’ Day", [item.summary!]: "The company communicates organisational changes affecting ten departments to employees.",
   [item.reason!]: "Relevant to employees' careers.", "本期关注公司组织调整与岗位变化。": "This issue focuses on organisational changes and employee roles." };
 let dense = false;
 const lookupSizes: number[] = [];
@@ -44,9 +44,11 @@ const api = createServer(async (req, res) => {
 before(async () => { web = await startWebServer(api); browser = await chromium.launch({ channel: "chromium" }); });
 after(async () => { await browser?.close(); await web?.stop(); });
 
-test("Chinese/English changes interface, headlines, summaries and daily body; preference survives reload and links stay unchanged", async () => {
-  for (const width of [390, 1280]) {
-    const context = await browser.newContext({ viewport: { width, height: 900 } }), page = await context.newPage();
+test("Chinese/English changes interface, headlines, summaries and daily body; new visits default to Chinese and links stay unchanged", async () => {
+  for (const width of [320, 390, 768, 1024, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 }, locale: "en-US" });
+    await context.addInitScript(() => localStorage.setItem("changji.language", "en"));
+    const page = await context.newPage();
     try {
       await page.goto(web.origin + "/");
       await expect(page.getByRole("heading", { name: item.title, exact: true })).toBeVisible();
@@ -58,11 +60,20 @@ test("Chinese/English changes interface, headlines, summaries and daily body; pr
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
       await page.screenshot({ path: `outputs/中英切换-${width}-20261021.png`, fullPage: true });
       await page.reload();
-      await expect(page.getByRole("heading", { name: translated[item.title], exact: true })).toBeVisible();
-      await page.goto(web.origin + "/daily");
+      await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+      await expect(page.getByRole("heading", { name: item.title, exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+      if (width === 1280) {
+        const newVisit = await context.newPage();
+        await newVisit.goto(web.origin + "/");
+        await expect(newVisit.locator("html")).toHaveAttribute("lang", "zh-CN");
+        await expect(newVisit.getByRole("heading", { name: item.title, exact: true })).toBeVisible();
+        await newVisit.close();
+      }
+      await page.locator('a[href="/daily"]').filter({ visible: true }).first().click();
       await expect(page.getByText(translated["本期关注公司组织调整与岗位变化。"], { exact: true })).toBeVisible();
       await page.screenshot({ path: `outputs/英文日报-${width}-20261021.png`, fullPage: true });
-      await page.goto(web.origin + "/account");
+      await page.locator('[data-reader-entry="header"]').click();
       await expect(page.getByRole("link", { name: "Continue with Google", exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "Continue with GitHub", exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Switch to Chinese", exact: true }).click();

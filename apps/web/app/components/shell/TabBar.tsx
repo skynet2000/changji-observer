@@ -4,7 +4,7 @@ import { Link, useLocation, useRevalidator } from "react-router";
 import { tabs, type TabKey } from "./nav";
 import { noteScreen, rememberedTab, useScreen } from "./screens";
 import { markBack } from "./transitions";
-import { useChangelogDot } from "./Sidebar";
+import { useChangelogDot } from "./Header";
 
 const subscribe = () => () => {};
 const serverTab = () => null;

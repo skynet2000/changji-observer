@@ -4,7 +4,6 @@ import { useLocation } from "react-router";
 import { englishUi } from "./ui.ts";
 import patterns from "./ui-patterns.json";
 
-const key = "changji.language";
 let locale: "zh" | "en" = "zh";
 let version = 0;
 const listeners = new Set<() => void>();
@@ -19,7 +18,6 @@ export function useLocale() { useSyncExternalStore(subscribe, () => version, () 
 function setLocale(value: "zh" | "en") {
   locale = value;
   document.documentElement.lang = value === "en" ? "en" : "zh-CN";
-  try { localStorage.setItem(key, value); } catch { /* Reading still works without browser storage. */ }
   emit();
 }
 async function flush() {
@@ -46,7 +44,7 @@ async function flush() {
   } catch { texts.forEach(text => missing.add(text)); }
   finally { texts.forEach(text => queued.delete(text)); pending = false; emit(); if (queued.size) timer = setTimeout(flush, 50); }
 }
-const templates = patterns.map(source => ({ source, parts: source.split(/\{\{\d+\}\}/) }));
+const templates = patterns.filter(source => source.replace(/\{\{\d+\}\}/g, "").length >= 4).map(source => ({ source, parts: source.split(/\{\{\d+\}\}/) }));
 function templateValues(source: string, parts: string[]): string[] | null {
   if (!source.startsWith(parts[0]!)) return null;
   let at = parts[0]!.length;
@@ -66,10 +64,11 @@ function requestText(source: string) {
     queued.add(source); timer ??= setTimeout(flush, 30);
   }
 }
-function lookup(source: string): string {
+function lookup(source: string, context: "interface" | "content" = "interface"): string {
   if (locale !== "en") return source;
   if (Object.hasOwn(englishUi, source)) return englishUi[source];
   if (translations.has(source)) return translations.get(source)!;
+  if (context === "content") { requestText(source); return source; }
   // Dates/counts are formatting, never separate model requests.
   const fullDate = source.match(/^(\d{4}) 年 (\d{1,2}) 月 (\d{1,2}) 日 · (星期[一二三四五六日])$/);
   if (fullDate) return `${new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Number(fullDate[1]), Number(fullDate[2]) - 1, Number(fullDate[3]))))} · ${englishUi[fullDate[4]!]}`;
@@ -98,7 +97,7 @@ function LanguageControl() {
   const lang = useLocale();
   return <button type="button" aria-label={lang === "zh" ? "Switch to English" : "Switch to Chinese"} title="中文 / English"
     onClick={() => setLocale(lang === "zh" ? "en" : "zh")}
-    className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-line bg-surface px-3 text-[12px] font-medium text-ink-3 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent">
+    className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-[12px] font-medium text-ink-3 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent">
     <span className={lang === "zh" ? "text-accent" : ""}>中</span><span aria-hidden="true" className="text-ink-4">/</span><span className={lang === "en" ? "text-accent" : ""}>EN</span>
   </button>;
 }
@@ -106,16 +105,12 @@ function LanguageStatus() {
   const { pathname } = useLocation();
   const lang = useLocale();
   useEffect(() => {
-    try { const stored = localStorage.getItem(key); if (stored === "en") setLocale("en"); } catch { /* Default Chinese. */ }
-    const changed = (event: StorageEvent) => { if (event.key === key) setLocale(event.newValue === "en" ? "en" : "zh"); };
-    window.addEventListener("storage", changed);
+    // Older releases saved an English preference. Every fresh document now starts in Chinese.
+    try { localStorage.removeItem("changji.language"); } catch { /* Storage is optional. */ }
     const refresh = setInterval(() => { missing.clear(); emit(); }, 60_000);
-    return () => { clearInterval(refresh); window.removeEventListener("storage", changed); };
+    return () => clearInterval(refresh);
   }, []);
   useEffect(() => { missing.clear(); emit(); if (queued.size) timer ??= setTimeout(flush, 30); }, [pathname, lang]);
-  return <div className="mb-3 flex items-center justify-end gap-3 border-b border-line-soft py-2" data-language-control="">
-    {lang === "en" && <p className="min-w-0 text-[11px] leading-relaxed text-ink-4">AI translation · Original text is shown when a translation is pending. Dates use Beijing time.</p>}
-    <LanguageControl />
-  </div>;
+  return lang === "en" ? <p className="mb-3 text-[11px] leading-relaxed text-ink-4" role="note">AI translation · Original text is shown when a translation is pending. Dates use Beijing time.</p> : null;
 }
-export default { name: "language", text: useTranslation, root: { Top: LanguageStatus } } satisfies WebModule;
+export default { name: "language", text: useTranslation, root: { Top: LanguageStatus, ToolbarControl: LanguageControl } } satisfies WebModule;

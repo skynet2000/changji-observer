@@ -14,7 +14,7 @@ export function ReadingLayout({ children, aside }: { children: ReactNode; aside?
   return (
     <div className="mx-auto grid max-w-[var(--page-max-reading)] gap-8 pb-14 pt-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 lg:pt-0 2xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0">{children}</div>
-      {aside && <aside className="min-w-0 space-y-4 lg:sticky lg:top-6 lg:self-start">{aside}</aside>}
+      {aside && <aside className="min-w-0 space-y-4 lg:sticky lg:top-[calc(var(--masthead-h)+24px)] lg:self-start">{aside}</aside>}
     </div>
   );
 }
@@ -30,13 +30,13 @@ export function ArticleLayout({ children, left, right }: { children: ReactNode; 
   return (
     <div className="mx-auto grid max-w-[var(--page-max-reading)] grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-x-12 2xl:grid-cols-[minmax(200px,1fr)_minmax(0,760px)_minmax(200px,1fr)] 2xl:gap-x-12">
       <aside className="hidden 2xl:block">
-        <div className="sticky top-6 max-w-[260px] space-y-8"><Text>{left}</Text></div>
+        <div className="sticky top-[calc(var(--masthead-h)+24px)] max-w-[260px] space-y-8"><Text>{left}</Text></div>
       </aside>
       <div className="min-w-0">
         <div className="mx-auto max-w-[760px]">{children}</div>
       </div>
       <aside className="hidden lg:block">
-        <div className="sticky top-6 ml-auto max-w-[260px] space-y-8"><Text>{right}</Text></div>
+        <div className="sticky top-[calc(var(--masthead-h)+24px)] ml-auto max-w-[260px] space-y-8"><Text>{right}</Text></div>
       </aside>
     </div>
   );

@@ -75,7 +75,7 @@ function Badges({ e }: { e: HotEntryView }) {
 function StoryLink({ e, className }: { e: HotEntryView; className: string }) {
   return (
     <IntentLink viewTransition to={`/story/${e.story.publicId}`} className={`transition-colors after:absolute after:inset-0 after:content-[''] ${className}`}>
-      <Text>{e.story.title}</Text>
+      <Text content>{e.story.title}</Text>
     </IntentLink>
   );
 }
@@ -121,7 +121,7 @@ function Lead({ e }: { e: HotEntryView }) {
           <h2 className="text-[21px] font-bold leading-[1.4] tracking-[-0.01em] text-ink sm:text-[23px] lg:text-[25px] lg:leading-[1.38]">
             <StoryLink e={e} className="group-hover:text-accent" />
           </h2>
-          {e.summary && <p className="mt-3 line-clamp-3 text-[14px] leading-[1.75] text-ink-3"><Text>{e.summary}</Text></p>}
+          {e.summary && <p className="mt-3 line-clamp-3 text-[14px] leading-[1.75] text-ink-3"><Text content>{e.summary}</Text></p>}
         </div>
         {e.cover ? (
           <div className="order-first overflow-hidden well rounded-panel xl:order-none">
@@ -171,7 +171,7 @@ function Runner({ e }: { e: HotEntryView }) {
       <h2 className="mt-2.5 line-clamp-2 text-[16px] font-[650] leading-[1.5] text-ink">
         <StoryLink e={e} className="group-hover:text-accent" />
       </h2>
-      {e.summary && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.7] text-ink-3 lg:line-clamp-1"><Text>{e.summary}</Text></p>}
+      {e.summary && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.7] text-ink-3 lg:line-clamp-1"><Text content>{e.summary}</Text></p>}
       <div className="mt-auto flex items-end justify-between gap-4 pt-3">
         <div className="flex min-w-0 flex-col gap-1.5">
           <Faces participants={e.participants} total={e.participantCount} size={20} />
@@ -206,7 +206,7 @@ function Row({ e }: { e: HotEntryView }) {
             </span>
           )}
         </h3>
-        {e.summary && <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.65] text-ink-4 lg:line-clamp-1"><Text>{e.summary}</Text></p>}
+        {e.summary && <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.65] text-ink-4 lg:line-clamp-1"><Text content>{e.summary}</Text></p>}
         <div className="mt-2 flex items-center gap-2.5 lg:hidden">
           <Faces participants={e.participants} total={e.participantCount} size={20} />
           <span className="text-[12px] text-ink-4">

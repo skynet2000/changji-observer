@@ -47,7 +47,7 @@ after(() => web.stop());
 
 /** The masthead's visible text (the archive's has the same frame). */
 function masthead(html: string): string {
-  const header = /<header class="pt-5 lg:pt-0">([\s\S]*?)<\/header>/.exec(html);
+  const header = /<header data-report-masthead=""[^>]*>([\s\S]*?)<\/header>/.exec(html);
   assert.ok(header, "the report masthead is rendered");
   return header[1]!.replace(/<[^>]+>/g, "");
 }

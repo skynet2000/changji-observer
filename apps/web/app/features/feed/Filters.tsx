@@ -4,11 +4,9 @@ import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
-import { SITE } from "@aihot/site";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
 import { Sheet } from "../../components/ui/Sheet";
-import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
 
@@ -48,7 +46,6 @@ export function CategoryTabs({ base, category, channel = "all", layoutId, classN
  * buttons for the filter sheet and search.
  */
 export function FeedBar({ base, category, channel }: { base: "/" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
-  const translate = useText();
   const [params] = useSearchParams();
   const [sheet, setSheet] = useState(false);
   const scope = (to: string) => hrefWith(to, params, { q: null, tab: null, search: null });
@@ -56,11 +53,6 @@ export function FeedBar({ base, category, channel }: { base: "/" | "/all"; categ
   return (
     <>
       <PhoneBar
-        leading={
-          <Link to="/" aria-label={translate(`${SITE.name} 首页`)} className="flex h-11 items-center pl-2.5 pr-2 text-ink">
-            <Wordmark size={17} />
-          </Link>
-        }
         center={
           <PillTabs
             size="sm"

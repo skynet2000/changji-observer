@@ -35,7 +35,7 @@ export default function DailyArchive() {
   return (
     <ReportLayout kind="daily" index={index} current={null} today={today} back={{ to: "/daily", label: "日报" }} title={translate("日报合订本")}>
       <div className="@container">
-        <header className="pt-5 lg:pt-0">
+        <header data-report-masthead="" className="pt-5 lg:pt-0">
           <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
             <span><Text>{`${SITE.name} · ${withSubject("日报")}`}</Text></span>
             <span><Text>

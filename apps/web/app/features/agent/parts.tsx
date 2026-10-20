@@ -70,7 +70,7 @@ export function Tips({ items }: { items: Array<{ title: string; text: ReactNode 
       {items.map((t, i) => (
         <li key={t.title} className="well rounded-panel p-4">
           <div className="mono text-[11px] text-ink-4">0<Text>{i + 1}</Text></div>
-          <div className="mt-1 text-[14.5px] font-semibold text-ink"><Text>{t.title}</Text></div>
+          <div className="mt-1 text-[14.5px] font-semibold text-ink"><Text content>{t.title}</Text></div>
           <p className="mt-1 text-[13px] leading-[1.7] text-ink-3"><Text>{t.text}</Text></p>
         </li>
       ))}
@@ -105,7 +105,7 @@ export function Details({ items }: { items: Array<{ title: string; body: ReactNo
       {items.map((it) => (
         <details key={it.title} className="disclosure group border-t border-line">
           <summary className="flex items-center justify-between gap-3 py-3.5 text-[14.5px] font-medium text-ink transition-colors hover:text-accent">
-            <Text>{it.title}</Text>
+            <Text content>{it.title}</Text>
             <IconChevronDown size={16} className="shrink-0 text-ink-4 transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <div className="pb-5 text-[14px] leading-[1.8] text-ink-2"><Text>{it.body}</Text></div>

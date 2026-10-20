@@ -93,9 +93,11 @@ test("account entries stay in navigation and login choices fit phone, desktop an
     const page = await context.newPage();
     try {
       await page.goto(web.origin + "/more");
-      const entry = page.locator(`[data-reader-entry="${width < 961 ? "toolbar" : "sidebar"}"]`);
+      const entry = page.locator('[data-reader-entry="header"]');
       await expect(entry).toBeVisible();
       assert.notEqual(await entry.evaluate(el => getComputedStyle(el).position), "fixed");
+      const entryBox = await entry.boundingBox();
+      assert.ok(entryBox && entryBox.y < 80 && entryBox.x > width / 2, "account is at the top right on phone and desktop");
       await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/账号入口-${width}-20261021.png`, import.meta.url)), fullPage: true });
       await entry.click();
       await expect(page.getByRole("heading", { name: "登录厂际观察", exact: true })).toBeVisible();
@@ -123,9 +125,32 @@ test("language switching preserves a reader's display name even when it matches 
   const page = await context.newPage();
   try {
     await page.goto(web.origin + "/account");
-    await expect(page.locator('[data-reader-entry="sidebar"]')).toContainText("精选");
+    await expect(page.locator('[data-reader-entry="header"]')).toContainText("精选");
     await page.getByRole("button", { name: "Switch to English", exact: true }).click();
-    await expect(page.locator('[data-reader-entry="sidebar"]')).toContainText("精选");
+    await expect(page.locator('[data-reader-entry="header"]')).toContainText("精选");
     await expect(page.getByText("精选 · GitHub", { exact: true })).toBeVisible();
   } finally { displayName = "测试读者"; await context.close(); }
+});
+
+test("top navigation supports keyboard selection, Escape and focus return", async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/more");
+    const more = page.locator('[data-site-header]').getByRole("button", { name: "更多", exact: true });
+    await more.focus();
+    await more.press("ArrowDown");
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("menuitem").first()).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(menu.getByRole("menuitem").last()).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(menu.getByRole("menuitem").first()).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(menu.getByRole("menuitem").last()).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(more).toBeFocused();
+  } finally { await context.close(); }
 });

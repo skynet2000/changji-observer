@@ -185,7 +185,7 @@ function Latest({ item, className = "" }: { item: SiteStats["latest"][number] | 
     <IntentLink viewTransition to={`/items/${item.id}`} className={`group block ${className}`}>
       <span className="text-[11px] font-semibold tracking-[0.2em] text-accent"><Text>最近精选</Text></span>
       <span key={item.id} className="animate-fade-up mt-1.5 block">
-        <span className="line-clamp-2 text-[13.5px] font-semibold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text>{item.title}</Text></span>
+        <span className="line-clamp-2 text-[13.5px] font-semibold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text content>{item.title}</Text></span>
         <span className="mt-1 block truncate text-[12px] text-ink-4"><Text>{item.source}</Text></span>
       </span>
     </IntentLink>
@@ -261,7 +261,7 @@ export default function AboutPage() {
             >
               <div className="flex items-baseline gap-2.5">
                 <span className="num text-[12px] font-bold tracking-[0.12em] text-accent"><Text>{s.no}</Text></span>
-                <h3 className="text-[17px] font-bold text-ink"><Text>{s.title}</Text></h3>
+                <h3 className="text-[17px] font-bold text-ink"><Text content>{s.title}</Text></h3>
               </div>
               {s.figure && <div className="mt-4"><Text>{s.figure}</Text></div>}
               <p className="mt-3 text-[14px] leading-[1.8] text-ink-3"><Text>{s.text}</Text></p>

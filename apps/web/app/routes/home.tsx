@@ -8,6 +8,7 @@ import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilte
 import { inNav } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 import { Timeline } from "../features/feed/Timeline";
+import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
 import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
@@ -41,8 +42,9 @@ export default function Home() {
       {/* Phones: the bar (精选 | 全部, filter, search), the filter in use, today's hot topics, the feed. */}
       <FeedBar base="/" category={filters.category} channel={filters.channel} />
       <ActiveFilters base="/" category={filters.category} channel={filters.channel} tag={filters.tag} />
+      <FeedMasthead />
       <div className="hidden lg:block">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink"><Text>{title}</Text></h1>
+        <h2 className="sr-only"><Text>{title}</Text></h2>
         <div className="mb-4 mt-4 flex items-start justify-between gap-4">
           <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
           <SearchField keep={{ category: filters.category }} />
@@ -51,11 +53,12 @@ export default function Home() {
 
       <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按原文发布时间排列 · 同一事件合并展示，可展开查看进展</Text></p>
 
-      {data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}
-
-      {data.cards.length === 0 && !hasFeedFilters(filters)
-        ? <FeedWelcome />
-        : <Timeline initial={data} filters={data.filters} />}
+      <div className={data.hot?.length && inNav("/hot") ? "feed-columns" : ""}>
+        <div className="min-w-0">{data.cards.length === 0 && !hasFeedFilters(filters)
+          ? <FeedWelcome />
+          : <Timeline initial={data} filters={data.filters} />}</div>
+        {data.hot && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>消息之外，看见关联。</Text></h2><p><Text>同一事件的报道与进展归在一起，保留来源，方便你判断。</Text></p></div></aside>}
+      </div>
     </div>
   );
 }

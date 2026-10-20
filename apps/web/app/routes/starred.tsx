@@ -167,11 +167,11 @@ export default function StarredPage() {
                     s.title
                   ) : (
                     <Link viewTransition to={`/items/${s.id}`} className="transition-colors after:absolute after:inset-0 after:content-[''] hover:text-accent">
-                      <Text>{s.title}</Text>
+                      <Text content>{s.title}</Text>
                     </Link>
                   )}</Text>
                 </h2>
-                {s.summary && <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.75] text-ink-3"><Text>{s.summary}</Text></p>}
+                {s.summary && <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.75] text-ink-3"><Text content>{s.summary}</Text></p>}
                 {unavailable && <p className="mt-2 text-[12.5px] text-hot"><Text>这条内容已不再公开，收藏会保留直到你手动移除。</Text></p>}
                 {status === "summary-only" && <p className="mt-2 text-[12.5px] text-amber-ink"><Text>应来源方要求，这条内容现在只提供摘要。</Text></p>}
               </li>

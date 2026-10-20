@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRouteLoaderData } from "react-router";
 import { POLICY, SITE } from "@aihot/site";
 import type { loader as rootLoader } from "../root";
-import { useChangelogDot } from "../components/shell/Sidebar";
+import { useChangelogDot } from "../components/shell/Header";
 import { PhoneBar } from "../components/shell/PhoneBar";
 import { inNav } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";

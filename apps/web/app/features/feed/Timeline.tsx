@@ -10,7 +10,7 @@ import { FeedItem } from "./FeedItem";
 import { IconChevronDown } from "../../components/icons";
 import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { EmptyState } from "../../components/ui/Page";
-import { beijingDate, beijingTime, beijingWeekday } from "@aihot/contracts/time";
+import { beijingDate, beijingWeekday } from "@aihot/contracts/time";
 import { monthDay, weekdayShort } from "../../lib/format";
 import { isHydrated } from "../../lib/hydration";
 import { markRead, useReadSet } from "../../lib/local-state";
@@ -55,7 +55,7 @@ export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { d
     </>
   );
   return (
-    <div className="bleed sticky top-[var(--bar-h)] z-20 bg-daybar lg:mx-0 lg:bg-bg lg:px-0">
+    <div className="feed-day sticky top-[var(--bar-h)] z-20 bg-bg">
       {/* Phones: a full-width day bar; on the timeline the whole bar folds the day. */}
       {onToggle ? (
         <button type="button" onClick={onToggle} aria-expanded={!collapsed} aria-label={translate(`${collapsed ? "展开" : "收起"}${date}`)} className="flex h-11 w-full items-center gap-2 text-left lg:hidden">
@@ -100,25 +100,16 @@ export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { d
 }
 
 /**
- * One dated slot: the time, the rail (desktop) and the item. As on the original timeline, the rail is a
- * 1px line from this node's centre to the next one's, so the day reads as one continuous thread.
+ * One reading card; its source line holds the time on every screen size.
  */
-export function TimelineSlot({ at, children, fresh = false, delay = 0, dataKey }: { at: string; children: React.ReactNode; fresh?: boolean; delay?: number; dataKey?: string }) {
+export function TimelineSlot({ children, fresh = false, delay = 0, dataKey }: { children: React.ReactNode; fresh?: boolean; delay?: number; dataKey?: string }) {
   return (
     <li
       data-card-key={dataKey}
-      className={`group/slot bleed touch:has-[a:active]:bg-bg-sunk/70 lg:mx-0 lg:px-0 lg:touch:has-[a:active]:bg-transparent ${fresh ? "animate-fade-up" : ""}`}
+      className={`group/slot ${fresh ? "animate-fade-up" : ""}`}
       style={fresh ? { animationDelay: `${delay}ms` } : undefined}
     >
-      {/* Phones: the row without the rail (the item shows its time); a hairline between rows. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] border-b border-line-soft py-3.5 group-last/slot:border-b-0 lg:grid-cols-[64px_22px_minmax(0,1fr)] lg:border-b-0 lg:py-0 lg:pb-3 lg:group-last/slot:pb-0">
-        <time dateTime={at} className="mono hidden text-ink-3 lg:block lg:pt-[17px] lg:text-[12.5px] lg:font-semibold lg:leading-6">
-          <Text>{beijingTime(at)}</Text>
-        </time>
-        <span aria-hidden="true" className="relative hidden lg:block">
-          <span className="absolute -bottom-[41px] left-[10.5px] top-[29px] w-px bg-line-strong group-last/slot:hidden" />
-          <span className="absolute left-[7.5px] top-[25.5px] size-[7px] rounded-full bg-accent shadow-[0_0_0_4px_var(--bg)] transition-transform duration-300 group-hover/slot:scale-[1.15]" />
-        </span>
+      <div className="pb-3 lg:pb-4">
         {children}
       </div>
     </li>
@@ -301,7 +292,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
                     const fresh = freshKeys.has(c.key);
                     const delay = fresh ? Math.min(order++, 10) * 40 : 0;
                     return (
-                      <TimelineSlot key={c.key} dataKey={c.key} at={c.anchorAt} fresh={fresh} delay={delay}>
+                      <TimelineSlot key={c.key} dataKey={c.key} fresh={fresh} delay={delay}>
                         <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id)} onOpen={markRead} at={c.anchorAt} />
                       </TimelineSlot>
                     );

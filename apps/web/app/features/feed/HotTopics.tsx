@@ -33,12 +33,11 @@ export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
   return (
     <section
       aria-labelledby="hot-topics"
-      className="card relative mb-4 overflow-hidden bg-[radial-gradient(120%_90%_at_100%_0%,var(--hot-soft),transparent_55%)] px-3.5 pb-1 pt-2.5 lg:mb-6 lg:px-5 lg:pb-2 lg:pt-3.5"
+      className="hot-editorial card relative mb-4 overflow-hidden px-4 pb-2 pt-4 lg:px-5"
     >
       <div className="flex items-center justify-between lg:mb-1">
         <h2 id="hot-topics" className="flex items-center gap-2 text-[14px] font-semibold text-ink">
           <span className="relative flex size-2" aria-hidden="true">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-hot opacity-40" />
             <span className="relative inline-flex size-2 rounded-full bg-hot" />
           </span><Text>
           当前热点
@@ -55,7 +54,7 @@ export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
               className="group -mx-2 grid min-h-10 sm:min-h-0 grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-tile px-2 py-1.5 transition-colors hover:bg-bg-sunk/70 active:bg-bg-sunk sm:grid-cols-[20px_minmax(0,1fr)_120px_64px_20px] sm:gap-x-4 sm:py-2 dark:hover:bg-bg-muted/40"
             >
               <span className={`num text-center leading-none ${RANK_COLOR[i] ?? "text-[14px] font-bold text-rank-rest"}`}><Text>{e.rank}</Text></span>
-              <span className="line-clamp-1 min-w-0 text-[14.5px] font-semibold leading-[1.5] text-ink transition-colors group-hover:text-accent lg:text-[14px]"><Text>{e.title}</Text></span>
+              <span className="line-clamp-1 min-w-0 text-[14.5px] font-semibold leading-[1.5] text-ink transition-colors group-hover:text-accent lg:text-[14px]"><Text content>{e.title}</Text></span>
               <span className="hidden justify-end sm:flex">
                 <Faces participants={e.participants} total={e.participantCount} size={20} interactive={false} />
               </span>

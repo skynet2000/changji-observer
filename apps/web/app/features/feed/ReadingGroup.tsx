@@ -139,7 +139,7 @@ export function GroupSources({ group, filters, parentId }: { group: GroupInfo; f
                 <time dateTime={r.timelineAt} className="num block text-[11px]"><Text>{monthDayTime(r.timelineAt)}</Text></time>
               </span>
               <Link viewTransition to={`/items/${r.id}`} className="min-w-0 flex-1 truncate text-ink-2 hover:text-accent">
-                <Text>{r.title}</Text>
+                <Text content>{r.title}</Text>
               </Link>
               <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label={translate("打开原文")} className="shrink-0 text-ink-4 hover:text-accent">
                 <IconArrowUpRight size={13} />
@@ -202,7 +202,7 @@ function GroupSheet({ open, onClose, group, filters, parentId }: {
                 <span className="block text-[12.5px] text-ink-4">
                   <Text>{r.source.name}</Text> · <span className="num"><Text>{monthDayTime(r.timelineAt)}</Text></span>
                 </span>
-                <span className="mt-0.5 line-clamp-2 text-[15px] leading-[1.5] text-ink-2"><Text>{r.title}</Text></span>
+                <span className="mt-0.5 line-clamp-2 text-[15px] leading-[1.5] text-ink-2"><Text content>{r.title}</Text></span>
               </Link>
               <a href={r.originalUrl} target="_blank" rel="noopener noreferrer" aria-label={translate("打开原文")} className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full text-ink-4 active:bg-bg-sunk">
                 <IconArrowUpRight size={16} />

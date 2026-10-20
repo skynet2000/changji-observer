@@ -7,12 +7,13 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
   const translate = useText();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); triggerRef.current?.focus(); } };
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -21,22 +22,31 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
     };
   }, [open]);
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }} onKeyDown={event => {
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      if (!open) { setOpen(true); requestAnimationFrame(() => { const entries = ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]'); (["ArrowUp", "End"].includes(event.key) ? entries?.[entries.length - 1] : entries?.[0])?.focus(); }); return; }
+      const entries = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+      const current = entries.indexOf(document.activeElement as HTMLElement);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? entries.length - 1 : current < 0 ? (event.key === "ArrowUp" ? entries.length - 1 : 0) : (current + (event.key === "ArrowUp" ? -1 : 1) + entries.length) % entries.length;
+      entries[next]?.focus();
+    }}>
       <button
+        ref={triggerRef}
         type="button"
         aria-label={translate(label)}
         title={translate(label)}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className={`inline-flex size-8 items-center justify-center rounded-control transition-colors ${open ? "bg-bg-sunk text-ink" : "text-ink-3 hover:bg-bg-sunk hover:text-ink"}`}
+        className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors ${open ? "bg-bg-sunk text-ink" : "text-ink-3 hover:bg-bg-sunk hover:text-ink"}`}
       >
         {trigger}
       </button>
       <Presence show={open} enter="anim-drop-in" exit="anim-drop-out" duration={140}>
         <div
           role="menu"
-          className="absolute top-10 z-50 min-w-[168px] overflow-hidden rounded-tile border border-line bg-raised py-1 shadow-[var(--shadow-pop)] right-0 origin-top-right"
+          className="absolute top-12 z-50 min-w-[168px] overflow-hidden rounded-tile border border-line bg-raised py-1 shadow-[var(--shadow-pop)] right-0 origin-top-right"
         >
           <Text>{children(() => setOpen(false))}</Text>
         </div>
@@ -47,7 +57,7 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
 
 /** One entry of a Menu (a button or a link). */
 export function MenuItem({ icon, children, onSelect, href, download }: { icon?: ReactNode; children: ReactNode; onSelect?: () => void; href?: string; download?: boolean }) {
-  const cls = "flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-ink-2 transition-colors hover:bg-bg-sunk hover:text-ink";
+  const cls = "flex w-full items-center gap-2.5 min-h-11 px-3 py-2 text-left text-[13px] text-ink-2 transition-colors hover:bg-bg-sunk hover:text-ink";
   const inner = (
     <>
       {icon && <span className="text-ink-4">{icon}</span>}

@@ -33,7 +33,7 @@ function Masthead({ report, index, quiet }: { report: ReportDetail; index: Repor
   const mark = dateMark(report.kind, report.key);
   const label = KIND_LABEL[report.kind];
   return (
-    <header className="pt-5 lg:pt-0">
+    <header data-report-masthead="" className="report-masthead pt-5 lg:pt-0">
       <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
         <span className="num"><Text>{dateLine(report.kind, report.key)}</Text></span>
         <span className="hidden tracking-[0.3em] @[640px]:inline"><Text>{MOTTO[report.kind]}</Text></span>
@@ -121,10 +121,10 @@ function Related({ items, className = "" }: { items: ReportCitation[]; className
           <span className="min-w-0 [overflow-wrap:anywhere]">
             {r.available && r.itemId ? (
               <IntentLink viewTransition to={`/items/${r.itemId}`} className="text-ink-2 transition-colors hover:text-accent">
-                <Text>{r.title}</Text>
+                <Text content>{r.title}</Text>
               </IntentLink>
             ) : (
-              <span title={translate(WITHDRAWN_NOTE)} className="text-ink-4 line-through"><Text>{r.title}</Text></span>
+              <span title={translate(WITHDRAWN_NOTE)} className="text-ink-4 line-through"><Text content>{r.title}</Text></span>
             )}
             {r.available && <span className="ml-2 text-[12px] text-ink-4"><Text>{r.sourceName}</Text></span>}
           </span>
@@ -159,13 +159,13 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
           <h3 className="mt-3 text-[19px] font-bold leading-[1.5] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] [text-wrap:pretty] @[880px]:text-[20px]">
             <Text>{c.itemId ? (
               <IntentLink viewTransition to={`/items/${c.itemId}`} className="transition-colors hover:text-accent">
-                <Text>{c.title}</Text>
+                <Text content>{c.title}</Text>
               </IntentLink>
             ) : (
               c.title
             )}</Text>
           </h3>
-          {c.summary && <p className="mt-2 line-clamp-4 text-[15px] leading-[1.85] text-ink-2 [overflow-wrap:anywhere] @[560px]:text-justify"><Text>{c.summary}</Text></p>}
+          {c.summary && <p className="mt-2 line-clamp-4 text-[15px] leading-[1.85] text-ink-2 [overflow-wrap:anywhere] @[560px]:text-justify"><Text content>{c.summary}</Text></p>}
           {!!c.related?.length && <Related items={c.related} className="mt-3" />}
           <div className="mt-auto pt-3">
             <Original c={c} />
@@ -173,7 +173,7 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
         </>
       ) : (
         <p className="mt-3 text-[14px] leading-relaxed text-ink-4">
-          <span className="line-through"><Text>{c.title}</Text></span> · <Text>{WITHDRAWN_NOTE}</Text>
+          <span className="line-through"><Text content>{c.title}</Text></span> · <Text>{WITHDRAWN_NOTE}</Text>
         </p>
       )}
     </article>
@@ -253,7 +253,7 @@ function LeadPicture({ cover, onError, priority = false, className = "" }: { cov
           width={cover.width ?? undefined} height={cover.height ?? undefined}
           alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={onError} className="size-full object-cover" />
       </div>
-      {cover.caption && <figcaption className="mt-2.5 line-clamp-2 text-[12.5px] leading-[1.6] text-ink-4"><Text>图 · </Text><Text>{cover.caption}</Text></figcaption>}
+      {cover.caption && <figcaption className="mt-2.5 line-clamp-2 text-[12.5px] leading-[1.6] text-ink-4"><Text>图 · </Text><Text content>{cover.caption}</Text></figcaption>}
     </figure>
   );
 }
@@ -267,7 +267,7 @@ function Overview({ text }: { text: string }) {
   return (
     <section aria-label={translate("本期导读")} className="border-b border-line py-7 @[880px]:py-9">
       <Kicker><Text>本期导读</Text></Kicker>
-      <p className="mt-4 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[560px]:text-justify @[880px]:text-[17.5px]"><Text>{text}</Text></p>
+      <p className="mt-4 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[560px]:text-justify @[880px]:text-[17.5px]"><Text content>{text}</Text></p>
     </section>
   );
 }
@@ -299,7 +299,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
         <h2 className="order-1 mt-4 text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[560px]:order-2 @[1040px]:text-[48px] @[1040px]:leading-[1.22]">
           <Text>{leadStory?.itemId ? (
             <IntentLink viewTransition to={`/items/${leadStory.itemId}`} className="transition-colors hover:text-accent">
-              <Text>{title}</Text>
+              <Text content>{title}</Text>
             </IntentLink>
           ) : (
             title
@@ -307,7 +307,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
         </h2>
         {dek && (
           <div className={cover && !wide ? "order-3 mt-6 grid gap-6 @[640px]:grid-cols-[minmax(0,1fr)_minmax(0,38%)] @[880px]:mt-7" : "order-3"}>
-            <p className={`text-[16.5px] leading-[1.9] text-ink-2 @[880px]:text-[17.5px] ${cover && !wide ? "" : "mt-6 @[560px]:text-justify @[880px]:mt-7"}`}><Text>{dek}</Text></p>
+            <p className={`text-[16.5px] leading-[1.9] text-ink-2 @[880px]:text-[17.5px] ${cover && !wide ? "" : "mt-6 @[560px]:text-justify @[880px]:mt-7"}`}><Text content>{dek}</Text></p>
             {cover && !wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} />}
           </div>
         )}
@@ -334,7 +334,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
                     <li key={keyOf(h)} className="flex gap-3.5 border-b border-line py-4">
                       <span className="num w-6 shrink-0 text-[26px] font-black leading-[0.95] tracking-[-0.03em] text-ink-4"><Text>{i + 1}</Text></span>
                       <span className="min-w-0 text-[13.5px] leading-[1.55] text-ink-4">
-                        <span className="line-through"><Text>{h.title}</Text></span>
+                        <span className="line-through"><Text content>{h.title}</Text></span>
                         <span className="mt-1 block text-[12px]"><Text>{WITHDRAWN_NOTE}</Text></span>
                       </span>
                     </li>
@@ -345,7 +345,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
                     <Link to={to} viewTransition={to.startsWith("/")} className="group flex gap-3.5 border-b border-line py-4">
                       <span className="num w-6 shrink-0 text-[26px] font-black leading-[0.95] tracking-[-0.03em] text-accent"><Text>{i + 1}</Text></span>
                       <span className="min-w-0">
-                        <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text>{h.title}</Text></span>
+                        <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text content>{h.title}</Text></span>
                         <span className="mt-1.5 block truncate text-[12px] text-ink-4"><Text>{h.sourceName}</Text></span>
                       </span>
                     </Link>
@@ -386,9 +386,9 @@ function QuietFront({ lead }: { lead: NonNullable<ReportDetail["lead"]> }) {
     <section aria-label={translate("头版")} className="pt-10 @[880px]:pt-16">
       <Kicker><Text>头版</Text></Kicker>
       <h2 className="mt-4 text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[1040px]:text-[48px] @[1040px]:leading-[1.22]">
-        <Text>{lead.title}</Text>
+        <Text content>{lead.title}</Text>
       </h2>
-      {lead.leadParagraph && <p className="mt-6 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[880px]:mt-7 @[880px]:text-[17.5px]"><Text>{lead.leadParagraph}</Text></p>}
+      {lead.leadParagraph && <p className="mt-6 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[880px]:mt-7 @[880px]:text-[17.5px]"><Text content>{lead.leadParagraph}</Text></p>}
     </section>
   );
 }
@@ -483,7 +483,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
   // Only a daily comes out with nothing in it: a day the editors judged with nothing new (REPORTS.quiet).
   const quiet = count === 0 && report.flashes.length === 0;
   return (
-    <article className="@container">
+    <article className="report-paper @container">
       <Masthead report={report} index={index} quiet={quiet} />
       {quiet ? (
         report.lead && <QuietFront lead={report.lead} />
@@ -499,7 +499,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
           {p.summary && (
             <p className="border-b border-line py-5 text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
               <span className="mr-2 font-semibold text-accent"><Text>本版导读</Text></span>
-              <Text>{p.summary}</Text>
+              <Text content>{p.summary}</Text>
             </p>
           )}
           <Rows items={p.items}>{(c, cell) => <Story key={`${p.id}-${keyOf(c)}`} c={c} dated={!daily} className={cell} />}</Rows>
@@ -515,15 +515,15 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
                 <span className="min-w-0">
                   {!f.available ? (
                     <span className="text-ink-4">
-                      <span className="line-through"><Text>{f.title}</Text></span>
+                      <span className="line-through"><Text content>{f.title}</Text></span>
                       <span className="ml-2 text-[12px]"><Text>{WITHDRAWN_NOTE}</Text></span>
                     </span>
                   ) : f.itemId ? (
                     <Link viewTransition to={`/items/${f.itemId}`} className="text-ink transition-colors hover:text-accent">
-                      <Text>{f.title}</Text>
+                      <Text content>{f.title}</Text>
                     </Link>
                   ) : (
-                    <span className="text-ink"><Text>{f.title}</Text></span>
+                    <span className="text-ink"><Text content>{f.title}</Text></span>
                   )}
                   {f.available && <span className="ml-2 text-[12px] text-ink-4"><Text>{f.sourceName}</Text></span>}
                   {f.available && f.followUp && <Badge className="ml-2 align-[1px]" title={translate(`${monthDay(f.followUp)}的日报报道过这件事，这里是新进展`)}><Text>跟进</Text></Badge>}

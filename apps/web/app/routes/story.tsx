@@ -157,12 +157,12 @@ function TimelineRow({ r }: { r: StoryReportView }) {
           {r.selected && <SelectedBadge />}
         </div>
         <IntentLink viewTransition to={`/items/${r.id}`} className="mt-1 block text-[16px] font-[650] leading-[1.6] text-ink transition-colors hover:text-accent lg:text-[15.5px]">
-          <Text>{r.title}</Text>
+          <Text content>{r.title}</Text>
         </IntentLink>
         {r.summary && (
           <>
             <p ref={ref} className={`mt-1 text-[14px] leading-[1.75] text-ink-3 ${open ? "" : "line-clamp-2"}`}>
-              <Text>{r.summary}</Text>
+              <Text content>{r.summary}</Text>
             </p>
             {(clamped || open) && (
               <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="mt-1 text-[12.5px] text-note transition-colors hover:text-accent">
@@ -254,7 +254,7 @@ export default function StoryPage() {
           热点事件
           </Text><Badge tone={status.tone}><Text>{status.label}</Text></Badge>
         </div>
-        <h1 data-page-title="" className="mt-2.5 text-[27px] font-bold leading-[1.5] tracking-[-0.01em] text-ink lg:mt-3 lg:text-[36px] lg:font-[730]"><Text>{story.title}</Text></h1>
+        <h1 data-page-title="" className="mt-2.5 text-[27px] font-bold leading-[1.5] tracking-[-0.01em] text-ink lg:mt-3 lg:text-[36px] lg:font-[730]"><Text content>{story.title}</Text></h1>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-ink-3">
           <span className="inline-flex items-center gap-1.5">
             <IconDoc size={15} className="text-ink-4" />
@@ -337,10 +337,10 @@ export default function StoryPage() {
                       <Text>{monthDayTime(d.firstReportAt)}</Text> · <Text>{d.reportCount}</Text><Text> 篇报道
                     </Text></div>
                     <Link viewTransition to={`/items/${d.representative.id}`} className="mt-0.5 block text-[15px] font-semibold leading-snug text-ink transition-colors hover:text-accent">
-                      <Text>{d.title}</Text>
+                      <Text content>{d.title}</Text>
                     </Link>
                     <div className="mt-0.5 truncate text-[12.5px] text-ink-4">
-                      <Text>{d.representative.source.name}</Text>：<Text>{d.representative.title}</Text>
+                      <Text>{d.representative.source.name}</Text>：<Text content>{d.representative.title}</Text>
                     </div>
                   </li>
                 ))}
@@ -406,7 +406,7 @@ export default function StoryPage() {
                   <li key={r.publicId}>
                     <Link viewTransition to={`/story/${r.publicId}`} className="group flex items-baseline gap-3 py-3">
                       <span className="shrink-0 text-[12px] text-ink-4"><Text>{r.relation === "storyline" ? "同一故事线" : "相关事件"}</Text></span>
-                      <span className="min-w-0 flex-1 text-[14.5px] font-medium text-ink-2 transition-colors group-hover:text-accent"><Text>{r.title}</Text></span>
+                      <span className="min-w-0 flex-1 text-[14.5px] font-medium text-ink-2 transition-colors group-hover:text-accent"><Text content>{r.title}</Text></span>
                       <IconChevronRight size={14} className="shrink-0 self-center text-ink-4" />
                     </Link>
                   </li>
@@ -445,7 +445,7 @@ export default function StoryPage() {
                   <li key={r.id} className="py-3">
                     <div className="truncate text-[11.5px] text-ink-4"><Text>{r.source.name}</Text></div>
                     <Link viewTransition to={`/items/${r.id}`} className="group mt-1 block text-[13.5px] font-semibold leading-[1.6] text-ink transition-colors hover:text-accent">
-                      <Text>{r.title}</Text>
+                      <Text content>{r.title}</Text>
                       <IconChevronRight size={13} className="ml-0.5 inline -translate-y-px text-ink-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </li>
