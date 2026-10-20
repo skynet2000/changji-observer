@@ -57,7 +57,7 @@ export function sidebar(): Array<{ title: string; items: NavItem[] }> {
     if (section) section.items.push(...m.sidebar.items);
     else sections.push({ title: m.sidebar.section, items: [...m.sidebar.items] });
   }
-  return [...sections, more];
+  return [...sections, { ...more, items: more.items.filter(i => inNav(i.to)) }];
 }
 
 /** A sidebar entry is lit on its pages; 日报 also covers weekly and monthly reports. */

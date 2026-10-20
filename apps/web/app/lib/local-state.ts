@@ -113,6 +113,21 @@ function subscribeKey(key: string) {
 }
 const subscribeStarred = subscribeKey(KEYS.starred);
 const subscribeRead = subscribeKey(KEYS.read);
+
+/** Optional account modules observe reading edits; appearance and drafts stay on the device. */
+export function subscribeReadingState(listener: () => void) {
+  const stars = subscribeStarred(listener), read = subscribeRead(listener);
+  return () => { stars(); read(); };
+}
+
+export function replaceReadingState(state: { starred: LocalStarredItem[]; read: string[] }): boolean {
+  if (starredUnreadable()) return false;
+  const stars = state.starred.filter(isStarredItem).slice(0, STARRED_LIMIT).map(s => normalizeStarred(s as unknown as Record<string, unknown>));
+  const read = state.read.filter(id => typeof id === "string" && ID_PATTERN.test(id)).slice(0, READ_LIMIT);
+  if (!writeRaw(KEYS.starred, JSON.stringify(stars)) || !writeRaw(KEYS.read, JSON.stringify(read))) return false;
+  invalidate(KEYS.starred); invalidate(KEYS.read);
+  return true;
+}
 const subscribeTheme = subscribeKey(KEYS.theme);
 const subscribeFont = subscribeKey(KEYS.font);
 const subscribeChangelog = subscribeKey(KEYS.changelogSeen);

@@ -39,6 +39,7 @@ const api=createServer((req,res)=>{
   const p=url.pathname;
   res.setHeader('Content-Type','application/json');
   if(p==='/api/site/meta') return res.end(JSON.stringify({changelogVersion:'fixture'}));
+  if(p==='/api/reader/session') return res.end(JSON.stringify({enabled:false,providers:[],user:null}));
   if(p==='/api/site/track'){res.statusCode=204;return res.end();}
   hits.push(req.url!);
   if(p===failing){res.statusCode=503;return res.end(JSON.stringify({code:'unavailable'}));}
