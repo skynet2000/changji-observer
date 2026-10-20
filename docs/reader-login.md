@@ -4,7 +4,7 @@
 
 ## 开放前
 
-默认 `READER_LOGIN_ENABLED=false`，没有配置完整的提供商不会显示对应按钮。先确认下方实际数据处理方式并更新隐私页，再配置凭据、用真实账号完成两个提供商的登录/退出验收，最后开启。不要把 Client Secret 提交到 GitHub、写入前端、发在聊天或截图中；本机填写文件为 `.data/deploy/reader-oauth.env`，发布时经专用 SSH 加密传输到服务器环境文件。
+默认 `READER_LOGIN_ENABLED=false`，没有配置完整的提供商不会显示对应按钮。先确认下方实际数据处理方式并更新隐私页，再配置凭据、用真实账号完成对应提供商的登录/退出验收，最后开放该提供商；尚未验收的提供商保持未配置。不要把 Client Secret 提交到 GitHub、写入前端、发在聊天或截图中；本机填写文件为 `.data/deploy/reader-oauth.env`，发布时经专用 SSH 加密传输到服务器环境文件。
 
 1. 在 [GitHub OAuth Apps](https://github.com/settings/developers) 创建独立应用，首页 `https://innews.site/`，回调 `https://innews.site/api/reader/callback/github`。填入 `READER_GITHUB_CLIENT_ID` 和 `READER_GITHUB_CLIENT_SECRET`。
 2. 在 [Google 身份平台](https://console.cloud.google.com/auth/clients) 创建网站 OAuth 客户端，按实际运营者填写应用信息、首页、使用规则与隐私页，回调为 `https://innews.site/api/reader/callback/google`。配置可用的受众及测试用户/发布状态，填入 `READER_GOOGLE_CLIENT_ID` 和 `READER_GOOGLE_CLIENT_SECRET`。Google 的控制台发布和必要的域名验证需应用所有者完成。
@@ -21,8 +21,12 @@
 
 账号页和接口不做共享缓存，接口有每地址每分钟 60 次的进程内限制。它是基础保护，不替代服务商 DDoS 防护。账号创建、登录和同步均不触发模型调用。
 
-## 待完成验收
+## 实际验收状态（2026-10-21）
 
-两个真实提供商的应用凭据、Google 应用发布状态和真实授权回调尚需配置。假服务测试只能验证本项目流程，不能当作提供商已接通。运营者已于 2026-10-21 确认[隐私增补](reader-privacy-approved.md)，真实提供商验收完成、将增补并入线上隐私页后再开启读者登录，不重复索取相同确认。当前隐私页仍对应匿名运行。
+GitHub 已完成真实授权、登录、同步、退出和再次登录验收。验收中新增收藏写入云端，重新登录后仍可读取；随后取消该测试收藏，文章已读也已保存。隐私增补已并入线上隐私页，GitHub 登录已开放。凭据仅在本机受限配置和服务器私有后端配置中，未进入 GitHub 或前端。
+
+本机回归：类型检查与构建通过，后端 809 项通过，前端 54 项通过、1 项跳过；公网 smoke 与 24 项 HTTP 边界通过。双浏览器上下文同步由自动化测试覆盖，尚需运营者用第二台真实设备进行体验验收。
+
+Google 专用项目已创建，应用名称、支持邮箱、外部用户模式已填好，等待运营者确认 Google 用户数据政策，然后创建网站客户端、配置受众及完成真实回调验收。Google 尚未开放。运营者已确认本站[隐私增补](reader-privacy-approved.md)，不重复索取相同确认；Google 自身政策与新凭据创建由运营者在其控制台完成。
 
 官方协议参考：[Google 网站授权](https://developers.google.com/identity/protocols/oauth2/web-server)、[GitHub 网站授权与 PKCE](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)。
