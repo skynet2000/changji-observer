@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router";
 import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { useChangelogSeen } from "../../lib/local-state";
-import { sidebar, sidebarIsActive, type NavItem } from "./nav";
+import { inNav, sidebar, sidebarIsActive, type NavItem } from "./nav";
 import { ThemeSwitch } from "./ThemeSwitch";
 import { IconGithub } from "../icons";
 
@@ -12,7 +12,7 @@ export function useChangelogDot(latestVersion: string | null): boolean {
   const seen = useChangelogSeen();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  if (!mounted || !latestVersion) return false;
+  if (!mounted || !latestVersion || !inNav("/changelog")) return false;
   return !seen || seen < latestVersion;
 }
 

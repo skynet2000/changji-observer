@@ -5,6 +5,7 @@ import { Reply, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { config } from "@aihot/backend/config";
+import { collectionIntervalMinutes } from "@aihot/site";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { collectSource, collectXShard, scheduleDueSources } from "@aihot/backend/sources/collect";
@@ -146,6 +147,7 @@ test("a failed search fails every account of the shard and moves no watermark", 
 });
 
 test("due accounts are scheduled by shard, not one by one", async () => {
+  await sql`UPDATE sources SET interval_minutes = ${collectionIntervalMinutes()} WHERE id IN ${sql(IDS)}`;
   await sql`UPDATE sources SET next_fetch_at = now() - interval '1 minute' WHERE id = ${IDS[1]!}`;
   await scheduleDueSources();
   const jobs = await sql<{ name: string; data: { sourceId?: string; sourceIds?: string[] } }[]>`

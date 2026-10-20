@@ -1,7 +1,7 @@
 // Collection run for one source: fetch listing → filter → store material → enqueue processing.
 // A failed fetch never advances the success cursor; the source's health reflects consecutive failures.
 import { sql, type Db } from "../db.ts";
-import { COLLECTION_INTERVAL_MINUTES } from "@aihot/site";
+import { collectionIntervalMinutes } from "@aihot/site";
 import { identityKeyFor, reuseExternalMaterialIdentities, STALE_ON_DISCOVERY_MS, upsertMaterial } from "../content/materials.ts";
 import { identityKeyForUrl } from "../lib/url.ts";
 import { sha256 } from "../lib/ids.ts";
@@ -364,6 +364,7 @@ async function scheduleXShards(): Promise<number> {
 
 /** Every minute: enqueue due sources (enabled, not WeChat/external), oldest due first; X accounts by shard. */
 export async function scheduleDueSources(): Promise<{ enqueued: number; shards: number }> {
+  await syncCollectionIntervals();
   const rows = await sql<{ id: string }[]>`
     SELECT id FROM sources
     WHERE enabled AND kind IN ('rss', 'web_list', 'json_list', 'x_search') AND (next_fetch_at IS NULL OR next_fetch_at <= now()) AND NOT (${sharded()})
@@ -376,6 +377,16 @@ export async function scheduleDueSources(): Promise<{ enqueued: number; shards: 
   return { enqueued, shards: await scheduleXShards() };
 }
 
+/** Apply the site's timed interval before selecting work; keep any longer failure backoff. */
+export async function syncCollectionIntervals(): Promise<number> {
+  const minutes = collectionIntervalMinutes();
+  const changed = await sql`
+    UPDATE sources SET interval_minutes = ${minutes}, updated_at = now(),
+      next_fetch_at = greatest(coalesce(next_fetch_at, now()), coalesce(last_fetch_at + make_interval(mins => ${minutes}), now()))
+    WHERE enabled AND interval_minutes <> ${minutes}`;
+  return changed.count;
+}
+
 /** Minutes between reads of a shard: editorial accounts every half hour, hot-signal accounts hourly. */
 const X_SHARD_MINUTES: Record<string, number> = { editorial: 30, hot_signal: 60 };
 const shardMinutes = (mode: string) => X_SHARD_MINUTES[mode] ?? 60;
@@ -385,11 +396,11 @@ const shardMinutes = (mode: string) => X_SHARD_MINUTES[mode] ?? 60;
  * hot_signal sources are allowed to be slower.
  */
 export async function adaptIntervals(): Promise<{ updated: number }> {
+  let updated = await syncCollectionIntervals();
   const rows = await sql<Array<Pick<SourceRow, "id" | "participation_mode" | "kind" | "config" | "cursor"> & { paid_listing: boolean; per_day: number }>>`
     SELECT s.id, s.participation_mode, s.kind, s.config, s.cursor, coalesce(s.config->>'url', '') LIKE 'https://r.jina.ai/%' AS paid_listing,
       (SELECT count(*) FROM articles a WHERE a.source_id = s.id AND a.discovered_at > now() - interval '7 days' AND NOT a.backfill) / 7.0 AS per_day
     FROM sources s WHERE s.enabled AND s.kind IN ('rss', 'web_list', 'json_list', 'x_search')`;
-  let updated = 0;
   for (const r of rows) {
     const perDay = Number(r.per_day);
     // Editorial sites and feeds are looked at hourly at least (they cost nothing);
@@ -399,7 +410,7 @@ export async function adaptIntervals(): Promise<{ updated: number }> {
     // Listings read through Jina are not looked at more than hourly: busy ones would outrun its daily budget.
     const min = r.paid_listing ? 60 : 15;
     // X accounts read by shard follow the shard's pace, whatever their own volume.
-    const target = COLLECTION_INTERVAL_MINUTES ?? (shardHandle(r) ? shardMinutes(r.participation_mode) : perDay <= 0.15 ? max : Math.round(Math.min(max, Math.max(min, (24 * 60) / (perDay * 3)))));
+    const target = collectionIntervalMinutes() ?? (shardHandle(r) ? shardMinutes(r.participation_mode) : perDay <= 0.15 ? max : Math.round(Math.min(max, Math.max(min, (24 * 60) / (perDay * 3)))));
     const res = await sql`UPDATE sources SET interval_minutes = ${target} WHERE id = ${r.id} AND interval_minutes <> ${target}`;
     updated += res.count;
   }

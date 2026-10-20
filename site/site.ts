@@ -9,8 +9,10 @@
  */
 export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
 
-/** 站长确定每小时采集一次，避免每日自适应调频缩短间隔。 */
-export const COLLECTION_INTERVAL_MINUTES = 60;
+/** 北京时间 2026-10-22 起改为每两小时采集；此前保留今天的每小时安排。 */
+export function collectionIntervalMinutes(now = new Date()): number {
+  return now.getTime() < Date.parse("2026-10-22T00:00:00+08:00") ? 60 : 120;
+}
 
 /** “每天 08:00”“每周一 10:00”“每月 1 日 10:30”：写进句子里的出刊时间。 */
 export const EDITION_WHEN = {
@@ -117,10 +119,10 @@ export const POLICY = {
 /** 导航（电脑侧栏、手机底栏、“我的”页）。 */
 export const NAV = {
   /**
-   * 不放进导航的引擎入口，目前只支持热点榜（"/hot"）和主题（"/topics"）。页面照样能打开；原来回到它的返回按钮和链接改回精选，
+   * 不放进导航的引擎入口：热点榜、主题、关于、更新日志。页面照样能打开；原来回到它的返回按钮和链接改回精选，
    * 写 "/hot" 时首页也不放当前热点。
    */
-  hidden: [] as Array<"/hot" | "/topics">,
+  hidden: ["/about", "/changelog"] as Array<"/hot" | "/topics" | "/about" | "/changelog">,
 };
 
 /** 条目卡片和详情页上的几处说法和显示。 */
