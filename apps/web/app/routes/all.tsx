@@ -152,11 +152,14 @@ export default function AllPage() {
             <EmptyState
               title={translate("没有找到相关内容")}
               action={
-                f.q && f.tab === "time" ? (
+                <div className="flex flex-col items-center gap-2">
+                {f.q && f.tab === "time" && (
                   <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline"><Text>
                     试试“全文相关”，连正文一起搜
                   </Text></Link>
-                ) : <FilterRecovery base="/all" />
+                )}
+                <FilterRecovery base="/all" />
+                </div>
               }
             >
               <Text>{f.q ? "换个说法，或者去掉筛选再试。" : "这个筛选下暂时没有内容。"}</Text>

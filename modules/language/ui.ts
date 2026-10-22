@@ -20,7 +20,7 @@ export const englishUi: Record<string, string> = {
   "登录厂际观察": "Sign in to 厂际观察", "我的阅读记录": "My reading", "收藏好内容，换台设备接着读。": "Save good stories. Keep reading on any device.",
   "使用 Google 登录": "Continue with Google", "使用 GitHub 登录": "Continue with GitHub", "无需设置密码 · 首次登录自动创建账号": "No password needed · Your first sign-in creates an account",
   "我的收藏与同步": "Saved stories & sync", "收藏与已读，随身同步": "Sync your reading", "查看我的收藏": "View saved stories",
-  "立即同步": "Sync now", "退出登录": "Sign out", "返回收藏 →": "Back to saved stories →", "导入本机记录": "Import local reading",
+  "立即同步": "Sync now", "退出登录": "Sign out", "导入本机记录": "Import local reading",
   "使用规则": "Terms", "隐私说明": "Privacy", "搜索": "Search", "筛选": "Filters", "取消": "Cancel", "确定": "Confirm",
   "加载更多": "Load more", "加载中…": "Loading…", "暂无内容": "No stories yet", "已读": "Read", "未读": "Unread", "一手": "First-party",
   "全部互联网动态": "All news", "热点": "Trending", "今天": "Today", "已经到底了": "You're all caught up", "推荐理由：": "Why it matters: ", "往期日报": "Archive",

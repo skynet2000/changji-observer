@@ -68,7 +68,7 @@ export default function Account() {
         <label className="mt-4 flex items-start gap-2"><input className="mt-0.5" type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} /><Text>我确认删除本站账号与云端记录</Text></label>
         <button disabled={busy || !confirmed} className={`${button} mt-3 w-full text-hot`} onClick={() => act(() => endReader(true))}><Text>永久删除本站账号</Text></button>
       </details>}
-      <div className="mt-6 text-center"><Link to="/starred" className="text-[13px] text-ink-3 hover:text-accent"><Text>返回收藏 →</Text></Link></div>
+      {!reader.user && <div className="mt-6 text-center"><Link to="/starred" className="text-[13px] text-ink-3 hover:text-accent"><Text>查看我的收藏</Text></Link></div>}
     </div>
   </div>;
 }

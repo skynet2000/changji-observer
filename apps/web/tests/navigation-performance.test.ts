@@ -60,7 +60,8 @@ const api=createServer((req,res)=>{
   }
   if(p==='/api/site/pool'){
     const page=Number(url.searchParams.get('page')||1);
-    return res.end(JSON.stringify({filters:{channel:url.searchParams.get('channel')??'all',category:url.searchParams.get('category'),tag:url.searchParams.get('tag'),q:url.searchParams.get('q'),tab:'time'},items:[{...item,title:'全部第 '+page+' 页',...(url.searchParams.get('tag')==='group-test'?{group:{factId:'group-fixture',scope:'story',developmentCount:3,reportCount:3,additionalSourceCount:0}}:{})}],page,pageCount:3,total:3,todayCount:1,freshness:at}));
+    const empty=url.searchParams.get('q')==='empty-query';
+    return res.end(JSON.stringify({filters:{channel:url.searchParams.get('channel')??'all',category:url.searchParams.get('category'),tag:url.searchParams.get('tag'),q:url.searchParams.get('q'),tab:url.searchParams.get('tab')==='relevance'?'relevance':'time'},items:empty?[]:[{...item,title:'全部第 '+page+' 页',...(url.searchParams.get('tag')==='group-test'?{group:{factId:'group-fixture',scope:'story',developmentCount:3,reportCount:3,additionalSourceCount:0}}:{})}],page,pageCount:empty?0:3,total:empty?0:3,todayCount:1,freshness:at}));
   }
   if(p==='/api/site/items/navigation-fixture')return res.end(JSON.stringify(detail));
   if(p==='/api/site/items/navigation-fixture/original')return res.end(JSON.stringify({...detail,body:{zh:null,original:'<p>Original fixture</p>',zhKind:null,complete:true},bodyLanguage:'original'}));
@@ -507,4 +508,21 @@ test('desktop source filters are reachable and preserve category and search',asy
     await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toBeVisible();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false);
   }finally{await context.close();}
+});
+
+
+test('empty searches can clear filters without losing their query and explain full-text ordering',async()=>{
+  for(const width of [390,1280]){
+    const context=await chrome.newContext({viewport:{width,height:900}});
+    const page=await context.newPage();
+    try{
+      await page.goto(origin+'/all?category=career&channel=firstParty&q=empty-query&tag=组织调整');
+      await expect(page.getByRole('link',{name:'清除筛选',exact:true})).toBeVisible();
+      await page.getByRole('link',{name:'试试“全文相关”，连正文一起搜',exact:true}).click();
+      await expect(page.getByText('按全文相关程度排列 · 同一事件合并展示，可展开查看进展')).toBeVisible();
+      await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tab')==='relevance');
+      await page.getByRole('link',{name:'清除筛选',exact:true}).click();
+      await expect(page).toHaveURL(url=>url.searchParams.get('q')==='empty-query'&&!url.searchParams.has('category')&&!url.searchParams.has('channel')&&!url.searchParams.has('tag'));
+    }finally{await context.close();}
+  }
 });

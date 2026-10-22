@@ -73,14 +73,14 @@ test("two devices import deliberately, merge concurrent stars, synchronize remov
     await pb.getByRole("button", { name: "导入本机原有收藏与已读", exact: true }).click();
     await expect.poll(() => state.starred.length).toBe(2);
     await pa.getByRole("button", { name: "立即同步", exact: true }).click();
-    await pa.getByRole("link", { name: "返回收藏 →", exact: true }).click();
+    await pa.getByRole("link", { name: "查看我的收藏", exact: true }).click();
     await expect(pa.locator('[data-card-key="guest-b"]')).toBeVisible();
     await pa.locator('[data-card-key="guest-a"]').getByRole("button", { name: "取消收藏" }).click();
     await expect.poll(() => state.starred.map(x => x.id)).toEqual(["guest-b"]);
     await pb.getByRole("button", { name: "立即同步", exact: true }).click();
     await pb.getByRole("button", { name: "退出登录", exact: true }).click();
     await expect(pb.getByRole("link", { name: "使用 GitHub 登录", exact: true })).toBeVisible();
-    await pb.getByRole("link", { name: "返回收藏 →", exact: true }).click();
+    await pb.getByRole("link", { name: "查看我的收藏", exact: true }).click();
     await expect(pb.locator('[data-card-key="guest-b"]')).toBeVisible();
     await expect(pb.locator('[data-card-key="guest-a"]')).toHaveCount(0);
     assert.ok(state.read.includes("guest-a") && state.read.includes("guest-b"));
