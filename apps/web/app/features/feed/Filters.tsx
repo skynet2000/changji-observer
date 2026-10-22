@@ -1,8 +1,8 @@
 import { Text, useText } from "@aihot/web/lib/text";
-// Categories are always visible; the phone sheet also offers source filters and a reset action.
+// Categories stay visible; the sheet repeats them and offers a reset action.
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
-import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
+import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, type CategoryKey } from "@aihot/contracts/taxonomy";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { Sheet } from "../../components/ui/Sheet";
 import { IntentLink } from "../../components/ui/IntentLink";
@@ -24,7 +24,7 @@ function hrefWith(base: string, params: URLSearchParams, patch: Record<string, s
   return s ? `${base}?${s}` : base;
 }
 
-/** Category, source channel, tag and search are independent filters. */
+/** Category, tag and search are independent filters. */
 function filterOptions(base: string, params: URLSearchParams, noneLabel: string) {
   return [
     { key: "all", label: noneLabel, to: hrefWith(base, params, { category: null }) },
@@ -64,12 +64,12 @@ export function CategoryTabs({ base, category, className = "" }: { base: string;
 }
 
 /** The phone page title and tools. Page switching lives only in the bottom navigation. */
-export function FeedBar({ base, category, channel }: { base: "/" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
+export function FeedBar({ base, category }: { base: "/" | "/all"; category: CategoryKey | null }) {
   return <PhoneBar
     leading={<h1 className="pl-2.5 text-[20px] font-semibold text-ink"><Text>{base === "/" ? "精选" : "全部动态"}</Text></h1>}
     actions={
       <>
-        <FilterButton base={base} category={category} channel={channel} />
+        <FilterButton base={base} category={category} />
         <SearchButton />
       </>
     }
@@ -77,11 +77,11 @@ export function FeedBar({ base, category, channel }: { base: "/" | "/all"; categ
 }
 
 /** The same category control is available while reading a feed or searching it. */
-export function FilterButton({ base, category, channel, desktop = false }: { base: string; category: CategoryKey | null; channel: ChannelKey; desktop?: boolean }) {
+export function FilterButton({ base, category, desktop = false }: { base: string; category: CategoryKey | null; desktop?: boolean }) {
   const translate = useText();
   const [params] = useSearchParams();
   const [sheet, setSheet] = useState(false);
-  const count = Number(!!category) + Number(channel !== "all") + Number(params.has("tag"));
+  const count = Number(!!category) + Number(params.has("tag"));
   const filtered = count > 0;
   return <>
     {desktop ? <button type="button" aria-label={translate(filtered ? "筛选（已选）" : "筛选")} onClick={() => setSheet(true)}
@@ -91,12 +91,12 @@ export function FilterButton({ base, category, channel, desktop = false }: { bas
       <IconFilter size={21} />
       {filtered && <span aria-hidden="true" className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-contrast ring-2 ring-bg">{count}</span>}
     </BarButton>}
-    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} channel={channel} filtered={filtered} centered={desktop} />
+    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} filtered={filtered} centered={desktop} />
   </>;
 }
 
 /** Phones: the filter as a sheet of options, the one in use ticked; choosing one applies it. */
-function FilterSheet({ open, onClose, base, active, channel, filtered, centered }: { open: boolean; onClose: () => void; base: string; active: string; channel: ChannelKey; filtered: boolean; centered: boolean }) {
+function FilterSheet({ open, onClose, base, active, filtered, centered }: { open: boolean; onClose: () => void; base: string; active: string; filtered: boolean; centered: boolean }) {
   const translate = useText();
   const [params] = useSearchParams();
   return (
@@ -121,15 +121,7 @@ function FilterSheet({ open, onClose, base, active, channel, filtered, centered 
         })}
       </nav>
       <p className="mt-3 text-[12px] leading-relaxed text-ink-4"><Text>点击即生效；各项条件叠加筛选。</Text></p>
-      <h3 className="mb-2 mt-5 text-[12px] font-medium text-ink-4"><Text>内容来源</Text></h3>
-      <nav aria-label={translate("内容来源")} className="grid grid-cols-2 gap-2">
-        {(["all", "news", "x", "firstParty"] as const).map(key => <Link key={key} to={hrefWith(base, params, { channel: key === "all" ? null : key })} onClick={onClose}
-          aria-current={key === channel ? "true" : undefined}
-          className={`flex min-h-11 items-center justify-between rounded-tile border px-3 text-[14px] ${key === channel ? "border-accent/30 bg-accent-soft font-semibold text-accent" : "border-line text-ink hover:bg-bg-sunk"}`}>
-          <Text>{key === "all" ? "全部来源" : CHANNEL_LABELS[key]}</Text>{key === channel && <IconCheck size={17} />}
-        </Link>)}
-      </nav>
-      {filtered && <Link to={hrefWith(base, params, { category: null, channel: null, tag: null })} onClick={onClose} className="mt-5 flex min-h-11 items-center justify-center rounded-tile bg-bg-sunk text-[14px] font-medium text-ink-2"><Text>清除筛选</Text></Link>}
+      {filtered && <Link to={hrefWith(base, params, { category: null, tag: null })} onClick={onClose} className="mt-5 flex min-h-11 items-center justify-center rounded-tile bg-bg-sunk text-[14px] font-medium text-ink-2"><Text>清除筛选</Text></Link>}
       </div>
     </Sheet>
   );
@@ -138,23 +130,21 @@ function FilterSheet({ open, onClose, base, active, channel, filtered, centered 
 /** Empty lists offer a way out without making readers hunt for the filter controls. */
 export function FilterRecovery({ base }: { base: "/" | "/all" }) {
   const [params] = useSearchParams();
-  const filtered = ["category", "channel", "tag"].some(key => params.has(key));
+  const filtered = ["category", "tag"].some(key => params.has(key));
   return <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-[13px] font-medium text-accent">
-    {filtered && <Link to={hrefWith(base, params, { category: null, channel: null, tag: null })} className="inline-flex min-h-11 items-center hover:underline"><Text>清除筛选</Text></Link>}
+    {filtered && <Link to={hrefWith(base, params, { category: null, tag: null })} className="inline-flex min-h-11 items-center hover:underline"><Text>清除筛选</Text></Link>}
     {base === "/" && <Link to={hrefWith("/all", params, {})} className="inline-flex min-h-11 items-center hover:underline"><Text>查看全部动态</Text></Link>}
   </div>;
 }
 
-/** Phones: the filter and tag in use as chips under the bar; each one clears itself when tapped. */
-export function ActiveFilters({ base, channel, tag }: { base: string; channel: ChannelKey; tag: string | null }) {
+/** Phones: the tag in use as chips under the bar; each one clears itself when tapped. */
+export function ActiveFilters({ base, tag }: { base: string; tag: string | null }) {
   const translate = useText();
   const [params] = useSearchParams();
-  const sourceLabel = channel !== "all" ? CHANNEL_LABELS[channel] : null;
-  if (!sourceLabel && !tag) return null;
+  if (!tag) return null;
   const chip = "inline-flex min-h-11 max-w-full items-center gap-1 rounded-full bg-accent-soft pl-3 pr-2 text-[13px] font-medium text-accent transition-opacity active:opacity-60";
   return (
     <div className="flex flex-wrap gap-2 pb-3 pt-1">
-      {sourceLabel && <Link to={hrefWith(base, params, { channel: null })} aria-label={translate(`取消筛选：${translate(sourceLabel)}`)} className={chip}><Text>{sourceLabel}</Text><IconClose size={14} /></Link>}
       {tag && (
         <Link to={hrefWith(base, params, { tag: null })} aria-label={translate(`取消标签：${tag}`)} className={chip}>
           <span className="truncate">#<Text>{tag}</Text></span>

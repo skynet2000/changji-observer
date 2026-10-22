@@ -46,7 +46,7 @@ export const inNav = (to: string) => !(NAV.hidden as readonly string[]).includes
 /** Switching feed scope keeps content filters, but never search ranking or pagination. */
 export function feedScopeHref(to: string, params: URLSearchParams): string {
   const next = new URLSearchParams();
-  for (const key of ["category", "channel", "tag"]) {
+  for (const key of ["category", "tag"]) {
     const value = params.get(key);
     if (value) next.set(key, value);
   }

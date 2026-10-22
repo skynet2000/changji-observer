@@ -27,6 +27,11 @@ const ALL_TITLE = subjectAfter("全部", "动态");
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
+  // Source channels remain an API capability; reader feeds always include every source.
+  if (url.searchParams.has("channel")) {
+    url.searchParams.delete("channel");
+    throw redirect(url.pathname + url.search);
+  }
   const q = url.searchParams.get("q")?.trim().slice(0, 200) || null;
   const tab = url.searchParams.get("tab") === "relevance" ? "relevance" : null;
   // Older deep-paging parameters (deep, anchorAt) still open a normal page.
@@ -50,7 +55,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const noindex = !!q || hasFeedFilters(f);
   return pageMeta({
     title,
-    description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按频道、类别与标签筛选，支持中英文搜索。`,
+    description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按栏目与标签筛选，支持中英文搜索。`,
     path,
     noindex,
     jsonLd: noindex ? undefined : itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
@@ -75,8 +80,8 @@ export default function AllPage() {
   const navigation = useNavigation();
   const f = data.filters;
   const busy = navigation.state === "loading" && navigation.location?.pathname === "/all";
-  const { channel, category } = filterParams(f);
-  const keep = { channel, category, tag: f.tag };
+  const { category } = filterParams(f);
+  const keep = { category, tag: f.tag };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);
     sp.delete("page");
@@ -101,7 +106,7 @@ export default function AllPage() {
       {f.q ? (
         <PhoneBar
           back={{ to: "/all", label: "全部" }}
-          actions={<FilterButton base="/all" category={f.category} channel={f.channel} />}
+          actions={<FilterButton base="/all" category={f.category} />}
           center={
             <button type="button" onClick={(event) => openSearch(f.q ?? "", event.currentTarget)} className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-bg-sunk px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60">
               <IconSearch size={16} className="shrink-0 text-ink-4" />
@@ -110,10 +115,10 @@ export default function AllPage() {
           }
         />
       ) : (
-        <FeedBar base="/all" category={f.category} channel={f.channel} />
+        <FeedBar base="/all" category={f.category} />
       )}
       <CategoryTabs base="/all" category={f.category} className="mobile-category-tabs lg:hidden" />
-      <ActiveFilters base="/all" channel={f.channel} tag={f.tag} />
+      <ActiveFilters base="/all" tag={f.tag} />
 
       {!f.q && !f.tag && <FeedMasthead all />}
 
@@ -123,7 +128,7 @@ export default function AllPage() {
         <div className="feed-filter-row">
           <CategoryTabs base="/all" category={f.category} />
           <div className="ml-auto flex items-center gap-3">
-            <FilterButton desktop base="/all" category={f.category} channel={f.channel} />
+            <FilterButton desktop base="/all" category={f.category} />
             <SearchField defaultValue={f.q ?? ""} keep={keep} />
           </div>
         </div>

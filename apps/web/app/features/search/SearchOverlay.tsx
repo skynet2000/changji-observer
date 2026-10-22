@@ -62,7 +62,7 @@ export function SearchOverlay() {
   const { key, pathname, search } = useLocation();
   const params = new URLSearchParams(search);
   const filters: [string, string][] = pathname === "/" || pathname === "/all"
-    ? ["category", "channel", "tag"].flatMap(key => params.has(key) ? [[key, params.get(key)!] as [string, string]] : []) : [];
+    ? ["category", "tag"].flatMap(key => params.has(key) ? [[key, params.get(key)!] as [string, string]] : []) : [];
   const searchHref = (q: string) => `/all?${new URLSearchParams([...filters, ["q", q]])}`;
   const [more, setMore] = useState<Awaited<ReturnType<typeof loadSuggestions>> | null>(null);
 

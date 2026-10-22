@@ -1,24 +1,25 @@
-// 站点的字标和圆环标记：页面用 Wordmark 画站名（size 是高度，单位像素），RingMark 是小标记，转起来就是加载动画。
-// 这里用站名排字；有自己的 Logo 时，把 Wordmark 换成你的 SVG（保持同样的参数）。
 import { SITE } from "../site.ts";
 
-export function Wordmark({ size = 24, className = "", title = SITE.name }: { size?: number; className?: string; title?: string }) {
-  return (
-    <span className={`inline-flex items-center font-black leading-none tracking-[-0.03em] ${className}`} style={{ fontSize: Math.round(size * 0.92) }} aria-label={title} role="img">
-      <svg aria-hidden="true" viewBox="0 0 28 28" className="mr-[0.4em] h-[1.2em] w-[1.2em] text-accent" fill="none"><path d="M11 3H3v22h22v-8M17 3h8v8M9 18l16-15" stroke="currentColor" strokeWidth="2.8" strokeLinejoin="round"/><path d="M9 11v7h7" stroke="currentColor" strokeWidth="2.8" /></svg>
-      <span aria-hidden="true">{SITE.name}</span>
-    </span>
-  );
+/** Two company boundaries and one observation point, legible even as a small app icon. */
+function ObservationMark({ className = "", spinning = false }: { className?: string; spinning?: boolean }) {
+  return <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+    <rect width="40" height="40" rx="12" fill="#10213d" />
+    <g className={spinning ? "brand-mark-spinning" : undefined}>
+      <path d="M18 10h-6l-4 4v16" stroke="#93b7ff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 30h6l4-4V10" stroke="#65dfeb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+    <circle cx="20" cy="20" r="3.5" fill="#fff" />
+  </svg>;
 }
 
-/** A ring with a dot; spinning, it is the loader. */
+export function Wordmark({ size = 24, className = "", title = SITE.name }: { size?: number; className?: string; title?: string }) {
+  return <span className={`brand-wordmark inline-flex items-center gap-[0.45em] font-black leading-none tracking-[-0.04em] ${className}`} style={{ fontSize: Math.round(size * 0.92) }} aria-label={title} role="img">
+    <ObservationMark className="size-[1.5em] shrink-0" />
+    <span aria-hidden="true">{SITE.name}</span>
+  </span>;
+}
+
+/** Shared brand mark for the account entry and loading states. */
 export function RingMark({ className = "", spinning = false }: { className?: string; spinning?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g style={spinning ? { transformOrigin: "12px 12px", animation: "spin-slow 1.1s linear infinite" } : undefined}>
-        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeDasharray="42 15" />
-      </g>
-      <circle cx="12" cy="12" r="2.6" fill="currentColor" />
-    </svg>
-  );
+  return <ObservationMark className={className} spinning={spinning} />;
 }

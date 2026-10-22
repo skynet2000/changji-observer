@@ -385,7 +385,7 @@ test('reader navigation has four categories on desktop and phone; old model link
         const categories=dialog.getByRole('navigation',{name:'栏目',exact:true});
         for(const label of ['不限',...labels.slice(1)])await expect(categories.getByRole('link',{name:label,exact:true})).toBeVisible();
         await expect(categories.getByRole('link')).toHaveCount(5);
-        await expect(dialog.getByRole('navigation',{name:'内容来源',exact:true}).getByRole('link')).toHaveCount(4);
+        await expect(dialog.getByRole('navigation',{name:'内容来源',exact:true})).toHaveCount(0);
       }else{
         const nav=page.getByRole('navigation',{name:'筛选',exact:true});
         assert.deepEqual(await nav.getByRole('link').allTextContents(),labels);
@@ -397,19 +397,19 @@ test('reader navigation has four categories on desktop and phone; old model link
   }
 });
 
-test('feed scope keeps the same category, channel and tag on desktop and phones, without carrying search or pages',async()=>{
+test('feed scope keeps the same category and tag, clearing legacy source filters on desktop and phones, without carrying search or pages',async()=>{
   for(const width of [390,1280]){
     const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();
     try{
       await page.goto(origin+'/all?category=career&channel=firstParty&tag=组织调整&q=岗位&tab=relevance&page=2');
       const featured=page.getByRole('navigation',{name:width===1280?'主导航':'底部导航',exact:true}).getByRole('link',{name:'精选',exact:true});
       await featured.click();
-      await expect(page).toHaveURL(url=>url.pathname==='/'&&url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tag')==='组织调整'&&!url.searchParams.has('page')&&!url.searchParams.has('q')&&!url.searchParams.has('tab'));
+      await expect(page).toHaveURL(url=>url.pathname==='/'&&url.searchParams.get('category')==='career'&&!url.searchParams.has('channel')&&url.searchParams.get('tag')==='组织调整'&&!url.searchParams.has('page')&&!url.searchParams.has('q')&&!url.searchParams.has('tab'));
       const all=page.getByRole('navigation',{name:width===1280?'主导航':'底部导航',exact:true}).getByRole('link',{name:width===1280?'全部互联网动态':'全部',exact:true});
       await all.click();
       await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
       await expect(page.getByRole('link',{name:'取消标签：组织调整',exact:true})).toBeVisible();
-      await page.getByRole('link',{name:'取消筛选：一手',exact:true}).click();
+      await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toHaveCount(0);
       await expect(page).toHaveURL(url=>!url.searchParams.has('channel')&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     }finally{await context.close();}
@@ -446,15 +446,16 @@ test('phone navigation marks All independently, category rail is visible and rep
   }
 });
 
-test('phone source filter applies independently and clear filters preserves the current search',async()=>{
+test('phone category filter applies independently and clear filters preserves the current search',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
   try{
     await page.goto(origin+'/all?category=career&tag=组织调整&q=岗位');
     const button=page.getByRole('button',{name:'筛选（已选）',exact:true});
     await expect(button).toContainText('2');await button.click();
-    await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('navigation',{name:'内容来源',exact:true}).getByRole('link',{name:'一手',exact:true}).click();
-    await expect(page).toHaveURL(url=>url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
-    await expect(button).toContainText('3');await button.click();
+    await expect(page.getByRole('dialog').getByText('内容来源',{exact:true})).toHaveCount(0);
+    await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务与产品',exact:true}).click();
+    await expect(page).toHaveURL(url=>!url.searchParams.has('channel')&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='ai-products'&&url.searchParams.get('tag')==='组织调整');
+    await expect(button).toContainText('2');await button.click();
     await expect(page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('link',{name:'清除筛选',exact:true})).toBeInViewport({ratio:0.99});
     await page.screenshot({path:'outputs/手机导航-筛选面板-20261021.png',fullPage:true});
     await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('link',{name:'清除筛选',exact:true}).click();
@@ -464,14 +465,14 @@ test('phone source filter applies independently and clear filters preserves the 
   }finally{await context.close();}
 });
 
-test('category changes reset pagination but keep active source, search and tag; desktop can clear a tag',async()=>{
+test('category changes reset pagination but keep search and tag; desktop can clear a tag',async()=>{
   const context=await chrome.newContext({viewport:{width:1024,height:900}}),page=await context.newPage();
   try{
     await page.goto(origin+'/all?channel=firstParty&tag=组织调整&q=岗位&page=2&deep=1&anchorAt=old');
     await page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
-    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('q')==='岗位'&&!['page','deep','anchorAt'].some(key=>url.searchParams.has(key)));
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&!url.searchParams.has('channel')&&url.searchParams.get('q')==='岗位'&&!['page','deep','anchorAt'].some(key=>url.searchParams.has(key)));
     await page.getByRole('link',{name:'取消标签：组织调整',exact:true}).click();
-    await expect(page).toHaveURL(url=>!url.searchParams.has('tag')&&url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty');
+    await expect(page).toHaveURL(url=>!url.searchParams.has('tag')&&url.searchParams.get('category')==='career'&&!url.searchParams.has('channel'));
     await expect(page.getByRole('navigation',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true})).toHaveAttribute('aria-current','page');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
@@ -485,15 +486,15 @@ test('phone search preserves feed filters and can change category without losing
     const search=page.getByRole('dialog',{name:'搜索',exact:true});
     await search.getByRole('searchbox').fill('岗位');
     await search.getByRole('searchbox').press('Enter');
-    await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='industry'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tag')==='组织调整');
+    await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='industry'&&!url.searchParams.has('channel')&&url.searchParams.get('tag')==='组织调整');
     await page.getByRole('button',{name:'筛选（已选）',exact:true}).click();
     await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
-    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('channel')==='firstParty');
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&!url.searchParams.has('channel'));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
 });
 
-test('desktop source filters are reachable and preserve category and search',async()=>{
+test('desktop category filters are reachable and preserve search',async()=>{
   const context=await chrome.newContext({viewport:{width:1280,height:900}});
   const page=await context.newPage();
   try{
@@ -502,10 +503,11 @@ test('desktop source filters are reachable and preserve category and search',asy
     await filters.click();
     const dialog=page.getByRole('dialog',{name:'筛选',exact:true});
     await expect(dialog.getByText('点击即生效；各项条件叠加筛选。')).toBeVisible();
-    await dialog.getByRole('link',{name:'一手',exact:true}).click();
-    await expect(page).toHaveURL(/category=career.*q=.*channel=firstParty/);
+    await expect(dialog.getByText('内容来源',{exact:true})).toHaveCount(0);
+    await dialog.getByRole('link',{name:'行业观察',exact:true}).click();
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='opinion'&&url.searchParams.get('q')==='招聘'&&!url.searchParams.has('channel'));
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toHaveCount(0);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false);
   }finally{await context.close();}
 });
@@ -520,7 +522,7 @@ test('empty searches can clear filters without losing their query and explain fu
       await expect(page.getByRole('link',{name:'清除筛选',exact:true})).toBeVisible();
       await page.getByRole('link',{name:'试试“全文相关”，连正文一起搜',exact:true}).click();
       await expect(page.getByText('按全文相关程度排列 · 同一事件合并展示，可展开查看进展')).toBeVisible();
-      await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('channel')==='firstParty'&&url.searchParams.get('tab')==='relevance');
+      await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&!url.searchParams.has('channel')&&url.searchParams.get('tab')==='relevance');
       await page.getByRole('link',{name:'清除筛选',exact:true}).click();
       await expect(page).toHaveURL(url=>url.searchParams.get('q')==='empty-query'&&!url.searchParams.has('category')&&!url.searchParams.has('channel')&&!url.searchParams.has('tag'));
     }finally{await context.close();}

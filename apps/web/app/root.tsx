@@ -24,10 +24,10 @@ import { titled } from "./lib/seo";
 import { webModules } from "./site-modules";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico", sizes: "any" },
-  { rel: "icon", type: "image/png", href: "/icon.png" },
-  { rel: "apple-touch-icon", href: "/apple-icon.png" },
-  { rel: "manifest", href: "/manifest.webmanifest" },
+  { rel: "icon", href: "/favicon.ico?v=observer-20261023", sizes: "any" },
+  { rel: "icon", type: "image/png", href: "/icon.png?v=observer-20261023" },
+  { rel: "apple-touch-icon", href: "/apple-icon.png?v=observer-20261023" },
+  { rel: "manifest", href: "/manifest.webmanifest?v=observer-20261023" },
   { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — 精选`, href: "/feed.xml" },
 ];
 
@@ -56,8 +56,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         {documentRelease && <meta name="aihot-release" content={documentRelease} />}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f5f1" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171b22" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f6fc" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1524" />
         <meta name="apple-mobile-web-app-title" content={SITE.name} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         {webModules().map((m) => m.root?.bootScript && <script key={m.name} dangerouslySetInnerHTML={{ __html: m.root.bootScript }} />)}

@@ -20,6 +20,11 @@ export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
+  // Source channels remain an API capability; reader feeds always include every source.
+  if (url.searchParams.has("channel")) {
+    url.searchParams.delete("channel");
+    throw redirect(url.pathname + url.search);
+  }
   const q = url.searchParams.get("q");
   // Search lives on /all; keep the parameters so old links still land on results.
   if (q && q.trim()) throw redirect(`/all${url.search}`);
@@ -40,18 +45,18 @@ export default function Home() {
   const title = filters.tag ? `#${filters.tag}` : "精选";
   return (
     <div className="pb-6">
-      {/* Phones: the page title, visible categories, active source/tag filters, then the news. */}
-      <FeedBar base="/" category={filters.category} channel={filters.channel} />
+      {/* Phones: the page title, visible categories, active tags, then the news. */}
+      <FeedBar base="/" category={filters.category} />
       <CategoryTabs base="/" category={filters.category} className="mobile-category-tabs lg:hidden" />
-      <ActiveFilters base="/" channel={filters.channel} tag={filters.tag} />
+      <ActiveFilters base="/" tag={filters.tag} />
       <FeedMasthead />
       <div className="hidden lg:block">
         <h2 className="sr-only"><Text>{title}</Text></h2>
         <div className="feed-filter-row">
           <CategoryTabs base="/" category={filters.category} />
           <div className="ml-auto flex items-center gap-3">
-            <FilterButton desktop base="/" category={filters.category} channel={filters.channel} />
-            <SearchField keep={{ category: filters.category, channel: filters.channel === "all" ? null : filters.channel, tag: filters.tag }} />
+            <FilterButton desktop base="/" category={filters.category} />
+            <SearchField keep={{ category: filters.category, tag: filters.tag }} />
           </div>
         </div>
       </div>
