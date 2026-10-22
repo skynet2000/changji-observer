@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
 import { chromium, expect, type Browser } from "@playwright/test";
-import type { FeedItemSummary, ReportDetail } from "@aihot/contracts/site";
+import type { FeedItemSummary, GroupInfo, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 const at = "2026-10-21T01:00:00Z";
 const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局京东与抖音因采销经理朋友圈互诉", summary: "公司与员工沟通组织调整，涉及十个部门。", reason: "关系员工发展。", source: { name: "第一财经 · 科技" },
@@ -14,6 +14,7 @@ const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1,
 const translated: Record<string, string> = { [item.title]: "JD and Douyin sue each other over a procurement manager’s social post ahead of Singles’ Day", [item.summary!]: "The company communicates organisational changes affecting ten departments to employees.",
   [item.reason!]: "Relevant to employees' careers.", "本期关注公司组织调整与岗位变化。": "This issue focuses on organisational changes and employee roles." };
 let dense = false;
+let group: GroupInfo | null = null;
 const lookupSizes: number[] = [];
 const failedTexts: string[] = [];
 const longItems = Array.from({ length: 32 }, (_, i) => ({ ...item, id: `long-${i}`, title: `长标题${i}`, summary: `${"长摘要".repeat(1300)}${i}` }));
@@ -24,7 +25,7 @@ const api = createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
   if (path === "/api/site/meta") return res.end('{"changelogVersion":null}');
   if (path === "/api/reader/session") return res.end('{"enabled":true,"providers":["google","github"],"user":null}');
-  if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: (dense ? longItems : [item]).map(item => ({ key: item.id, anchorAt: at, item, group: null })), nextCursor: null, hot: null, dayCounts: { "2026-10-21": dense ? longItems.length : 1 } }));
+  if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: (dense ? longItems : [item]).map(item => ({ key: item.id, anchorAt: at, item, group })), nextCursor: null, hot: null, dayCounts: { "2026-10-21": dense ? longItems.length : 1 } }));
   if (path === "/api/site/reports/daily/latest-page") return res.end(JSON.stringify({ index: [{ key: report.key, issueNumber: 1, title: report.title }], report }));
   if (path === "/api/language/lookup") {
     lookups++;
@@ -103,6 +104,25 @@ test("a new source name uses its saved translation, alongside translated article
     await page.getByRole("button", { name: "Switch to Chinese", exact: true }).click();
     await expect(page.getByText(item.source.name, { exact: true })).toBeVisible();
   } finally { item.source.name = original; await context.close(); }
+});
+
+test("English count labels work without saved translations and long source names fit phone cards", async () => {
+  const original = item.source.name;
+  item.source.name = "21世纪经济报道 · 公司";
+  group = { factId: "language-group", additionalSourceCount: 1, reportCount: 2 };
+  try {
+    for (const width of [320, 390, 768]) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } }), page = await context.newPage();
+      try {
+        await page.goto(web.origin + "/");
+        await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+        await expect(page.getByRole("heading", { name: translated[item.title], exact: true })).toBeVisible();
+        await expect(page.getByText("1 item", { exact: true }).filter({ visible: true })).toHaveCount(1);
+        await expect(page.getByRole("button", { name: "1 other source", exact: true })).toBeVisible();
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      } finally { await context.close(); }
+    }
+  } finally { group = null; item.source.name = original; }
 });
 
 test("unavailable saved translations keep readable Chinese and a pending notice; a failing endpoint cannot cause a request loop", async () => {

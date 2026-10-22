@@ -8,6 +8,7 @@ export const englishUi: Record<string, string> = {
   "主导航": "Main navigation", "底部导航": "Bottom navigation", "外观": "Appearance", "不限": "All categories",
   "深色": "Dark", "浅色": "Light", "跟随系统": "System", "筛选（已选）": "Filters (active)",
   "AI 评分": "AI score",
+  "当前热点": "Trending now", "完整榜单": "Full ranking", "热度指数": "Heat score", "热度": "Heat", " 热度": " heat",
   "栏目": "Category", "内容来源": "Sources", "全部来源": "All sources", "资讯": "News", "清除筛选": "Clear filters",
   "搜索标题、摘要…": "Search news…", "搜索标题、摘要与正文": "Search titles, summaries and articles",
   "星期日": "Sunday", "星期一": "Monday", "星期二": "Tuesday", "星期三": "Wednesday", "星期四": "Thursday", "星期五": "Friday", "星期六": "Saturday",

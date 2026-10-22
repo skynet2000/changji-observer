@@ -46,7 +46,7 @@ export function Collapse({ open, children, duration = 240, className = "" }: { o
   return (
     <Presence show={open} enter="anim-collapse-in" exit="anim-collapse-out" duration={duration}>
       <div className={`grid ${className}`} style={{ "--anim-ms": `${duration}ms` } as CSSProperties}>
-        <div className="min-h-0 overflow-x-visible overflow-y-clip">{children}</div>
+        <div className="min-h-0 min-w-0 overflow-x-visible overflow-y-clip">{children}</div>
       </div>
     </Presence>
   );

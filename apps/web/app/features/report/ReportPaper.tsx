@@ -139,7 +139,7 @@ function Coverage({ c }: { c: ReportCitation }) {
   const translate = useText();
   return (
     <>
-      {!!c.otherSources && <span className="shrink-0 text-ink-4"><Text>另有 </Text><Text>{c.otherSources}</Text><Text> 家信源报道</Text></span>}
+      {!!c.otherSources && <span className="shrink-0 text-ink-4"><Text>{`另有 ${c.otherSources} 家信源报道`}</Text></span>}
       {c.followUp && <Badge title={translate(`${monthDay(c.followUp)}的日报报道过这件事，这里是新进展`)}><Text>跟进</Text></Badge>}
     </>
   );

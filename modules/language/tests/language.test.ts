@@ -12,6 +12,7 @@ const app = Fastify(); language.http!(app);
 after(async () => { await app.close(); await closeDb(); });
 
 test("English uses current public text only, leaves Chinese untouched, and lookup cannot invoke or enqueue models", async () => {
+  assert.equal(language.schedules?.find(job => job.name === "language.translate")?.cron, "*/5 * * * *");
   const source = "language-fixture";
   await sql`INSERT INTO sources(id,name,kind,tier,participation_mode) VALUES(${source},'测试媒体','rss','T1','editorial')`;
   const { articleId } = await upsertMaterial({ sourceId: source, url: "https://example.com/language", title: "公司公开信", bodyText: "公司公开信正文", via: "fetch", publishedAt: new Date() });
@@ -127,4 +128,18 @@ test("real date ranges, compound units, discounts and gaming labels keep their m
   ];
   for (const [source, english] of cases) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
   for (const [source, english] of [["首单5折", "70% off"], ["5000万像素", "5 megapixels"], ["13:04恢复", "Restored at 2:04 p.m."], ["补偿10.8-10.14消费", "Refund November 8-14"], ["腾讯3A", "Tencent AA"], ["保持活跃的10多家", "Only a dozen or so remain"]]) assert.equal(validTranslations([source!], [english!]), false);
+});
+
+test("observed approximate amounts, shared range units and half minutes pass without admitting wrong numbers", () => {
+  for (const [source, english] of [
+    ["尾款70来万元，佣金33250元", "A remaining balance of about 700,000 yuan and a 33,250 yuan commission"],
+    ["985高校，年薪600万，年包200至300万元", "A 985 university, 6 million yuan salary, and a 2 to 3 million yuan annual package"],
+    ["1分半钟，成本300元，330万播放", "1.5 minutes, 300 yuan in costs, and 3.3 million views"],
+    ["基础优惠低至7.2折", "Base discounts as low as 72% of the original price"],
+  ]) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
+  for (const [source, english] of [
+    ["70来万元", "About 70,000 yuan"], ["200至300万元", "2 to 30 million yuan"],
+    ["1分半钟", "15 minutes"], ["7.2折", "Discounts of 70% of the original price"],
+    ["8点1氪，487万元", "8 AM briefing, 4.87 million yuan"],
+  ]) assert.equal(validTranslations([source!], [english!]), false);
 });

@@ -46,9 +46,7 @@ export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { d
       <span className="ml-auto flex items-center gap-1 text-[12.5px] text-ink-4">
         {aside}
         {count !== null && (
-          <span>
-            <span className="num">{count}</span><Text> 条
-          </Text></span>
+          <span className="num"><Text>{`${count} 条`}</Text></span>
         )}
         {onToggle && <IconChevronDown size={15} className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} />}
       </span>
@@ -89,8 +87,8 @@ export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { d
           {count !== null && (
             <>
               <Text>{" · "}</Text>
-              <span className="num">{count}</span><Text> 条
-            </Text></>
+              <span className="num"><Text>{`${count} 条`}</Text></span>
+            </>
           )}
         </span>
         {aside && <span className="ml-auto text-[12px] text-ink-4">{aside}</span>}

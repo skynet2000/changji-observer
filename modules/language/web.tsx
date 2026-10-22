@@ -45,6 +45,7 @@ async function flush() {
   finally { texts.forEach(text => queued.delete(text)); pending = false; emit(); if (queued.size) timer = setTimeout(flush, 50); }
 }
 const templates = patterns.filter(source => source.replace(/\{\{\d+\}\}/g, "").length >= 4).map(source => ({ source, parts: source.split(/\{\{\d+\}\}/) }));
+const quantity = (count: string, noun: string) => `${count} ${noun}${Number(count) === 1 ? "" : "s"}`;
 function templateValues(source: string, parts: string[]): string[] | null {
   if (!source.startsWith(parts[0]!)) return null;
   let at = parts[0]!.length;
@@ -67,8 +68,13 @@ function requestText(source: string) {
 function lookup(source: string, context: "interface" | "content" = "interface"): string {
   if (locale !== "en") return source;
   if (Object.hasOwn(englishUi, source)) return englishUi[source];
-  if (translations.has(source)) return translations.get(source)!;
-  if (context === "content") { requestText(source); return source; }
+  if (context === "interface" && Object.hasOwn(englishUi, source.trim())) {
+    return source.replace(source.trim(), englishUi[source.trim()]!);
+  }
+  if (context === "content") {
+    if (translations.has(source)) return translations.get(source)!;
+    requestText(source); return source;
+  }
   // Dates/counts are formatting, never separate model requests.
   const fullDate = source.match(/^(\d{4}) 年 (\d{1,2}) 月 (\d{1,2}) 日 · (星期[一二三四五六日])$/);
   if (fullDate) return `${new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Number(fullDate[1]), Number(fullDate[2]) - 1, Number(fullDate[3]))))} · ${englishUi[fullDate[4]!]}`;
@@ -77,7 +83,12 @@ function lookup(source: string, context: "interface" | "content" = "interface"):
   const day = source.match(/^(\d{1,2})月(\d{1,2})日$/);
   if (day) return `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(day[1]) - 1]} ${day[2]}`;
   const count = source.match(/^(\d+)\s*(条|件|家|篇|分钟)$/);
-  if (count) return `${count[1]} ${count[2] === "分钟" ? "min" : count[2] === "家" ? "sources" : "items"}`;
+  if (count) return count[2] === "分钟" ? `${count[1]} min` : quantity(count[1]!, count[2] === "家" ? "source" : count[2] === "篇" ? "report" : "item");
+  const progress = source.match(/^(\d+) 条进展 · (\d+) 篇报道$/);
+  if (progress) return `${quantity(progress[1]!, "update")} · ${quantity(progress[2]!, "report")}`;
+  const otherSources = source.match(/^另有 (\d+) 家信源报道$/);
+  if (otherSources) return `${otherSources[1]} other source${Number(otherSources[1]) === 1 ? "" : "s"}`;
+  if (translations.has(source)) return translations.get(source)!;
   for (const template of templates) {
     const match = templateValues(source, template.parts);
     if (!match) continue;
