@@ -1,10 +1,11 @@
 import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
-import { Link, useLocation, useRevalidator } from "react-router";
-import { tabs, type TabKey } from "./nav";
+import { useLocation, useRevalidator, useSearchParams } from "react-router";
+import { feedScopeHref, tabs, type TabKey } from "./nav";
 import { noteScreen, rememberedTab, useScreen } from "./screens";
 import { markBack } from "./transitions";
 import { useChangelogDot } from "./Header";
+import { IntentLink } from "../ui/IntentLink";
 
 const subscribe = () => () => {};
 const serverTab = () => null;
@@ -19,7 +20,8 @@ const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayout
 export function TabBar({ changelogVersion }: { changelogVersion: string | null }) {
   const translate = useText();
   const screen = useScreen();
-  const { pathname, key } = useLocation();
+  const { pathname, search, key } = useLocation();
+  const [params] = useSearchParams();
   const revalidator = useRevalidator();
   const dot = useChangelogDot(changelogVersion);
   const last = useRef<TabKey | undefined>(undefined);
@@ -39,15 +41,14 @@ export function TabBar({ changelogVersion }: { changelogVersion: string | null }
       aria-label={translate("底部导航")}
       className="fixed inset-x-0 bottom-0 z-40 bg-surface/90 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-[0_-1px_0_var(--line)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
     >
-      <div className="mx-auto grid h-[50px] max-w-[640px]" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+      <div className="mx-auto grid h-[58px] max-w-[640px] px-1" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
         {items.map((t) => {
           const on = t.key === active;
           const Icon = t.icon;
           return (
-            <Link
+            <IntentLink
               key={t.key}
-              to={t.to}
-              prefetch="intent"
+              to={on && pathname === t.to ? pathname + search : (pathname === "/" || pathname === "/all") && (t.to === "/" || t.to === "/all") ? feedScopeHref(t.to, params) : t.to}
               aria-current={on ? "page" : undefined}
               viewTransition={on && pathname !== t.to}
               onClick={(event) => {
@@ -61,12 +62,12 @@ export function TabBar({ changelogVersion }: { changelogVersion: string | null }
                   void revalidator.revalidate();
                 }
               }}
-              className={`relative flex flex-col items-center justify-center gap-[2px] text-[10.5px] transition-colors ${on ? "font-semibold text-accent" : "text-ink-3 active:text-ink"}`}
+              className={`relative m-1 flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-lg text-[10.5px] transition-colors ${on ? "bg-accent-soft font-semibold text-accent" : "text-ink-3 active:bg-bg-sunk active:text-ink"}`}
             >
-              <Icon size={23} />
-              <span><Text>{t.label}</Text></span>
+              <Icon size={21} />
+              <span className="max-w-full truncate px-0.5"><Text>{t.label}</Text></span>
               {dot && t.changelog && <span className="absolute left-[calc(50%+9px)] top-[7px] size-1.5 rounded-full bg-hot" aria-label={translate("有新的更新")} />}
-            </Link>
+            </IntentLink>
           );
         })}
       </div>

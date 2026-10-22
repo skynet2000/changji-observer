@@ -34,6 +34,22 @@ after(async () => {
   await closeDb();
 });
 
+test("runs overview includes budget waits even without a failed processing attempt", async () => {
+  const { articleId } = await upsertMaterial({ sourceId: SOURCE, url: `https://example.com/${T}-budget`, title: "budget wait", bodyStatus: "none", via: "fetch" });
+  const baseline = (await runsOverview()).retrying.count;
+  try {
+    await sql`UPDATE articles SET processing_state='new', processing_attempts=0,
+      processing_retry_at=now()+interval '1 hour', processing_error='Budget for llm exhausted (cost/day)' WHERE id=${articleId}`;
+    const waiting = (await runsOverview()).retrying;
+    assert.equal(waiting.count, baseline + 1);
+    assert.ok(waiting.next);
+    await sql`UPDATE articles SET processing_state='analyzed' WHERE id=${articleId}`;
+    assert.equal((await runsOverview()).retrying.count, baseline);
+  } finally {
+    await sql`DELETE FROM articles WHERE id=${articleId}`;
+  }
+});
+
 test("an outage is announced once, repeated hourly, and closed with one recovery", async () => {
   process.env.COLLECT_ENABLED = "true";
   process.env.MODEL_CALLS_ENABLED = "true";

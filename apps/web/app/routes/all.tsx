@@ -19,7 +19,7 @@ import { isPhone, type Screen } from "../components/shell/screens";
 import { openSearch } from "../features/search/SearchOverlay";
 import { addRecentSearch } from "../lib/local-state";
 
-export const handle: Screen = { tab: "featured", name: "全部" };
+export const handle: Screen = { tab: "all", name: "全部" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -112,7 +112,8 @@ export default function AllPage() {
       ) : (
         <FeedBar base="/all" category={f.category} channel={f.channel} />
       )}
-      <ActiveFilters base="/all" category={f.category} channel={f.channel} tag={f.tag} />
+      <CategoryTabs base="/all" category={f.category} className="mobile-category-tabs lg:hidden" />
+      <ActiveFilters base="/all" channel={f.channel} tag={f.tag} />
 
       {!f.q && !f.tag && <FeedMasthead all />}
 

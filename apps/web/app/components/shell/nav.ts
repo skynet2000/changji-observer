@@ -78,12 +78,13 @@ export function sidebarIsActive(item: NavItem, pathname: string): boolean {
 }
 
 /**
- * The phone tab bar: 全部 lives beside 精选 as a switch, 热点 and 日报 are tabs, and "我的" at /more holds
+ * The phone tab bar: 精选 and 全部 are separate pages, 热点 and 日报 are tabs, and "我的" at /more holds
  * 收藏, 外观, the tools and the site's own pages. Which tab a page sits under is declared by the page
  * itself (components/shell/screens.ts).
  */
 export type TabKey =
   | "featured"
+  | "all"
   | "hot"
   | "daily"
   | "me"
@@ -100,6 +101,7 @@ export interface Tab {
 
 const ENGINE_TABS: Tab[] = [
   { key: "featured", to: "/", label: "精选", icon: IconBolt },
+  { key: "all", to: "/all", label: "全部", icon: IconList },
   { key: "hot", to: "/hot", label: "热点", icon: IconFlame },
   { key: "daily", to: "/daily", label: "日报", icon: IconDoc },
   { key: "me", to: "/more", label: "我的", icon: IconUser, changelog: true },

@@ -133,32 +133,33 @@ test("request reservation bounds Chinese text and refuses unpriced models, endpo
   } finally { if (previous === undefined) delete process.env.LLM_DAILY_BUDGET_CNY; else process.env.LLM_DAILY_BUDGET_CNY = previous; }
 });
 
-test("collection switches at Beijing midnight and adaptation preserves the new interval", async (t) => {
-  assert.equal(collectionIntervalMinutes(new Date("2026-10-21T15:59:59Z")), 60);
-  assert.equal(collectionIntervalMinutes(new Date("2026-10-21T16:00:00Z")), 120);
+test("collection remains hourly across Beijing midnight and interval adaptation", async (t) => {
   t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-22T01:00:00Z") });
+  assert.equal(collectionIntervalMinutes(), 60);
+  t.mock.timers.setTime(new Date("2026-10-23T01:00:00Z").getTime());
+  assert.equal(collectionIntervalMinutes(), 60);
   const id = `hourly-${tag()}`;
   await sql`INSERT INTO sources (id,name,kind,config,tier,enabled,interval_minutes) VALUES (${id},'hourly fixture','rss','{}','T2',true,15)`;
   await adaptIntervals();
   const [row] = await sql`SELECT interval_minutes FROM sources WHERE id=${id}`;
-  assert.equal(row!.interval_minutes, 120);
+  assert.equal(row!.interval_minutes, 60);
 });
 
 test("the minute scheduler moves an existing deadline and preserves longer failure backoff and disabled sources", async (t) => {
   t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-22T01:00:00Z") });
   const ids = [tag(), tag(), tag(), tag()];
   for (const [index, id] of ids.entries()) {
-    await sql`INSERT INTO sources (id,name,kind,config,tier,enabled,interval_minutes,last_fetch_at,next_fetch_at)
-      VALUES (${id},'interval fixture','rss','{}','T2',${index !== 2},60,
-        ${index === 3 ? sql`NULL` : sql`now()`}, now() + make_interval(mins => ${index === 1 ? 360 : 0}))`;
+    await sql`INSERT INTO sources (id,name,kind,config,tier,enabled,interval_minutes,last_fetch_at,next_fetch_at,fail_count)
+      VALUES (${id},'interval fixture','rss','{}','T2',${index !== 2},120,
+        ${index === 3 ? sql`NULL` : sql`now()`}, now() + make_interval(mins => ${index === 1 ? 360 : 120}), ${index === 1 ? 1 : 0})`;
   }
   await syncCollectionIntervals();
   const rows = await sql`SELECT id,interval_minutes,extract(epoch from (next_fetch_at - coalesce(last_fetch_at,now()))) / 60 AS wait
     FROM sources WHERE id IN ${sql(ids)}`;
   const get = (i: number) => rows.find(r => r.id === ids[i])!;
-  assert.equal(get(0).interval_minutes, 120); assert.ok(Number(get(0).wait) >= 119);
-  assert.equal(get(1).interval_minutes, 120); assert.ok(Number(get(1).wait) >= 359);
-  assert.equal(get(2).interval_minutes, 60);
+  assert.equal(get(0).interval_minutes, 60); assert.ok(Math.abs(Number(get(0).wait) - 60) < 1);
+  assert.equal(get(1).interval_minutes, 60); assert.ok(Number(get(1).wait) >= 359);
+  assert.equal(get(2).interval_minutes, 120);
   assert.ok(Math.abs(Number(get(3).wait)) < 1);
   assert.equal(await syncCollectionIntervals(), 0);
 });

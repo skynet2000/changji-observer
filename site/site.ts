@@ -9,9 +9,9 @@
  */
 export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
 
-/** 北京时间 2026-10-22 起改为每两小时采集；此前保留今天的每小时安排。 */
-export function collectionIntervalMinutes(now = new Date()): number {
-  return now.getTime() < Date.parse("2026-10-22T00:00:00+08:00") ? 60 : 120;
+/** 厂际观察所有启用信源每小时采集，失败时仍保留退避。 */
+export function collectionIntervalMinutes(): number {
+  return 60;
 }
 
 /** “每天 08:00”“每周一 10:00”“每月 1 日 10:30”：写进句子里的出刊时间。 */

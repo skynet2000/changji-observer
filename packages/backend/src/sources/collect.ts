@@ -377,12 +377,14 @@ export async function scheduleDueSources(): Promise<{ enqueued: number; shards: 
   return { enqueued, shards: await scheduleXShards() };
 }
 
-/** Apply the site's timed interval before selecting work; keep any longer failure backoff. */
+/** Apply the site's interval before selecting work; keep any longer failure backoff. */
 export async function syncCollectionIntervals(): Promise<number> {
   const minutes = collectionIntervalMinutes();
   const changed = await sql`
     UPDATE sources SET interval_minutes = ${minutes}, updated_at = now(),
-      next_fetch_at = greatest(coalesce(next_fetch_at, now()), coalesce(last_fetch_at + make_interval(mins => ${minutes}), now()))
+      next_fetch_at = CASE WHEN fail_count > 0
+        THEN greatest(coalesce(next_fetch_at, now()), coalesce(last_fetch_at + make_interval(mins => ${minutes}), now()))
+        ELSE coalesce(last_fetch_at + make_interval(mins => ${minutes}), now()) END
     WHERE enabled AND interval_minutes <> ${minutes}`;
   return changed.count;
 }

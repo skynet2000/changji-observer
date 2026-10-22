@@ -1,16 +1,13 @@
 import { Text, useText } from "@aihot/web/lib/text";
-// Feed filters: the channel and category choice (a row of tabs on desktop, a sheet behind the bar's filter
-// button on phones), the phone bar of 精选 and 全部, and search.
+// Categories are always visible; the phone sheet also offers source filters and a reset action.
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
-import { PillTabs } from "../../components/ui/Tabs";
 import { Sheet } from "../../components/ui/Sheet";
 import { IntentLink } from "../../components/ui/IntentLink";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
-import { feedScopeHref } from "../../components/shell/nav";
 
 /** Same page with some query parameters changed (paging state dropped). */
 function hrefWith(base: string, params: URLSearchParams, patch: Record<string, string | null>) {
@@ -43,104 +40,106 @@ function filterKey(category: CategoryKey | null): string {
 export function CategoryTabs({ base, category, className = "" }: { base: string; category: CategoryKey | null; className?: string }) {
   const translate = useText();
   const [params] = useSearchParams();
-  return <nav aria-label={translate("筛选")} className={`category-tabs ${className}`}>
+  const rail = useRef<HTMLElement>(null);
+  const activeLabel = translate(category ? readerCategoryLabel(category) : "全部");
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const reveal = () => {
+      const active = el.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!active || !el.clientWidth || el.scrollWidth <= el.clientWidth) return;
+      const track = el.getBoundingClientRect(), choice = active.getBoundingClientRect();
+      if (choice.left < track.left + 12) el.scrollLeft += choice.left - track.left - 12;
+      else if (choice.right > track.right - 12) el.scrollLeft += choice.right - track.right + 12;
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [category, activeLabel]);
+  return <nav ref={rail} aria-label={translate("筛选")} className={`category-tabs ${className}`}>
     {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
       aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}
   </nav>;
 }
 
-/**
- * The phone bar of 精选 and 全部: the brand, the 精选 | 全部 switch (a filter in use carries over), and
- * buttons for the filter sheet and search.
- */
+/** The phone page title and tools. Page switching lives only in the bottom navigation. */
 export function FeedBar({ base, category, channel }: { base: "/" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
-  const [params] = useSearchParams();
-  const scope = (to: string) => feedScopeHref(to, params);
-  return (
-    <>
-      <PhoneBar
-        center={
-          <PillTabs
-            size="sm"
-            layoutId="feed-scope"
-            label="看精选或全部"
-            active={base === "/" ? "featured" : "all"}
-            items={[
-              { key: "featured", label: "精选", to: scope("/"), resetScroll: true, prefetch: 'intent' },
-              { key: "all", label: "全部", to: scope("/all"), resetScroll: true, prefetch: 'intent' },
-            ]}
-          />
-        }
-        actions={
-          <>
-            <FilterButton base={base} category={category} channel={channel} />
-            <SearchButton />
-          </>
-        }
-      />
-    </>
-  );
+  return <PhoneBar
+    leading={<h1 className="pl-2.5 text-[20px] font-semibold text-ink"><Text>{base === "/" ? "精选" : "全部动态"}</Text></h1>}
+    actions={
+      <>
+        <FilterButton base={base} category={category} channel={channel} />
+        <SearchButton />
+      </>
+    }
+  />;
 }
 
 /** The same category control is available while reading a feed or searching it. */
 export function FilterButton({ base, category, channel }: { base: string; category: CategoryKey | null; channel: ChannelKey }) {
   const [params] = useSearchParams();
   const [sheet, setSheet] = useState(false);
-  const filtered = !!category || channel !== "all" || params.has("tag");
+  const count = Number(!!category) + Number(channel !== "all") + Number(params.has("tag"));
+  const filtered = count > 0;
   return <>
     <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
       <IconFilter size={21} />
-      {filtered && <span aria-hidden="true" className="absolute right-[9px] top-[9px] size-[7px] rounded-full bg-accent ring-2 ring-bg" />}
+      {filtered && <span aria-hidden="true" className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-contrast ring-2 ring-bg">{count}</span>}
     </BarButton>
-    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} />
+    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} channel={channel} filtered={filtered} />
   </>;
 }
 
 /** Phones: the filter as a sheet of options, the one in use ticked; choosing one applies it. */
-function FilterSheet({ open, onClose, base, active }: { open: boolean; onClose: () => void; base: string; active: string }) {
+function FilterSheet({ open, onClose, base, active, channel, filtered }: { open: boolean; onClose: () => void; base: string; active: string; channel: ChannelKey; filtered: boolean }) {
   const translate = useText();
   const [params] = useSearchParams();
   return (
     <Sheet open={open} onClose={onClose} title={translate("筛选")}>
-      <ul className="mx-4 space-y-1.5 pb-2">
+      <div className="px-4 pb-2">
+      <h3 className="mb-2 mt-2 text-[12px] font-medium text-ink-4"><Text>栏目</Text></h3>
+      <nav aria-label={translate("栏目")} className="grid grid-cols-2 gap-2">
         {filterOptions(base, params, "不限").map((o) => {
           const on = o.key === active;
           return (
-            <li key={o.key}>
               <Link
+                key={o.key}
                 to={o.to}
                 onClick={onClose}
                 aria-current={on ? "true" : undefined}
-                className={`flex min-h-12 items-center justify-between rounded-tile px-4 text-[15px] transition-colors active:bg-bg-sunk ${on ? "bg-accent-soft font-semibold text-accent" : "text-ink hover:bg-bg-sunk"}`}
+                className={`flex min-h-11 items-center justify-between rounded-tile border px-3 text-[14px] transition-colors active:bg-bg-sunk ${o.key === "all" ? "col-span-2" : ""} ${on ? "border-accent/30 bg-accent-soft font-semibold text-accent" : "border-line text-ink hover:bg-bg-sunk"}`}
               >
                 <Text>{o.label}</Text>
                 {on && <IconCheck size={19} strokeWidth={2.2} />}
               </Link>
-            </li>
           );
         })}
-      </ul>
+      </nav>
+      <h3 className="mb-2 mt-5 text-[12px] font-medium text-ink-4"><Text>内容来源</Text></h3>
+      <nav aria-label={translate("内容来源")} className="grid grid-cols-2 gap-2">
+        {(["all", "news", "x", "firstParty"] as const).map(key => <Link key={key} to={hrefWith(base, params, { channel: key === "all" ? null : key })} onClick={onClose}
+          aria-current={key === channel ? "true" : undefined}
+          className={`flex min-h-11 items-center justify-between rounded-tile border px-3 text-[14px] ${key === channel ? "border-accent/30 bg-accent-soft font-semibold text-accent" : "border-line text-ink hover:bg-bg-sunk"}`}>
+          <Text>{key === "all" ? "全部来源" : CHANNEL_LABELS[key]}</Text>{key === channel && <IconCheck size={17} />}
+        </Link>)}
+      </nav>
+      {filtered && <Link to={hrefWith(base, params, { category: null, channel: null, tag: null })} onClick={onClose} className="mt-5 flex min-h-11 items-center justify-center rounded-tile bg-bg-sunk text-[14px] font-medium text-ink-2"><Text>清除筛选</Text></Link>}
+      </div>
     </Sheet>
   );
 }
 
 /** Phones: the filter and tag in use as chips under the bar; each one clears itself when tapped. */
-export function ActiveFilters({ base, category, channel, tag }: { base: string; category: CategoryKey | null; channel: ChannelKey; tag: string | null }) {
+export function ActiveFilters({ base, channel, tag }: { base: string; channel: ChannelKey; tag: string | null }) {
   const translate = useText();
   const [params] = useSearchParams();
-  const label = category ? readerCategoryLabel(category) : null;
   const sourceLabel = channel !== "all" ? CHANNEL_LABELS[channel] : null;
-  if (!label && !sourceLabel && !tag) return null;
+  if (!sourceLabel && !tag) return null;
   const chip = "inline-flex min-h-11 max-w-full items-center gap-1 rounded-full bg-accent-soft pl-3 pr-2 text-[13px] font-medium text-accent transition-opacity active:opacity-60";
   return (
-    <div className={`flex flex-wrap gap-2 pb-3 pt-1 ${!sourceLabel && !tag ? "lg:hidden" : ""}`}>
-      {label && (
-        <Link to={hrefWith(base, params, { category: null })} aria-label={translate(`取消筛选：${label}`)} className={`${chip} lg:hidden`}><Text>
-          只看</Text><Text>{label}</Text>
-          <IconClose size={14} strokeWidth={2} />
-        </Link>
-      )}
-      {sourceLabel && <Link to={hrefWith(base, params, { channel: null })} aria-label={translate(`取消筛选：${sourceLabel}`)} className={chip}><Text>{sourceLabel}</Text><IconClose size={14} /></Link>}
+    <div className="flex flex-wrap gap-2 pb-3 pt-1">
+      {sourceLabel && <Link to={hrefWith(base, params, { channel: null })} aria-label={translate(`取消筛选：${translate(sourceLabel)}`)} className={chip}><Text>{sourceLabel}</Text><IconClose size={14} /></Link>}
       {tag && (
         <Link to={hrefWith(base, params, { tag: null })} aria-label={translate(`取消标签：${tag}`)} className={chip}>
           <span className="truncate">#<Text>{tag}</Text></span>

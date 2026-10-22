@@ -6,7 +6,7 @@ import { PhoneBar } from "../components/shell/PhoneBar";
 import type { Screen } from "../components/shell/screens";
 import { titled } from "../lib/seo";
 
-export const handle: Screen = { tab: "featured" };
+export const handle: Screen = { tab: "all" };
 
 export function meta() {
   return [{ title: titled("搜索繁忙") }, { name: "robots", content: "noindex, follow" }];
