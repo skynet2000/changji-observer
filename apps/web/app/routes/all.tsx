@@ -8,7 +8,7 @@ import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
-import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, FilterRecovery, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { DayList, Pagination } from "../features/feed/DayList";
@@ -122,11 +122,14 @@ export default function AllPage() {
         <h1 className={title ? "text-[24px] font-semibold leading-[1.3] text-ink" : "sr-only"}><Text>{title ?? ALL_TITLE}</Text></h1>
         <div className="feed-filter-row">
           <CategoryTabs base="/all" category={f.category} />
-          <SearchField defaultValue={f.q ?? ""} keep={keep} />
+          <div className="ml-auto flex items-center gap-3">
+            <FilterButton desktop base="/all" category={f.category} channel={f.channel} />
+            <SearchField defaultValue={f.q ?? ""} keep={keep} />
+          </div>
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按原文发布时间排列 · 同一事件合并展示，可展开查看进展</Text></p>
+      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>{f.q && f.tab === "relevance" ? "按全文相关程度排列 · 同一事件合并展示，可展开查看进展" : "按原文发布时间排列 · 同一事件合并展示，可展开查看进展"}</Text></p>
 
       {f.q && (
         <div className="mb-3 mt-1 flex flex-wrap items-center justify-between gap-2 lg:mt-0">
@@ -153,7 +156,7 @@ export default function AllPage() {
                   <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline"><Text>
                     试试“全文相关”，连正文一起搜
                   </Text></Link>
-                ) : undefined
+                ) : <FilterRecovery base="/all" />
               }
             >
               <Text>{f.q ? "换个说法，或者去掉筛选再试。" : "这个筛选下暂时没有内容。"}</Text>

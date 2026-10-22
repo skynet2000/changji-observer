@@ -23,6 +23,7 @@ export function noiseFiltered(c: Candidate, source: SourceRow): boolean {
   const title = c.title.toLowerCase();
   const hay = `${title}\n${(c.excerpt ?? "").toLowerCase()}`;
   // Broad feeds must first match their configured scope; noise exemptions cannot widen it.
+  if (f.requireTitleAnyMatches?.length && !has(title, f.requireTitleAnyMatches)) return true;
   if (f.requireAnyMatches?.length && !has(hay, f.requireAnyMatches)) return true;
   if (has(hay, f.keepIfMatches)) return false;
   return has(title, f.dropMarkersTitleOnly) || has(hay, f.dropMarkers);

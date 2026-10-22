@@ -10,6 +10,7 @@ import { FeedItem } from "./FeedItem";
 import { IconChevronDown } from "../../components/icons";
 import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { EmptyState } from "../../components/ui/Page";
+import { FilterRecovery } from "./Filters";
 import { beijingDate, beijingWeekday } from "@aihot/contracts/time";
 import { monthDay, weekdayShort } from "../../lib/format";
 import { isHydrated } from "../../lib/hydration";
@@ -274,7 +275,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     <div className="relative">
       {days.length === 0 && (
         <div className="lg:card">
-          <EmptyState title={translate("这个筛选下还没有精选内容")}><Text>换个类别看看，或者去全部动态里找找。</Text></EmptyState>
+          <EmptyState title={translate("这个筛选下还没有精选内容")} action={<FilterRecovery base="/" />}><Text>换个类别看看，或者去全部动态里找找。</Text></EmptyState>
         </div>
       )}
 

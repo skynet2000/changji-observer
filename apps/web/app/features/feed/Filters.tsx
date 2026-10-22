@@ -77,26 +77,30 @@ export function FeedBar({ base, category, channel }: { base: "/" | "/all"; categ
 }
 
 /** The same category control is available while reading a feed or searching it. */
-export function FilterButton({ base, category, channel }: { base: string; category: CategoryKey | null; channel: ChannelKey }) {
+export function FilterButton({ base, category, channel, desktop = false }: { base: string; category: CategoryKey | null; channel: ChannelKey; desktop?: boolean }) {
+  const translate = useText();
   const [params] = useSearchParams();
   const [sheet, setSheet] = useState(false);
   const count = Number(!!category) + Number(channel !== "all") + Number(params.has("tag"));
   const filtered = count > 0;
   return <>
-    <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
+    {desktop ? <button type="button" aria-label={translate(filtered ? "筛选（已选）" : "筛选")} onClick={() => setSheet(true)}
+      className={`inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-full border px-4 text-[13px] font-medium transition-colors ${filtered ? "border-accent/30 bg-accent-soft text-accent" : "border-line text-ink-2 hover:bg-bg-sunk"}`}>
+      <IconFilter size={17} /><Text>筛选</Text>{filtered && <span className="num">{count}</span>}
+    </button> : <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
       <IconFilter size={21} />
       {filtered && <span aria-hidden="true" className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-contrast ring-2 ring-bg">{count}</span>}
-    </BarButton>
-    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} channel={channel} filtered={filtered} />
+    </BarButton>}
+    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} channel={channel} filtered={filtered} centered={desktop} />
   </>;
 }
 
 /** Phones: the filter as a sheet of options, the one in use ticked; choosing one applies it. */
-function FilterSheet({ open, onClose, base, active, channel, filtered }: { open: boolean; onClose: () => void; base: string; active: string; channel: ChannelKey; filtered: boolean }) {
+function FilterSheet({ open, onClose, base, active, channel, filtered, centered }: { open: boolean; onClose: () => void; base: string; active: string; channel: ChannelKey; filtered: boolean; centered: boolean }) {
   const translate = useText();
   const [params] = useSearchParams();
   return (
-    <Sheet open={open} onClose={onClose} title={translate("筛选")}>
+    <Sheet open={open} onClose={onClose} title={translate("筛选")} centered={centered}>
       <div className="px-4 pb-2">
       <h3 className="mb-2 mt-2 text-[12px] font-medium text-ink-4"><Text>栏目</Text></h3>
       <nav aria-label={translate("栏目")} className="grid grid-cols-2 gap-2">
@@ -116,6 +120,7 @@ function FilterSheet({ open, onClose, base, active, channel, filtered }: { open:
           );
         })}
       </nav>
+      <p className="mt-3 text-[12px] leading-relaxed text-ink-4"><Text>点击即生效；各项条件叠加筛选。</Text></p>
       <h3 className="mb-2 mt-5 text-[12px] font-medium text-ink-4"><Text>内容来源</Text></h3>
       <nav aria-label={translate("内容来源")} className="grid grid-cols-2 gap-2">
         {(["all", "news", "x", "firstParty"] as const).map(key => <Link key={key} to={hrefWith(base, params, { channel: key === "all" ? null : key })} onClick={onClose}
@@ -128,6 +133,16 @@ function FilterSheet({ open, onClose, base, active, channel, filtered }: { open:
       </div>
     </Sheet>
   );
+}
+
+/** Empty lists offer a way out without making readers hunt for the filter controls. */
+export function FilterRecovery({ base }: { base: "/" | "/all" }) {
+  const [params] = useSearchParams();
+  const filtered = ["category", "channel", "tag"].some(key => params.has(key));
+  return <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-[13px] font-medium text-accent">
+    {filtered && <Link to={hrefWith(base, params, { category: null, channel: null, tag: null })} className="inline-flex min-h-11 items-center hover:underline"><Text>清除筛选</Text></Link>}
+    {base === "/" && <Link to={hrefWith("/all", params, {})} className="inline-flex min-h-11 items-center hover:underline"><Text>查看全部动态</Text></Link>}
+  </div>;
 }
 
 /** Phones: the filter and tag in use as chips under the bar; each one clears itself when tapped. */

@@ -198,6 +198,15 @@ test("broad feeds require a topic match before noise exemptions apply", () => {
   assert.equal(noiseFiltered(c("普通文章"), { config: { ingestNoiseFilter: { requireAnyMatches: [] } } } as never), false);
 });
 
+test("broad technology feeds can require title scope without matching subscription footers", () => {
+  const source = { config: { ingestNoiseFilter: { requireTitleAnyMatches: ["微信", "Meta", "裁员"], keepIfMatches: ["agent"] } } } as never;
+  const c = (title: string, excerpt: string) => ({ url: "https://example.org/a", title, excerpt }) as never;
+  assert.equal(noiseFiltered(c("尺寸暴涨！比亚迪新一代海鸥太超标了，还只要 6.59 万元", "欢迎关注爱范儿官方微信公众号：爱范儿"), source), true);
+  assert.equal(noiseFiltered(c("普通工具上线", "agent，欢迎关注微信公众号"), source), true);
+  assert.equal(noiseFiltered(c("META 调整部门与招聘计划", ""), source), false);
+  assert.equal(noiseFiltered(c("公司回应裁员传闻", ""), source), false);
+});
+
 test("a time without a zone is read in the source's offset, in JSON lists and in detail page metadata", async () => {
   const list = async (extra: Record<string, unknown> = {}) => (await fetchJsonList({ id: "test-json", config: { url: `${site}/zoneless.json`, itemsPath: "result", titlePaths: ["title"], urlTemplate: "https://example.org/p/{id}", publishedAtPath: "publishDate", ...extra } } as never))
     .map((c) => c.publishedAt?.toISOString());

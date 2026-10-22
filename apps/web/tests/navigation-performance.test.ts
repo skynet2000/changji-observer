@@ -101,6 +101,8 @@ test('empty home explains its purpose; category navigation preserves the filtere
         await page.getByRole('link',{name:/职场与组织.*组织调整/}).click();
         await expect(page).toHaveURL(/category=career/);
         await expect(page.getByText('这个筛选下还没有精选内容')).toBeVisible();
+        await expect(page.getByRole('link',{name:'清除筛选',exact:true})).toBeVisible();
+        await expect(page.getByRole('link',{name:'查看全部动态',exact:true})).toHaveAttribute('href','/all?category=career');
         await expect(page.getByRole('heading',{name:'看懂业务变化，找到成长方向。'})).toHaveCount(0);
         await page.goBack();
         await expect(page.getByRole('status')).toContainText('精选内容尚未发布');
@@ -487,5 +489,22 @@ test('phone search preserves feed filters and can change category without losing
     await page.getByRole('dialog',{name:'筛选',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('channel')==='firstParty');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  }finally{await context.close();}
+});
+
+test('desktop source filters are reachable and preserve category and search',async()=>{
+  const context=await chrome.newContext({viewport:{width:1280,height:900}});
+  const page=await context.newPage();
+  try{
+    await page.goto(origin+'/all?category=career&q=招聘');
+    const filters=page.getByRole('button',{name:'筛选（已选）',exact:true}).filter({visible:true});
+    await filters.click();
+    const dialog=page.getByRole('dialog',{name:'筛选',exact:true});
+    await expect(dialog.getByText('点击即生效；各项条件叠加筛选。')).toBeVisible();
+    await dialog.getByRole('link',{name:'一手',exact:true}).click();
+    await expect(page).toHaveURL(/category=career.*q=.*channel=firstParty/);
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toBeVisible();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false);
   }finally{await context.close();}
 });

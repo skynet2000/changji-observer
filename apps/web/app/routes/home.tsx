@@ -12,7 +12,7 @@ import { Timeline } from "../features/feed/Timeline";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
-import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, SearchField } from "../features/feed/Filters";
 
 export const handle: Screen = { tab: "featured", name: "精选" };
 export { pageHeaders as headers } from "../lib/api.server";
@@ -49,7 +49,10 @@ export default function Home() {
         <h2 className="sr-only"><Text>{title}</Text></h2>
         <div className="feed-filter-row">
           <CategoryTabs base="/" category={filters.category} />
-          <SearchField keep={{ category: filters.category, channel: filters.channel === "all" ? null : filters.channel, tag: filters.tag }} />
+          <div className="ml-auto flex items-center gap-3">
+            <FilterButton desktop base="/" category={filters.category} channel={filters.channel} />
+            <SearchField keep={{ category: filters.category, channel: filters.channel === "all" ? null : filters.channel, tag: filters.tag }} />
+          </div>
         </div>
       </div>
 
