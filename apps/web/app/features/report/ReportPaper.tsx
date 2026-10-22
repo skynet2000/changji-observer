@@ -26,8 +26,6 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const keyOf = (c: ReportCitation) => c.itemId ?? c.title;
 const anchorOf = (c: ReportCitation) => (c.itemId ? `r-${c.itemId}` : null);
 const LINK = "inline-flex min-h-7 items-center gap-0.5 font-medium transition-colors hover:text-accent";
-/** What comes before `noun` at the end of `phrase` ("往期 AI " of "往期 AI 周报"), so the kind's name is its own text. */
-const before = (phrase: string, noun: string) => phrase.slice(0, -noun.length);
 
 function Masthead({ report, index, quiet }: { report: ReportDetail; index: ReportNavigationEntry[]; quiet: boolean }) {
   const mark = dateMark(report.kind, report.key);
@@ -44,7 +42,7 @@ function Masthead({ report, index, quiet }: { report: ReportDetail; index: Repor
         <div className="flex min-w-0 flex-col justify-center">
           <h1 id="report-start" className="scroll-mt-[calc(var(--bar-h)+1.5rem)]">
             <span className="sr-only">
-              <Text>{before(withSubject(label), label)}</Text><Text>{label}</Text> · <Text>{dateLine(report.kind, report.key)}</Text>
+              <Text>{withSubject(label)}</Text> · <Text>{dateLine(report.kind, report.key)}</Text>
             </span>
             <Nameplate which={report.kind} className="block h-[44px] w-auto @[520px]:h-[58px] @[880px]:h-[74px] @[1040px]:h-[84px]" />
           </h1>
@@ -448,7 +446,7 @@ function History({ report, index }: { report: ReportDetail; index: ReportNavigat
   const label = KIND_LABEL[report.kind];
   return (
     <section id="report-history" className="scroll-mt-[calc(var(--bar-h)+1.5rem)] pt-12">
-      <Kicker><Text>{before(subjectAfter("往期", label), label)}</Text><Text>{label}</Text></Kicker>
+      <Kicker><Text>{subjectAfter("往期", label)}</Text></Kicker>
       <ul className="mt-3">
         {others.map((e) => (
           <li key={e.key}>
@@ -539,7 +537,8 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       <footer className="py-10 text-center">
         <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4"><Text>（本期完）</Text></div>
         <p className="mt-3 text-[12px] text-ink-4">
-          <Text>{`${SITE.name} `}</Text><Text>{KIND_LABEL[report.kind]}</Text><Text>由编辑系统根据公开来源自动</Text><Text>{daily ? "编辑" : "综合"}</Text><Text>，每条均附原文 ·</Text><Text>{" "}</Text>
+          <Text>{`${SITE.name} ${KIND_LABEL[report.kind]}`}</Text>{" · "}
+          <Text>{daily ? "根据公开来源自动编辑，每条均附原文" : "根据公开来源自动综合，每条均附原文"}</Text>{" · "}
           <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
             <Text>{daily ? "日报合订本" : `往期${KIND_LABEL[report.kind]}`}</Text>
           </Link>

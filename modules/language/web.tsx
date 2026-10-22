@@ -82,6 +82,8 @@ function lookup(source: string, context: "interface" | "content" = "interface"):
   if (month) return new Intl.DateTimeFormat("en", { year: "numeric", month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(Number(month[1]), Number(month[2]) - 1, 1)));
   const day = source.match(/^(\d{1,2})月(\d{1,2})日$/);
   if (day) return `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(day[1]) - 1]} ${day[2]}`;
+  const neighbour = source.match(/^(前一日|后一日) · (\d{1,2}月\d{1,2}日)$/);
+  if (neighbour) return `${neighbour[1] === "前一日" ? "Previous day" : "Next day"} · ${lookup(neighbour[2]!)}`;
   const count = source.match(/^(\d+)\s*(条|件|家|篇|分钟)$/);
   if (count) return count[2] === "分钟" ? `${count[1]} min` : quantity(count[1]!, count[2] === "家" ? "source" : count[2] === "篇" ? "report" : "item");
   const progress = source.match(/^(\d+) 条进展 · (\d+) 篇报道$/);

@@ -10,7 +10,7 @@ const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局�
   publishedAt: at, timelineAt: at, category: "career", tags: [], score: 80, selected: true, channel: "news", x: null };
 const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1, title: "互联网日报", generatedAt: at,
   lead: { title: item.title, leadParagraph: "本期关注公司组织调整与岗位变化。" }, leadItemId: null, overview: null, highlights: [],
-  sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null };
+  sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: "2026-10-20", next: null };
 const translated: Record<string, string> = { [item.title]: "JD and Douyin sue each other over a procurement manager’s social post ahead of Singles’ Day", [item.summary!]: "The company communicates organisational changes affecting ten departments to employees.",
   [item.reason!]: "Relevant to employees' careers.", "本期关注公司组织调整与岗位变化。": "This issue focuses on organisational changes and employee roles." };
 let dense = false;
@@ -74,6 +74,8 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       }
       await page.locator('a[href="/daily"]').filter({ visible: true }).first().click();
       await expect(page.getByText(translated["本期关注公司组织调整与岗位变化。"], { exact: true })).toBeVisible();
+      await expect(page.getByText("Previous day · Oct 20", { exact: true })).toBeVisible();
+      await expect(page.getByRole("main").locator("footer")).toContainText("厂际观察 Daily · Compiled from public sources, with links to every original report · Daily archive");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "daily layout fits the same viewport");
       if (width >= 961) {
         await expect(page.getByRole("navigation", { name: "Main navigation", exact: true }).getByRole("link", { name: "Daily brief", exact: true })).toHaveAttribute("aria-current", "page");
