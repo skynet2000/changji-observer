@@ -685,7 +685,9 @@
   .mobile-category-tabs a { padding-inline: 0; }
   .site-brand > span { font-size: 18px !important; }
   .site-header-inner > div { gap: 2px; }
-  .reader-entry { padding-inline: 9px; }
+  .site-header-inner [title="中文 / English"] { padding-inline: 4px; }
+  .reader-entry { padding-inline: 6px; font-size: 12px; }
+  .reader-entry > svg { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .feed-masthead { animation: fade-up 350ms var(--ease-out-quart) both; }

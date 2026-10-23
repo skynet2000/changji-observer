@@ -145,9 +145,10 @@ test('hover still fetches article data, touches that move do not, and failed pre
   try{
     await page.goto(origin+'/');
     const link=page.getByRole('link',{name:'性能检查文章',exact:true});
+    await page.mouse.move(0,0);
     const start=hits.length;
     await link.dispatchEvent('touchstart');await link.dispatchEvent('touchmove');
-    await page.getByRole('heading',{name:'看见大厂的下一步。',exact:true}).click();
+    await page.waitForTimeout(150); // Let the intent timer expire without a real mouse crossing the card.
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,0);
     const response=page.waitForResponse(r=>r.url().includes('/items/navigation-fixture.data'));
     await link.hover();await response;

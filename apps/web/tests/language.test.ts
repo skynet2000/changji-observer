@@ -59,7 +59,7 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       await expect(page.getByText(translated[item.summary!], { exact: true })).toBeVisible();
       await expect(page.getByText("Yicai · Technology", { exact: true })).toBeVisible();
       assert.ok((await page.locator(`a[href="/items/${item.id}"]`).count()) > 0);
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false, `English feed fits ${width}px`);
       await page.screenshot({ path: `outputs/中英切换-${width}-20261021.png`, fullPage: true });
       await page.reload();
       await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
@@ -121,7 +121,7 @@ test("English count labels work without saved translations and long source names
         await expect(page.getByRole("heading", { name: translated[item.title], exact: true })).toBeVisible();
         await expect(page.getByText("1 item", { exact: true }).filter({ visible: true })).toHaveCount(1);
         await expect(page.getByRole("button", { name: "1 other source", exact: true })).toBeVisible();
-        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `English source labels fit ${width}px`);
       } finally { await context.close(); }
     }
   } finally { group = null; item.source.name = original; }
