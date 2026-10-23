@@ -284,7 +284,10 @@ export default function HotPage() {
         </div>
       ) : (
         <>
-          <section aria-label={translate("热度前三")} className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:gap-4">
+          <ol aria-label={translate("热点榜")} className="card divide-y divide-line-soft overflow-hidden lg:hidden">
+            {hot.entries.map(e => <Row key={e.story.publicId} e={e} />)}
+          </ol>
+          <section aria-label={translate("热度前三")} className="hidden lg:grid lg:grid-cols-12 lg:gap-4">
             <div className="grid grid-cols-1 lg:col-span-7 lg:row-span-2 xl:col-span-8">
               <Lead e={lead} />
             </div>
@@ -296,7 +299,7 @@ export default function HotPage() {
           </section>
 
           {others.length > 0 && (
-            <section aria-label={translate("其余热点")} className="mt-6 lg:mt-7">
+            <section aria-label={translate("其余热点")} className="mt-6 hidden lg:mt-7 lg:block">
               <div className="mb-3 flex items-baseline justify-between px-1">
                 <h2 className="text-[15px] font-semibold text-ink"><Text>
                   继续看 </Text><span className="num font-normal text-ink-4">No.<Text>{pad(others[0]!.rank)}</Text>–<Text>{pad(others[others.length - 1]!.rank)}</Text></span>

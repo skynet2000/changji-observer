@@ -681,6 +681,8 @@
   .report-paper { border: 0; padding: 0; background: transparent; }
 }
 @media (max-width: 360px) {
+  .mobile-category-tabs { gap: 2px; }
+  .mobile-category-tabs a { padding-inline: 0; }
   .site-brand > span { font-size: 18px !important; }
   .site-header-inner > div { gap: 2px; }
   .reader-entry { padding-inline: 9px; }

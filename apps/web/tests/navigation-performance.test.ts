@@ -542,6 +542,9 @@ test('hot overview uses source-scoped counts and translates dates without a mode
   const context=await chrome.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
   try{
     await page.goto(origin+'/hot');
+    await expect(page.getByRole('list',{name:'热点榜',exact:true})).toBeVisible();
+    const first=await page.getByRole('list',{name:'热点榜',exact:true}).getByRole('listitem').first().boundingBox();
+    assert.ok(first&&first.height<240,'phone rankings do not start with a screen-sized hero');
     await expect(page.getByText('过去 48 小时 · 已收录信源中的 1 个热点').filter({visible:true})).toBeVisible();
     await page.getByRole('button',{name:'Switch to English'}).click();
     await expect(page.getByText('Past 48 hours · 1 trend across our sources').filter({visible:true})).toBeVisible();
@@ -583,6 +586,7 @@ test('top hotspots precede one reading column and phone feeds use one toolbar',a
           const box=await link.boundingBox(); assert.ok(box&&box.height>=44,'hot links remain touch targets');
         }
         const rail=page.getByRole('navigation',{name:'栏目',exact:true});
+        for(const link of await rail.getByRole('link').all())await expect(link).toBeInViewport({ratio:0.99});
         const choice=rail.getByRole('link',{name:'行业观察',exact:true});
         await choice.click();
         await expect(choice).toHaveAttribute('aria-current','page');
