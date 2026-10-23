@@ -124,8 +124,8 @@ test('reader groups include their detailed categories without mixing workplace a
   for(const category of ['industry','career','tip','ai-products','ecommerce','local-life','ai-models','opinion','policy','paper'])
     await f.add('-category-'+category,null,{category});
   for(const [category,members] of [
-    ['industry',['industry']], ['career',['career','tip']],
-    ['ai-products',['ai-products','ecommerce','local-life','ai-models']], ['opinion',['opinion','policy','paper']]
+    ['industry',['industry']], ['career',['career']],
+    ['ai-products',['ai-products','ecommerce','local-life','ai-models','tip']], ['opinion',['opinion','policy','paper']]
   ] as const){
     const result=await loadPool({...f.query,category});
     assert.deepEqual(new Set(result.items.map(i=>i.category)),new Set(members));

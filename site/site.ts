@@ -305,8 +305,8 @@ export const FEED_COPY = {
 /** 面向互联网中大厂职场人的阅读栏目；细分类仍用于后台判断和既有订阅。 */
 export const READER_CATEGORIES = [
   { key: "industry", label: "大厂动态", members: ["industry"] },
-  { key: "career", label: "职场与组织", members: ["career", "tip"] },
-  { key: "ai-products", label: "业务与产品", members: ["ai-products", "ecommerce", "local-life", "ai-models"] },
+  { key: "career", label: "职场与组织", members: ["career"] },
+  { key: "ai-products", label: "业务与产品", members: ["ai-products", "ecommerce", "local-life", "ai-models", "tip"] },
   { key: "opinion", label: "行业观察", members: ["opinion", "policy", "paper"] },
 ] as const;
 

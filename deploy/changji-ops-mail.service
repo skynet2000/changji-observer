@@ -1,0 +1,14 @@
+[Unit]
+Description=Changji Observer host fault and recovery email
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/changji-observer/current
+EnvironmentFile=/home/ubuntu/changji-observer/shared/cost-email.env
+ExecStart=/usr/bin/python3 /home/ubuntu/changji-observer/current/deploy/ops-notify.py --send
+TimeoutStartSec=330
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

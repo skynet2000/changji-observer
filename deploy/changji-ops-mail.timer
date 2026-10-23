@@ -1,0 +1,10 @@
+[Unit]
+Description=Check website and processing tasks every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Unit=changji-ops-mail.service
+
+[Install]
+WantedBy=timers.target

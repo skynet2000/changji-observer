@@ -18,3 +18,11 @@
 如状态为 unknown/sending，先在发件箱确认是否送达，再由维护者处理 `shared/cost-mail-state.json`；不要直接反复手动发信。Google 登录密码变更或撤销应用专用密码后，需要更新服务器发信凭据。停用邮件时使用 `systemctl disable --now changji-cost-mail.timer`，不影响网站或采集。
 
 本机测试：`PYTHONPYCACHEPREFIX=.data/python-cache python3 -m unittest discover -s deploy/tests`。
+
+## 故障与恢复通知
+
+`changji-ops-mail.timer` 每五分钟运行 `deploy/ops-notify.py`，复用同一份私有发信配置和收件邮箱。检查网站健康、容器状态、worker 心跳、内容积压、日报缺刊，以及本机备份和费用邮件任务。异常连续两次存在才通知，相同异常不反复发信；已通知的故障消失时发送一次恢复邮件。后台等级为“稍后处理”的信源提醒仍在后台查看，不因单个来源被拦截而刷邮件。
+
+代码发布后安装 `changji-ops-mail.service` 和 `changji-ops-mail.timer`，运行 `systemctl daemon-reload` 与 `systemctl enable --now changji-ops-mail.timer`。`sudo python3 current/deploy/ops-notify.py` 只检查并输出异常，不发邮件、不写状态。检查定时器和日志使用 `systemctl list-timers changji-ops-mail.timer`、`journalctl -u changji-ops-mail.service -n 30`。
+
+通知状态保存在 `shared/ops-mail-state.json`，权限 600。SMTP 结果未知时停止盲目重发，先核查发件箱后再处理状态。整台服务器或网络宕机，以及 SMTP 服务自身故障时，本机任务无法保证发送；这不等于已经配置独立站外监测。
