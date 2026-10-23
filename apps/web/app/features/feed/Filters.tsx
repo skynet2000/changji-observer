@@ -5,8 +5,6 @@ import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { READER_CATEGORY_OPTIONS, readerCategory, type CategoryKey } from "@aihot/contracts/taxonomy";
 import { IconClose, IconSearch } from "../../components/icons";
 import { IntentLink } from "../../components/ui/IntentLink";
-import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
-import { openSearch } from "../search/SearchOverlay";
 
 /** Same page with some query parameters changed (paging state dropped). */
 function hrefWith(base: string, params: URLSearchParams, patch: Record<string, string | null>) {
@@ -39,18 +37,25 @@ function filterKey(category: CategoryKey | null): string {
 export function CategoryTabs({ base, category, className = "" }: { base: string; category: CategoryKey | null; className?: string }) {
   const translate = useText();
   const [params] = useSearchParams();
-  return <nav aria-label={translate("栏目")} className={`category-tabs ${className}`}>
+  const rail = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = rail.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return;
+    const bounds = nav.getBoundingClientRect(), item = active.getBoundingClientRect();
+    if (item.left < bounds.left || item.right > bounds.right) {
+      nav.scrollTo({ left: nav.scrollLeft + item.left - bounds.left - (bounds.width - item.width) / 2 });
+    }
+  }, [category]);
+  return <nav ref={rail} aria-label={translate("栏目")} className={`category-tabs ${className}`}>
     {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
       aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}
   </nav>;
 }
 
-/** The phone page title and tools. Page switching lives only in the bottom navigation. */
+/** Feed pages share the brand header's search; avoid stacking two phone toolbars. */
 export function FeedBar({ base }: { base: "/" | "/all" }) {
-  return <PhoneBar
-    leading={<h1 className="pl-2.5 text-[20px] font-semibold text-ink"><Text>{base === "/" ? "精选" : "全部动态"}</Text></h1>}
-    actions={<SearchButton />}
-  />;
+  return <h1 data-feed-page="" className="sr-only lg:hidden"><Text>{base === "/" ? "精选" : "全部动态"}</Text></h1>;
 }
 
 /** Empty lists offer a way out without making readers hunt for the filter controls. */
@@ -82,15 +87,6 @@ export function ActiveFilters({ base, tag }: { base: string; tag: string | null 
         </Link>
       )}
     </div>
-  );
-}
-
-/** Phones: the magnifier in a bar; the search opens over the page with the keyboard up. */
-function SearchButton() {
-  return (
-    <BarButton label="搜索" onClick={(event) => openSearch("", event.currentTarget)}>
-      <IconSearch size={21} />
-    </BarButton>
   );
 }
 

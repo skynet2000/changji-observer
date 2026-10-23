@@ -25,16 +25,14 @@ test("successful priority answers use the exact requested version and never pay 
   });
 });
 
-test("429 falls back once, shares cooldown across reasoning modes, then retries priority", async (t) => {
+test("each task tries priority first after another task's 429; recovery immediately avoids payment", async () => {
   let recover = false;
   await withProviders(() => recover ? answer : new Reply(429, { error: "rate limit" }), async (p, f) => {
     assert.equal((await call()).model, "deepseek-flash");
     assert.equal((await call("intern-flash-think")).model, "deepseek-flash-think");
-    assert.equal(p.hits(), 1); assert.equal(f.hits(), 2);
+    assert.equal(p.hits(), 2); assert.equal(f.hits(), 2);
     recover = true;
-    const now = Date.now(); t.mock.method(Date, "now", () => now + 61_000);
-    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 2); assert.equal(f.hits(), 2);
-    t.mock.restoreAll();
+    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 3); assert.equal(f.hits(), 2);
   });
 });
 

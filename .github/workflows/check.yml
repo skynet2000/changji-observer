@@ -76,6 +76,8 @@ jobs:
       # leaves empty; the smoke check then reads that empty database.
       - name: Backend tests
         run: npm test
+      - name: Server cost email tests
+        run: python3 -m unittest discover -s deploy/tests
       - name: Smoke check of the built site
         # The site itself runs with collection and model calls off (the tests above use local stubs).
         env:

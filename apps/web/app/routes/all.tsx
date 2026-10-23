@@ -133,7 +133,7 @@ export default function AllPage() {
 
       <ActiveFilters base="/all" tag={f.tag} />
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>{f.q && f.tab === "relevance" ? "按全文相关程度排列 · 同一事件合并展示，可展开查看进展" : "按事件最新进展排列 · 同一事件合并展示，可展开查看进展"}</Text></p>
+      <p className="feed-order-note"><Text>{f.q && f.tab === "relevance" ? "按全文相关程度排列 · 同一事件合并展示，可展开查看进展" : "按事件最新进展排列 · 同一事件合并展示，可展开查看进展"}</Text></p>
 
       {f.q && (
         <div className="mb-3 mt-1 flex flex-wrap items-center justify-between gap-2 lg:mt-0">

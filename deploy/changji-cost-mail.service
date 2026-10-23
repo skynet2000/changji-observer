@@ -1,0 +1,18 @@
+[Unit]
+Description=Changji Observer rolling 24h model expense email
+After=docker.service network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=3600
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/changji-observer/current
+EnvironmentFile=/home/ubuntu/changji-observer/shared/cost-email.env
+ExecStart=/usr/bin/python3 /home/ubuntu/changji-observer/current/deploy/cost-report.py --send
+TimeoutStartSec=150
+Restart=on-failure
+RestartSec=900
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

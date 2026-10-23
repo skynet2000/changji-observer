@@ -1,4 +1,3 @@
-import { FEED_EDITORIAL } from "@aihot/site";
 import { Text } from "@aihot/web/lib/text";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
@@ -45,10 +44,10 @@ export default function Home() {
   const title = filters.tag ? `#${filters.tag}` : "精选";
   return (
     <div className="pb-6">
-      {/* Phones: the page title, visible categories, active tags, then the news. */}
       <FeedBar base="/" />
-      <CategoryTabs base="/" category={filters.category} className="mobile-category-tabs lg:hidden" />
       <FeedMasthead />
+      {!!data.hot?.length && inNav("/hot") && <HotTopics entries={data.hot} />}
+      <CategoryTabs base="/" category={filters.category} className="mobile-category-tabs lg:hidden" />
       <div className="hidden lg:block">
         <h2 className="sr-only"><Text>{title}</Text></h2>
         <div className="feed-filter-row">
@@ -61,13 +60,11 @@ export default function Home() {
 
       <ActiveFilters base="/" tag={filters.tag} />
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按事件最新进展排列 · 同一事件合并展示，可展开查看进展</Text></p>
+      <p className="feed-order-note"><Text>按事件最新进展排列 · 同一事件合并展示，可展开查看进展</Text></p>
 
-      <div className={data.hot?.length && inNav("/hot") ? "feed-columns" : ""}>
-        <div className="min-w-0">{data.cards.length === 0 && !hasFeedFilters(filters)
+      <div className="min-w-0">{data.cards.length === 0 && !hasFeedFilters(filters)
           ? <FeedWelcome />
-          : <Timeline initial={data} filters={data.filters} />}</div>
-        {!!data.hot?.length && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>{FEED_EDITORIAL.contextTitle}</Text></h2><p><Text>{FEED_EDITORIAL.contextLead}</Text></p></div></aside>}
+          : <Timeline initial={data} filters={data.filters} />}
       </div>
     </div>
   );

@@ -2,7 +2,6 @@ import { Text, useText } from "@aihot/web/lib/text";
 import { Link } from "react-router";
 import type { HotStripEntry } from "@aihot/contracts/site";
 import { IconArrowRight, IconMinus, IconTrendDown, IconTrendUp } from "../../components/icons";
-import { Faces } from "../hot/Faces";
 
 // As on the original list: the top three in the ranking colours at the heaviest weight.
 const RANK_COLOR = ["text-[15px] font-black text-rank-1", "text-[15px] font-black text-rank-2", "text-[15px] font-black text-rank-3"];
@@ -21,7 +20,7 @@ function TrendMark({ trend }: { trend: HotStripEntry["trend"] }) {
   return <IconMinus size={14} strokeWidth={2.2} className="text-ink-4" aria-label={translate("热度持平")} />;
 }
 
-/** The desktop feed rail shows site-wide trends; narrow layouts use the dedicated hot tab. */
+/** A compact top-three overview above the feed, with the complete ranking one tap away. */
 export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
   const translate = useText();
   if (entries.length === 0) return null;
@@ -42,21 +41,18 @@ export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
         </Link>
       </div>
       <ol className="hot-editorial-list">
-        {entries.slice(0, 5).map((e, i) => (
-          <li key={e.rank} className={i >= 3 ? "max-sm:hidden" : undefined}>
+        {entries.slice(0, 3).map((e, i) => (
+          <li key={e.rank}>
             <Link viewTransition
               to={hrefOf(e)}
-              className="group -mx-2 grid min-h-10 sm:min-h-0 grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-tile px-2 py-1.5 transition-colors hover:bg-bg-sunk/70 active:bg-bg-sunk sm:grid-cols-[20px_minmax(0,1fr)_120px_64px_20px] sm:gap-x-4 sm:py-2 dark:hover:bg-bg-muted/40"
+              className="hot-topic-link group"
             >
-              <span className={`num text-center leading-none ${RANK_COLOR[i] ?? "text-[14px] font-bold text-rank-rest"}`}><Text>{e.rank}</Text></span>
-              <span className="line-clamp-1 min-w-0 text-[14.5px] font-semibold leading-[1.5] text-ink transition-colors group-hover:text-accent lg:text-[14px]"><Text content>{e.title}</Text></span>
-              <span className="hidden justify-end sm:flex">
-                <Faces participants={e.participants} total={e.participantCount} size={20} interactive={false} />
-              </span>
-              <span className="flex items-center justify-end gap-2.5 sm:contents">
+              <span className={`hot-topic-rank num ${RANK_COLOR[i] ?? "text-rank-rest"}`}><Text>{e.rank}</Text></span>
+              <span className="hot-topic-title"><Text content>{e.title}</Text></span>
+              <span className="hot-topic-meta">
                 <span className="whitespace-nowrap text-right text-[12.5px] text-ink-4" title={translate("热度指数")}>
-                  <span className="num text-[13.5px] font-semibold text-ink-2"><Text>{Math.round(e.heat)}</Text></span><Text> 热度
-                </Text></span>
+                  <span className="num text-[13.5px] font-semibold text-ink-2"><Text>{Math.round(e.heat)}</Text></span><span className="hidden lg:inline"><Text> 热度</Text></span>
+                </span>
                 <span className="flex w-5 justify-center">
                   <TrendMark trend={e.trend} />
                 </span>

@@ -13,11 +13,12 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { before, after, test } from "node:test";
 import { chromium, webkit, expect, type Browser } from "@playwright/test";
-import type { FeedItemSummary, SiteItemDetail, ReportDetail } from "@aihot/contracts/site";
+import type { FeedItemSummary, SiteItemDetail, ReportDetail, HotStripEntry } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 const at = '2026-10-04T08:00:00.000Z';
 const item: FeedItemSummary = {id:'navigation-fixture',title:'性能检查文章',summary:'固定摘要',reason:'固定推荐理由',source:{name:'Fixture'},publishedAt:at,timelineAt:at,category:'ai-models',tags:[],score:80,selected:true,channel:'news',x:null};
+const topHot: HotStripEntry[] = Array.from({length:5},(_,i)=>({rank:i+1,title:`大厂热点 ${i+1}：组织调整与业务竞争的最新进展`,heat:100-i,trend:'up',storyPublicId:'fixture',itemId:null,participants:[],participantCount:0}));
 const detail: SiteItemDetail = {...item,x:null,originalTitle:'Fixture article',links:{original:'https://example.org/article'},discoveredAt:at,story:null,readingMode:'full',author:null,body:{zh:'<p>固定正文</p>',original:null,zhKind:'translation',complete:true},outline:[],relatedStories:[],topics:[],indexable:true,markdownAvailable:true,group:null,hasTranslation:true,bodyLanguage:'zh'};
 const codeSource='import json\n\nwith open("data.json") as file:\n    data = json.load(file)\n\nfor record in data:\n    print(record["title"])\n';
 const readerBody=Array.from({length:30},(_,i)=>`<p>阅读段落 ${i}：先阅读文章，再查看后面的代码和图片。正文保持可读，图片和代码在需要时增强。</p>`).join('')
@@ -39,7 +40,7 @@ const api=createServer((req,res)=>{
   const p=url.pathname;
   res.setHeader('Content-Type','application/json');
   if(p==='/api/site/meta') return res.end(JSON.stringify({changelogVersion:'fixture'}));
-  if(p==='/api/reader/session') return res.end(JSON.stringify({enabled:false,providers:[],user:null}));
+  if(p==='/api/reader/session') return res.end(JSON.stringify({enabled:true,providers:['google','github'],user:null}));
   if(p==='/api/site/track'){res.statusCode=204;return res.end();}
   hits.push(req.url!);
   if(p===failing){res.statusCode=503;return res.end(JSON.stringify({code:'unavailable'}));}
@@ -52,6 +53,7 @@ const api=createServer((req,res)=>{
     const category=url.searchParams.get('category');
     if(emptyTimeline) return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[],nextCursor:null,hot:null,dayCounts:{}}));
     const shown={...item,title:category?'分类 '+category:'性能检查文章'};
+    if(url.searchParams.get('tag')==='hot-layout')return res.end(JSON.stringify({filters:{channel:'all',category,tag:'hot-layout'},cards:[{key:item.id,anchorAt:at,item,group:null}],nextCursor:null,hot:topHot,dayCounts:{'2026-10-04':1}}));
     if(url.searchParams.get('tag')==='new-development'){
       return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:'new-development'},cards:[{key:item.id,anchorAt:'2026-10-06T11:07:00Z',item,group:{factId:'fixture-fact',reportCount:2,additionalSourceCount:1,scope:'story',developmentCount:2}}],nextCursor:null,hot:null,dayCounts:{'2026-10-06':1}}));
     }
@@ -558,4 +560,36 @@ test('a new event development does not replace the representative report publica
     await expect(card.locator('time')).toHaveText('· 10/04');
     await expect(page.getByRole('region',{name:'2026-10-06'})).toBeVisible();
   }finally{await context.close();}
+});
+
+test('top hotspots precede one reading column and phone feeds use one toolbar',async()=>{
+  for(const width of [320,390,768,1280,1920]){
+    const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();
+    try{
+      await page.goto(origin+'/?tag=hot-layout');
+      const hot=page.getByRole('region',{name:'全站热点',exact:true});
+      await expect(hot).toBeVisible();
+      assert.equal(await hot.getByRole('listitem').count(),3);
+      const hotBox=await hot.boundingBox(),cardBox=await page.locator('[data-item-id]').boundingBox();
+      assert.ok(hotBox&&cardBox&&hotBox.y+hotBox.height<=cardBox.y,'hotspots appear above the feed, never beside it');
+      assert.ok(hotBox&&cardBox&&Math.abs(hotBox.x-cardBox.x)<2&&Math.abs(hotBox.width-cardBox.width)<2,'hotspots and news share the same reading column');
+      if(width<961){
+        await expect(page.locator('[data-phone-bar]')).toHaveCount(0);
+        await expect(page.locator('[data-site-header]').getByRole('button',{name:'搜索',exact:true})).toBeVisible();
+        const account=page.getByRole('link',{name:'登录并同步',exact:true});
+        await expect(account).toBeVisible();
+        const accountBox=await account.boundingBox();assert.ok(accountBox&&accountBox.x+accountBox.width<=width,'account stays inside narrow phone headers');
+        for(const link of await hot.getByRole('list').getByRole('link').all()){
+          const box=await link.boundingBox(); assert.ok(box&&box.height>=44,'hot links remain touch targets');
+        }
+        const rail=page.getByRole('navigation',{name:'栏目',exact:true});
+        const choice=rail.getByRole('link',{name:'行业观察',exact:true});
+        await choice.click();
+        await expect(choice).toHaveAttribute('aria-current','page');
+        await expect(choice).toBeInViewport({ratio:0.99});
+        const bounds=await rail.boundingBox();assert.ok(bounds&&bounds.height<54,'categories occupy one row');
+      }
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }finally{await context.close();}
+  }
 });
