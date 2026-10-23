@@ -15,10 +15,20 @@ export interface ModelPreset {
   jsonMode: boolean;
   /** 能看图。 */
   vision?: boolean;
+  /** 主通道不可用时只回退一次；回退请求仍经过回执和预算。 */
+  fallback?: string;
 }
 
 /** 具名的模型示例（每个要配自己的密钥）。用不上可以删掉。 */
 export const PRESETS: Record<string, ModelPreset> = {
+  "intern-flash": {
+    service: "intern", model: "deepseek-v4.1-flash-1017", baseUrlEnv: "INTERN_BASE_URL", apiKeyEnv: "INTERN_API_KEY",
+    extra: { thinking: { type: "disabled" } }, jsonMode: true, fallback: "deepseek-flash",
+  },
+  "intern-flash-think": {
+    service: "intern", model: "deepseek-v4.1-flash-1017", baseUrlEnv: "INTERN_BASE_URL", apiKeyEnv: "INTERN_API_KEY", reasoningTokens: 12000,
+    extra: { thinking: { type: "enabled" }, reasoning_effort: "low" }, jsonMode: true, fallback: "deepseek-flash-think",
+  },
   // GLM 5.3 Flash always reasons; the lowest effort keeps short structured tasks fast.
   "glm-5.3-flash": {
     service: "zhipu", model: "glm-5.3-flash", baseUrlEnv: "ZHIPU_BASE_URL", apiKeyEnv: "ZHIPU_API_KEY",

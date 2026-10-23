@@ -146,6 +146,7 @@ export function SearchOverlay() {
             onInput={(e) => setHasText(!!e.currentTarget.value)}
             tabIndex={shown ? 0 : -1}
             placeholder={translate(searchLabel)}
+            aria-label={translate(searchLabel)}
             maxLength={200}
             autoComplete="off"
             enterKeyHint="search"

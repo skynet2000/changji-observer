@@ -6,7 +6,7 @@ import type { z } from "zod";
 import { PRESETS } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
-import { assertAccepted, paidRequest, ProviderRejectedError, rejectReceivedResponse } from "./receipts.ts";
+import { assertAccepted, paidRequest, ProviderRejectedError, ReceiptUnknownError, rejectReceivedResponse } from "./receipts.ts";
 import { budgetedOutputTokens, modelCost, reserveModelCost } from "./model-cost.ts";
 
 export interface ModelSpec {
@@ -21,6 +21,7 @@ export interface ModelSpec {
   reasoningTokens?: number;
   jsonMode: boolean;
   vision?: boolean;
+  fallback?: string;
 }
 
 function extraFromEnv(value: string | undefined): Record<string, unknown> | undefined {
@@ -127,7 +128,32 @@ function isConnectFailure(error: unknown): boolean {
   return ["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "UND_ERR_CONNECT_TIMEOUT", "CERT_HAS_EXPIRED"].includes(code ?? "");
 }
 
+// A quota-limited channel rejected live requests with 429. Briefly back off across capabilities
+// in this worker; try it again after a minute. Successful answers are never sent to a second provider.
+const unavailableUntil = new Map<string, number>();
+
 export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): Promise<ChatJsonResult<z.infer<S>>> {
+  const spec = MODELS[opts.model];
+  if (!spec?.fallback) return chatJsonOnce(opts);
+  const fallback = MODELS[spec.fallback];
+  if (!fallback || fallback.fallback || fallback.key === spec.key) throw new Error("Invalid model fallback configuration");
+  if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
+  const channel = `${spec.service}:${credential("models", spec.baseUrlEnv)}`;
+  if ((unavailableUntil.get(channel) ?? 0) <= Date.now()) {
+    try {
+      return await chatJsonOnce(opts);
+    } catch (error) {
+      // Do not turn local budget stops, in-flight locks, or database errors into extra paid calls.
+      if (!(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError)) throw error;
+      if (!(error instanceof ModelOutputError)) unavailableUntil.set(channel, Date.now() + 60_000);
+      console.warn(JSON.stringify({ event: "model_fallback", primary: spec.key, fallback: fallback.key,
+        purpose: opts.purpose, reason: error.constructor.name, status: error instanceof ProviderRejectedError ? error.status : null }));
+    }
+  }
+  return chatJsonOnce({ ...opts, model: fallback.key });
+}
+
+async function chatJsonOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>): Promise<ChatJsonResult<z.infer<S>>> {
   const spec = MODELS[opts.model];
   if (!spec) throw new Error(`Unknown model ${opts.model}`);
   if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
