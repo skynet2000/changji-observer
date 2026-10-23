@@ -1,10 +1,9 @@
 import { Text, useText } from "@aihot/web/lib/text";
-// Categories stay visible; the sheet repeats them and offers a reset action.
+// One visible category control; active tags and queries can be removed independently.
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
-import { READER_CATEGORY_OPTIONS, readerCategory, readerCategoryLabel, type CategoryKey } from "@aihot/contracts/taxonomy";
-import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
-import { Sheet } from "../../components/ui/Sheet";
+import { READER_CATEGORY_OPTIONS, readerCategory, type CategoryKey } from "@aihot/contracts/taxonomy";
+import { IconClose, IconSearch } from "../../components/icons";
 import { IntentLink } from "../../components/ui/IntentLink";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
@@ -40,91 +39,18 @@ function filterKey(category: CategoryKey | null): string {
 export function CategoryTabs({ base, category, className = "" }: { base: string; category: CategoryKey | null; className?: string }) {
   const translate = useText();
   const [params] = useSearchParams();
-  const rail = useRef<HTMLElement>(null);
-  const activeLabel = translate(category ? readerCategoryLabel(category) : "全部");
-  useEffect(() => {
-    const el = rail.current;
-    if (!el) return;
-    const reveal = () => {
-      const active = el.querySelector<HTMLElement>('[aria-current="page"]');
-      if (!active || !el.clientWidth || el.scrollWidth <= el.clientWidth) return;
-      const track = el.getBoundingClientRect(), choice = active.getBoundingClientRect();
-      if (choice.left < track.left + 12) el.scrollLeft += choice.left - track.left - 12;
-      else if (choice.right > track.right - 12) el.scrollLeft += choice.right - track.right + 12;
-    };
-    reveal();
-    const observer = new ResizeObserver(reveal);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [category, activeLabel]);
-  return <nav ref={rail} aria-label={translate("筛选")} className={`category-tabs ${className}`}>
+  return <nav aria-label={translate("栏目")} className={`category-tabs ${className}`}>
     {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
       aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}
   </nav>;
 }
 
 /** The phone page title and tools. Page switching lives only in the bottom navigation. */
-export function FeedBar({ base, category }: { base: "/" | "/all"; category: CategoryKey | null }) {
+export function FeedBar({ base }: { base: "/" | "/all" }) {
   return <PhoneBar
     leading={<h1 className="pl-2.5 text-[20px] font-semibold text-ink"><Text>{base === "/" ? "精选" : "全部动态"}</Text></h1>}
-    actions={
-      <>
-        <FilterButton base={base} category={category} />
-        <SearchButton />
-      </>
-    }
+    actions={<SearchButton />}
   />;
-}
-
-/** The same category control is available while reading a feed or searching it. */
-export function FilterButton({ base, category, desktop = false }: { base: string; category: CategoryKey | null; desktop?: boolean }) {
-  const translate = useText();
-  const [params] = useSearchParams();
-  const [sheet, setSheet] = useState(false);
-  const count = Number(!!category) + Number(params.has("tag"));
-  const filtered = count > 0;
-  return <>
-    {desktop ? <button type="button" aria-label={translate(filtered ? "筛选（已选）" : "筛选")} onClick={() => setSheet(true)}
-      className={`inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-full border px-4 text-[13px] font-medium transition-colors ${filtered ? "border-accent/30 bg-accent-soft text-accent" : "border-line text-ink-2 hover:bg-bg-sunk"}`}>
-      <IconFilter size={17} /><Text>筛选</Text>{filtered && <span className="num">{count}</span>}
-    </button> : <BarButton label={filtered ? "筛选（已选）" : "筛选"} on={filtered} onClick={() => setSheet(true)}>
-      <IconFilter size={21} />
-      {filtered && <span aria-hidden="true" className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-accent text-[10px] font-semibold text-accent-contrast ring-2 ring-bg">{count}</span>}
-    </BarButton>}
-    <FilterSheet open={sheet} onClose={() => setSheet(false)} base={base} active={filterKey(category)} filtered={filtered} centered={desktop} />
-  </>;
-}
-
-/** Phones: the filter as a sheet of options, the one in use ticked; choosing one applies it. */
-function FilterSheet({ open, onClose, base, active, filtered, centered }: { open: boolean; onClose: () => void; base: string; active: string; filtered: boolean; centered: boolean }) {
-  const translate = useText();
-  const [params] = useSearchParams();
-  return (
-    <Sheet open={open} onClose={onClose} title={translate("筛选")} centered={centered}>
-      <div className="px-4 pb-2">
-      <h3 className="mb-2 mt-2 text-[12px] font-medium text-ink-4"><Text>栏目</Text></h3>
-      <nav aria-label={translate("栏目")} className="grid grid-cols-2 gap-2">
-        {filterOptions(base, params, "不限").map((o) => {
-          const on = o.key === active;
-          return (
-              <Link
-                key={o.key}
-                to={o.to}
-                onClick={onClose}
-                aria-current={on ? "true" : undefined}
-                className={`flex min-h-11 items-center justify-between rounded-tile border px-3 text-[14px] transition-colors active:bg-bg-sunk ${o.key === "all" ? "col-span-2" : ""} ${on ? "border-accent/30 bg-accent-soft font-semibold text-accent" : "border-line text-ink hover:bg-bg-sunk"}`}
-              >
-                <Text>{o.label}</Text>
-                {on && <IconCheck size={19} strokeWidth={2.2} />}
-              </Link>
-          );
-        })}
-      </nav>
-      <p className="mt-3 text-[12px] leading-relaxed text-ink-4"><Text>点击即生效；各项条件叠加筛选。</Text></p>
-      {filtered && <Link to={hrefWith(base, params, { category: null, tag: null })} onClick={onClose} className="mt-5 flex min-h-11 items-center justify-center rounded-tile bg-bg-sunk text-[14px] font-medium text-ink-2"><Text>清除筛选</Text></Link>}
-      </div>
-    </Sheet>
-  );
 }
 
 /** Empty lists offer a way out without making readers hunt for the filter controls. */
@@ -137,14 +63,18 @@ export function FilterRecovery({ base }: { base: "/" | "/all" }) {
   </div>;
 }
 
-/** Phones: the tag in use as chips under the bar; each one clears itself when tapped. */
+/** Applied tags and queries stay visible and each can be cleared without losing the others. */
 export function ActiveFilters({ base, tag }: { base: string; tag: string | null }) {
   const translate = useText();
   const [params] = useSearchParams();
-  if (!tag) return null;
+  const query = params.get("q")?.trim();
+  if (!tag && !query) return null;
   const chip = "inline-flex min-h-11 max-w-full items-center gap-1 rounded-full bg-accent-soft pl-3 pr-2 text-[13px] font-medium text-accent transition-opacity active:opacity-60";
   return (
     <div className="flex flex-wrap gap-2 pb-3 pt-1">
+      {query && <Link to={hrefWith(base, params, { q: null, tab: null })} aria-label={translate(`取消搜索：${query}`)} className={chip}>
+        <IconSearch size={14} className="shrink-0" /><span className="truncate">{query}</span><IconClose size={14} strokeWidth={2} className="shrink-0" />
+      </Link>}
       {tag && (
         <Link to={hrefWith(base, params, { tag: null })} aria-label={translate(`取消标签：${tag}`)} className={chip}>
           <span className="truncate">#<Text>{tag}</Text></span>
@@ -186,13 +116,14 @@ export function SearchField({ defaultValue = "", keep = {} }: { defaultValue?: s
   useEffect(() => setValue(defaultValue), [defaultValue]);
   useSlashFocus(inputRef);
   const searching = navigation.state === "loading" && navigation.location?.pathname === "/all" && !!new URLSearchParams(navigation.location.search).get("q");
+  const searchLabel = keep.tab === "relevance" ? "搜索标题、摘要与正文" : "搜索标题与摘要";
   const hidden = Object.entries(keep).map(([k, v]) => (v ? <input key={k} type="hidden" name={k} value={v} /> : null));
 
   return (
     <Form method="get" action="/all" role="search" className="group relative w-full shrink-0 lg:w-60">
       <Text>{hidden}</Text>
       <label htmlFor="site-search" className="sr-only"><Text>
-        搜索标题、摘要与正文
+        {searchLabel}
       </Text></label>
       <IconSearch size={16} className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${searching ? "text-accent" : "text-ink-4 group-focus-within:text-ink-3"}`} />
       <input
@@ -201,7 +132,7 @@ export function SearchField({ defaultValue = "", keep = {} }: { defaultValue?: s
         name="q"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder={translate("搜索标题、摘要…")}
+        placeholder={translate(keep.tab === "relevance" ? "全文搜索…" : "搜索标题、摘要…")}
         maxLength={200}
         autoComplete="off"
         className="h-[42px] w-full rounded-full bg-bg-sunk pl-10 pr-10 text-[14px] text-ink outline-none ring-1 ring-inset ring-line-soft transition-[background-color,box-shadow] placeholder:text-ink-4 hover:ring-line-strong focus:bg-surface focus:shadow-[0_0_0_3px_var(--accent-soft)] focus:ring-accent dark:bg-bg-muted/60 dark:focus:bg-surface"

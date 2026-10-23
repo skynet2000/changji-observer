@@ -2,7 +2,7 @@ import { Text, useText } from "@aihot/web/lib/text";
 import { useLoaderData } from "react-router";
 import { IntentLink } from "../components/ui/IntentLink";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
-import { subjectAfter, withSubject } from "@aihot/site";
+import { withSubject } from "@aihot/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { pageMeta } from "../lib/seo";
@@ -28,7 +28,7 @@ export async function loader({ request }: { request: Request }) {
 export function meta() {
   return pageMeta({
     title: withSubject("热点榜"),
-    description: `${subjectAfter("过去 48 小时", "圈")}讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。`,
+    description: "过去 48 小时已收录信源中的热点事件：热度指数、趋势与组成热度的公开来源。",
     path: "/hot",
     image: "/og/pages/hot.png",
   });
@@ -49,15 +49,14 @@ function Voices({ e }: { e: HotEntryView }) {
   const names = e.sourceNames.slice(0, 2);
   return (
     <span className="min-w-0 text-[12.5px] leading-snug text-ink-4">
-      {/* Lines break between the phrases, never inside one. */}
-      <span className="whitespace-nowrap">
+      {/* Source names may wrap, especially after switching to English. */}
+      <span>
         {names.length > 0 && <span className="text-ink-3">{names.map((name, i) => <span key={name}>{i > 0 && <span> / </span>}<Text>{name}</Text></span>)}</span>}
         <Text>{e.sourceCount > names.length ? ` 等 ${e.sourceCount} 个来源` : names.length ? " 报道" : `${e.sourceCount} 个来源`}</Text>
       </span>
       <span className="mx-1.5 text-line-strong">·</span>
       <span className="whitespace-nowrap">
-        <span className="num"><Text>{e.participantCount}</Text></span><Text> 位参与者
-      </Text></span>
+        <Text>{`${e.participantCount} 位参与者`}</Text></span>
     </span>
   );
 }
@@ -89,7 +88,7 @@ function HeatPanel({ e }: { e: HotEntryView }) {
   const peak = Math.max(...seen);
   const peakAt = e.spark.findIndex((v) => v === peak);
   return (
-    <div className="order-first flex aspect-[2/1] flex-col rounded-panel bg-accent-softer p-4 ring-1 ring-inset ring-line-soft xl:order-none xl:aspect-[16/10] dark:bg-accent-soft">
+    <div className="flex h-28 flex-col sm:h-auto sm:aspect-[2/1] rounded-panel bg-accent-softer p-4 ring-1 ring-inset ring-line-soft xl:order-none xl:aspect-[16/10] dark:bg-accent-soft">
       <div className="flex items-baseline justify-between text-[11.5px] text-ink-4">
         <span className="font-semibold text-ink-3"><Text>24 小时热度</Text></span>
         <span><Text>
@@ -111,7 +110,7 @@ function Lead({ e }: { e: HotEntryView }) {
   const panel = !e.cover && e.spark.filter((v) => v !== null).length >= 3;
   return (
     <article className="card card-hover group relative flex flex-col overflow-hidden p-5 sm:p-6">
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}>NO.<Text>{pad(e.rank)}</Text></span>
         <Badges e={e} />
         <Delta trend={e.trend} pct={e.trendPct} className="ml-auto" />
@@ -124,7 +123,7 @@ function Lead({ e }: { e: HotEntryView }) {
           {e.summary && <p className="mt-3 line-clamp-3 text-[14px] leading-[1.75] text-ink-3"><Text content>{e.summary}</Text></p>}
         </div>
         {e.cover ? (
-          <div className="order-first overflow-hidden well rounded-panel xl:order-none">
+          <div className="overflow-hidden well rounded-panel">
             <img src={e.cover.url} srcSet={e.cover.srcSet} sizes="(min-width: 1280px) calc(28vw - 96px), (min-width: 1024px) calc(58vw - 180px), (min-width: 640px) 568px, calc(100vw - 74px)" width={e.cover.width ?? undefined} height={e.cover.height ?? undefined} alt="" loading="eager" fetchPriority="high" decoding="async" className="aspect-[16/9] size-full object-cover transition-transform duration-500 group-hover:scale-[1.02] xl:aspect-[16/10]" />
           </div>
         ) : (
@@ -163,7 +162,7 @@ function Lead({ e }: { e: HotEntryView }) {
 function Runner({ e }: { e: HotEntryView }) {
   return (
     <article className="card card-hover group relative flex flex-col px-5 py-4">
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}>NO.<Text>{pad(e.rank)}</Text></span>
         <Badges e={e} />
         <Delta trend={e.trend} pct={e.trendPct} className="ml-auto" />
@@ -250,14 +249,9 @@ export default function HotPage() {
         title={translate("热点")}
         large
         sub={
-          <><Text>
-            过去 </Text><Text>{hot.windowHours}</Text><Text>{`${subjectAfter(" 小时", "圈")}讨论最多的 `}</Text>{hot.entries.length || 10}<Text> 件事
-            </Text>{hot.computedAt && (
-              <>
-                <Text>{" · "}</Text>
-                <span className="num"><Text>{monthDayTime(hot.computedAt)}</Text></span><Text> 更新
-              </Text></>
-            )}
+          <>
+            <Text>{`过去 ${hot.windowHours} 小时 · 已收录信源中的 ${hot.entries.length} 个热点`}</Text>
+            {hot.computedAt && <span className="mt-1 block"><Text>更新于</Text>{" "}<Text>{monthDayTime(hot.computedAt)}</Text></span>}
           </>
         }
         actions={
@@ -273,15 +267,14 @@ export default function HotPage() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-hot opacity-30" />
               <span className="relative inline-flex size-2 rounded-full bg-hot" />
             </span><Text>
-            实时热度
+            讨论热度
           </Text></div>
           <h1 className="mt-1.5 text-[24px] font-bold leading-[1.3] tracking-[-0.01em] text-ink lg:text-[26px]"><Text>{withSubject("热点榜")}</Text></h1>
-          <p className="mt-1.5 text-[13.5px] text-ink-3"><Text>过去 </Text><Text>{hot.windowHours}</Text><Text>{` 小时，${withSubject("圈")}讨论最多的 `}</Text>{hot.entries.length || 10}<Text> 件事</Text></p>
+          <p className="mt-1.5 text-[13.5px] text-ink-3"><Text>{`过去 ${hot.windowHours} 小时 · 已收录信源中的 ${hot.entries.length} 个热点`}</Text></p>
         </div>
         {hot.computedAt && (
           <p className="text-[12px] text-ink-4">
-            <span className="num"><Text>{monthDayTime(hot.computedAt)}</Text></span><Text> 更新 · 按讨论热度排序
-          </Text></p>
+            <Text>更新于</Text>{" "}<span className="num"><Text>{monthDayTime(hot.computedAt)}</Text></span></p>
         )}
       </header>
 

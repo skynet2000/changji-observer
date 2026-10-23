@@ -21,32 +21,27 @@ function TrendMark({ trend }: { trend: HotStripEntry["trend"] }) {
   return <IconMinus size={14} strokeWidth={2.2} className="text-ink-4" aria-label={translate("热度持平")} />;
 }
 
-/**
- * The top of the hot ranking on the home page, kept quiet: a live dot, coloured ranks and titles, then
- * columns of fixed width so every row lines up — who is talking (精选组 faces, from sm), "N 热度" and an arrow for
- * where it is heading. The whole row lights up on hover. Phones show the top three in one line each, so
- * the feed starts on the first screen.
- */
+/** The desktop feed rail shows site-wide trends; narrow layouts use the dedicated hot tab. */
 export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
   const translate = useText();
   if (entries.length === 0) return null;
   return (
     <section
       aria-labelledby="hot-topics"
-      className="hot-editorial card relative mb-4 overflow-hidden px-4 pb-2 pt-4 lg:px-5"
+      className="hot-editorial"
     >
-      <div className="flex items-center justify-between lg:mb-1">
+      <div className="hot-editorial-heading">
         <h2 id="hot-topics" className="flex items-center gap-2 text-[14px] font-semibold text-ink">
           <span className="relative flex size-2" aria-hidden="true">
             <span className="relative inline-flex size-2 rounded-full bg-hot" />
           </span><Text>
-          当前热点
+          全站热点
         </Text></h2>
         <Link to="/hot" className="group -my-2 -mr-1.5 inline-flex h-10 items-center gap-1 px-1.5 text-[12.5px] text-ink-3 transition-colors hover:text-accent lg:my-0 lg:mr-0 lg:h-auto lg:px-0"><Text>
           完整榜单 </Text><IconArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </div>
-      <ol>
+      <ol className="hot-editorial-list">
         {entries.slice(0, 5).map((e, i) => (
           <li key={e.rank} className={i >= 3 ? "max-sm:hidden" : undefined}>
             <Link viewTransition

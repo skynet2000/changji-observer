@@ -536,6 +536,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       {!daily && <History report={report} index={index} />}
       <footer className="py-10 text-center">
         <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4"><Text>（本期完）</Text></div>
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-4"><Text>本期保留出刊时的选稿结果；之后新增或重新入选的内容请查看精选。</Text></p>
         <p className="mt-3 text-[12px] text-ink-4">
           <Text>{`${SITE.name} ${KIND_LABEL[report.kind]}`}</Text>{" · "}
           <Text>{daily ? "根据公开来源自动编辑，每条均附原文" : "根据公开来源自动综合，每条均附原文"}</Text>{" · "}

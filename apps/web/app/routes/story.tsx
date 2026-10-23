@@ -267,8 +267,7 @@ export default function StoryPage() {
           {story.latestAt && (
             <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
               <IconClock size={15} className="text-ink-4" />
-              <Text>{relativeTime(story.latestAt)}</Text><Text>更新
-            </Text></span>
+              <Text>{`${relativeTime(story.latestAt)}更新`}</Text></span>
           )}
         </div>
       </header>
@@ -294,7 +293,7 @@ export default function StoryPage() {
           <Panel id={SECTIONS.overview} title={translate("先了解这件事")} right={overview?.label} className="order-1">
             {overview ? (
               <>
-                <p className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2"><Text>{overview.text}</Text></p>
+                <p className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2"><Text content>{overview.text}</Text></p>
                 {overview.note && (
                   <p className="mt-2 text-[12px] text-ink-4" suppressHydrationWarning>
                     <Text>{overview.note}</Text>

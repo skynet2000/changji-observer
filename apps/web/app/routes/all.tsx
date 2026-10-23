@@ -8,7 +8,7 @@ import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
-import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, FilterRecovery, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, CategoryTabs, FeedBar, FilterRecovery, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { DayList, Pagination } from "../features/feed/DayList";
@@ -81,7 +81,7 @@ export default function AllPage() {
   const f = data.filters;
   const busy = navigation.state === "loading" && navigation.location?.pathname === "/all";
   const { category } = filterParams(f);
-  const keep = { category, tag: f.tag };
+  const keep = { category, tag: f.tag, tab: f.q && f.tab === "relevance" ? "relevance" : null };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);
     sp.delete("page");
@@ -106,7 +106,6 @@ export default function AllPage() {
       {f.q ? (
         <PhoneBar
           back={{ to: "/all", label: "全部" }}
-          actions={<FilterButton base="/all" category={f.category} />}
           center={
             <button type="button" onClick={(event) => openSearch(f.q ?? "", event.currentTarget)} className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-bg-sunk px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60">
               <IconSearch size={16} className="shrink-0 text-ink-4" />
@@ -115,10 +114,9 @@ export default function AllPage() {
           }
         />
       ) : (
-        <FeedBar base="/all" category={f.category} />
+        <FeedBar base="/all" />
       )}
       <CategoryTabs base="/all" category={f.category} className="mobile-category-tabs lg:hidden" />
-      <ActiveFilters base="/all" tag={f.tag} />
 
       {!f.q && !f.tag && <FeedMasthead all />}
 
@@ -128,13 +126,14 @@ export default function AllPage() {
         <div className="feed-filter-row">
           <CategoryTabs base="/all" category={f.category} />
           <div className="ml-auto flex items-center gap-3">
-            <FilterButton desktop base="/all" category={f.category} />
             <SearchField defaultValue={f.q ?? ""} keep={keep} />
           </div>
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>{f.q && f.tab === "relevance" ? "按全文相关程度排列 · 同一事件合并展示，可展开查看进展" : "按原文发布时间排列 · 同一事件合并展示，可展开查看进展"}</Text></p>
+      <ActiveFilters base="/all" tag={f.tag} />
+
+      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>{f.q && f.tab === "relevance" ? "按全文相关程度排列 · 同一事件合并展示，可展开查看进展" : "按事件最新进展排列 · 同一事件合并展示，可展开查看进展"}</Text></p>
 
       {f.q && (
         <div className="mb-3 mt-1 flex flex-wrap items-center justify-between gap-2 lg:mt-0">

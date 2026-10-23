@@ -12,7 +12,7 @@ import { Timeline } from "../features/feed/Timeline";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
-import { ActiveFilters, CategoryTabs, FeedBar, FilterButton, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
 
 export const handle: Screen = { tab: "featured", name: "精选" };
 export { pageHeaders as headers } from "../lib/api.server";
@@ -46,28 +46,28 @@ export default function Home() {
   return (
     <div className="pb-6">
       {/* Phones: the page title, visible categories, active tags, then the news. */}
-      <FeedBar base="/" category={filters.category} />
+      <FeedBar base="/" />
       <CategoryTabs base="/" category={filters.category} className="mobile-category-tabs lg:hidden" />
-      <ActiveFilters base="/" tag={filters.tag} />
       <FeedMasthead />
       <div className="hidden lg:block">
         <h2 className="sr-only"><Text>{title}</Text></h2>
         <div className="feed-filter-row">
           <CategoryTabs base="/" category={filters.category} />
           <div className="ml-auto flex items-center gap-3">
-            <FilterButton desktop base="/" category={filters.category} />
             <SearchField keep={{ category: filters.category, tag: filters.tag }} />
           </div>
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按原文发布时间排列 · 同一事件合并展示，可展开查看进展</Text></p>
+      <ActiveFilters base="/" tag={filters.tag} />
+
+      <p className="mb-4 text-[12px] leading-relaxed text-ink-4"><Text>按事件最新进展排列 · 同一事件合并展示，可展开查看进展</Text></p>
 
       <div className={data.hot?.length && inNav("/hot") ? "feed-columns" : ""}>
         <div className="min-w-0">{data.cards.length === 0 && !hasFeedFilters(filters)
           ? <FeedWelcome />
           : <Timeline initial={data} filters={data.filters} />}</div>
-        {data.hot && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>{FEED_EDITORIAL.contextTitle}</Text></h2><p><Text>{FEED_EDITORIAL.contextLead}</Text></p></div></aside>}
+        {!!data.hot?.length && inNav("/hot") && <aside className="feed-aside"><HotTopics entries={data.hot} /><div className="editorial-aside-note"><span className="editorial-kicker">IN CONTEXT</span><h2><Text>{FEED_EDITORIAL.contextTitle}</Text></h2><p><Text>{FEED_EDITORIAL.contextLead}</Text></p></div></aside>}
       </div>
     </div>
   );

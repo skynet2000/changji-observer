@@ -10,7 +10,7 @@ import { readerCategory, readerCategoryLabel } from "@aihot/contracts/taxonomy";
 import { ITEM_COPY } from "@aihot/site";
 import { SameEventBadge, SelectedBadge } from "../../components/ui/Badge";
 import { ScoreLabel } from "../../components/ui/Score";
-import { beijingTime } from "@aihot/contracts/time";
+import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { MediaThumbs, SourceLine, StarButton } from "./parts";
 import { GroupButton, GroupSources } from "./ReadingGroup";
 import { QuotedLine } from "../item/QuotedPost";
@@ -24,7 +24,7 @@ export interface FeedItemProps {
   onOpen?: (id: string) => void;
   /** Show category and tags under the text (全部动态, topics, search). */
   showTags?: boolean;
-  /** The time the item sits at in its list; phones show it in the source line (desktop: on the rail). */
+  /** Event position in the list; the source line still shows this report's own time. */
   at?: string;
 }
 
@@ -36,6 +36,9 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
     onOpen?.(item.id);
   };
   const showSources = !!group && (group.additionalSourceCount > 0 || group.reportCount > 1);
+  const reportAt = item.publishedAt ?? item.timelineAt;
+  const reportTime = at && beijingDate(at) !== beijingDate(reportAt)
+    ? beijingDate(reportAt).slice(5).replace("-", "/") : beijingTime(reportAt);
   const tags = showTags ? item.tags.slice(0, 3) : [];
 
   return (
@@ -43,8 +46,8 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
       <header className="flex min-h-[22px] items-center gap-1.5 text-[12.5px] leading-[18px] text-ink-4 lg:min-h-[18px] lg:gap-2">
         <SourceLine item={item} className="text-ink-4" />
         {at && (
-          <time dateTime={at} className="mono shrink-0 text-[12px]">
-            · <Text>{beijingTime(at)}</Text>
+          <time dateTime={reportAt} title={translate("原文发布时间")} className="mono shrink-0 text-[12px]">
+            · <Text>{reportTime}</Text>
           </time>
         )}
         {item.selected && (

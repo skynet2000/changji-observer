@@ -62,7 +62,8 @@ export function SearchOverlay() {
   const { key, pathname, search } = useLocation();
   const params = new URLSearchParams(search);
   const filters: [string, string][] = pathname === "/" || pathname === "/all"
-    ? ["category", "tag"].flatMap(key => params.has(key) ? [[key, params.get(key)!] as [string, string]] : []) : [];
+    ? ["category", "tag", "tab"].flatMap(key => params.has(key) ? [[key, params.get(key)!] as [string, string]] : []) : [];
+  const searchLabel = params.get("tab") === "relevance" ? "搜索标题、摘要与正文" : "搜索标题与摘要";
   const searchHref = (q: string) => `/all?${new URLSearchParams([...filters, ["q", q]])}`;
   const [more, setMore] = useState<Awaited<ReturnType<typeof loadSuggestions>> | null>(null);
 
@@ -136,7 +137,7 @@ export function SearchOverlay() {
       >
         {filters.map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)}
         <label className="relative flex-1">
-          <span className="sr-only"><Text>搜索标题、摘要和正文</Text></span>
+          <span className="sr-only"><Text>{searchLabel}</Text></span>
           <IconSearch size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-4" />
           <input
             ref={input}
@@ -144,7 +145,7 @@ export function SearchOverlay() {
             type="search"
             onInput={(e) => setHasText(!!e.currentTarget.value)}
             tabIndex={shown ? 0 : -1}
-            placeholder={translate("搜索标题、摘要和正文")}
+            placeholder={translate(searchLabel)}
             maxLength={200}
             autoComplete="off"
             enterKeyHint="search"
