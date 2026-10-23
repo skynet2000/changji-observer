@@ -238,6 +238,16 @@
       "labelledAt": "2026-10-20",
       "labelledBy": "editorial-review-user-feedback",
       "labelBasis": "用户质疑行业范围，结合官方业务定义及原文主线复核；不是标注界面的人工ABC标签"
+    },
+    {
+      "articleId": "udiy1tjp42z6sfm23kjq2g4rs",
+      "title": "杭州警方通报盘石及关联公司涉嫌合同诈骗，创始人田宁被采取刑事强制措施",
+      "topic": "普通公司涉刑及园区消息，无目标互联网平台业务或员工用工机制主线；泛互联网营销背景及旁枝团队解散不足以准入",
+      "relevance": "BLOCK",
+      "selected": false,
+      "labelledAt": "2026-10-23",
+      "labelledBy": "editorial-review-user-feedback",
+      "labelBasis": "用户质疑盘石进入信息流；结合其指定报道主线复核，不冒充标注界面ABC标签"
     }
   ]
 }
