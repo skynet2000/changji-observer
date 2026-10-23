@@ -540,17 +540,21 @@ test('editing a full-text query preserves its search mode and filters on both la
 });
 
 test('hot overview uses source-scoped counts and translates dates without a model',async()=>{
-  const context=await chrome.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
-  try{
+  for(const width of [320,390,1280]){
+    const context=await chrome.newContext({viewport:{width,height:844}}),page=await context.newPage();
+    try{
     await page.goto(origin+'/hot');
     await expect(page.getByRole('list',{name:'热点榜',exact:true})).toBeVisible();
     const first=await page.getByRole('list',{name:'热点榜',exact:true}).getByRole('listitem').first().boundingBox();
-    assert.ok(first&&first.height<240,'phone rankings do not start with a screen-sized hero');
+    assert.ok(first&&first.height>=44&&first.height<=56,'phone rankings are compact touchable rows');
+    await expect(page.getByRole('list',{name:'热点榜',exact:true}).getByRole('link').first()).toHaveAttribute('href','/story/fixture');
     await expect(page.getByText('过去 48 小时 · 已收录信源中的 1 个热点').filter({visible:true})).toBeVisible();
     await page.getByRole('button',{name:'Switch to English'}).click();
     await expect(page.getByText('Past 48 hours · 1 trend across our sources').filter({visible:true})).toBeVisible();
     await expect(page.getByText('Updated Oct 4 16:00',{exact:true}).filter({visible:true})).toBeVisible();
-  }finally{await context.close();}
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }finally{await context.close();}
+  }
 });
 
 
@@ -573,8 +577,18 @@ test('top hotspots precede one reading column and phone feeds use one toolbar',a
       await page.goto(origin+'/?tag=hot-layout');
       const hot=page.getByRole('region',{name:'全站热点',exact:true});
       await expect(hot).toBeVisible();
-      assert.equal(await hot.getByRole('listitem').count(),3);
+      assert.equal(await hot.getByRole('listitem').count(),width<961?3:5);
+      const rows=await hot.getByRole('listitem').all();
+      let previousBottom=0;
+      for(const row of rows){
+        const box=await row.boundingBox();assert.ok(box&&box.y>=previousBottom&&box.height<=52,'ranking flows vertically as short rows');
+        previousBottom=box.y+box.height;
+      }
+      const heatBoxes=await hot.locator('.hot-rank-heat').filter({visible:true}).evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().right));
+      assert.ok(heatBoxes.every(x=>Math.abs(x-heatBoxes[0]!)<1),'heat values share a right-aligned column');
+      await expect(hot.locator('.hot-rank-badge')).toHaveCount(0); // Upward trends alone do not justify a hot/new badge.
       const hotBox=await hot.boundingBox(),cardBox=await page.locator('[data-item-id]').boundingBox();
+      assert.ok(hotBox&&hotBox.height<=(width<961?180:240),'homepage board stays short and leaves room for the news');
       assert.ok(hotBox&&cardBox&&hotBox.y+hotBox.height<=cardBox.y,'hotspots appear above the feed, never beside it');
       assert.ok(hotBox&&cardBox&&Math.abs(hotBox.x-cardBox.x)<2&&Math.abs(hotBox.width-cardBox.width)<2,'hotspots and news share the same reading column');
       if(width<961){

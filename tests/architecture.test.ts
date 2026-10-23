@@ -130,8 +130,8 @@ test("every table and column is used by the code that reads and writes the datab
 });
 
 // import.meta.env.DEV and the like are the web build's own flags, not environment variables.
-const ENV_READ = /\b(?:process\.env|(?<!import\.meta\.)env)\.([A-Z][A-Z0-9_]+)|\b(?:process\.env|env)\[\s*["']([A-Z][A-Z0-9_]+)["']\s*\]|\b(?:str|int|bool)\(\s*"([A-Z][A-Z0-9_]+)"/g;
-const envReads = (files: Array<{ text: string }>) => new Set(files.flatMap(({ text }) => [...text.matchAll(ENV_READ)].map((m) => (m[1] ?? m[2] ?? m[3])!)));
+const ENV_READ = /\b(?:process\.env|(?<!import\.meta\.)env)\.([A-Z][A-Z0-9_]+)|\b(?:process\.env|env|os\.environ)\[\s*["']([A-Z][A-Z0-9_]+)["']\s*\]|\b(?:str|int|bool)\(\s*"([A-Z][A-Z0-9_]+)"|\bos\.environ\.get\(\s*["']([A-Z][A-Z0-9_]+)["']/g;
+const envReads = (files: Array<{ text: string }>) => new Set(files.flatMap(({ text }) => [...text.matchAll(ENV_READ)].map((m) => (m[1] ?? m[2] ?? m[3] ?? m[4])!)));
 const assigned = (file: string, pattern: RegExp) => [...readFileSync(path.join(ROOT, file), "utf8").matchAll(pattern)].map((m) => m[1]!);
 
 // .env.example is the template. A deployment's own files, where the repository has them, set the rest
@@ -153,7 +153,9 @@ test("every environment variable the code reads is listed in a template, and eve
     ...(DEPLOYMENT.includes(COMPOSE) ? assigned(COMPOSE, /^\s+([A-Z][A-Z0-9_]+):\s/gm) : []),
     ...tracked("*.service").flatMap((unit) => assigned(unit, /^Environment="?([A-Z][A-Z0-9_]+)=/gm)),
   ]);
-  const read = envReads(production());
+  // Server-side Python jobs use independent env templates, outside the Node containers.
+  const deployed = tracked("deploy/*.py").filter(file => !file.includes("/tests/")).map(file => ({ text: readFileSync(path.join(ROOT, file), "utf8") }));
+  const read = envReads([...production(), ...deployed]);
   const readAnywhere = new Set([...read, ...envReads(sources("scripts")),
     ...[...production(), ...sources("site"), ...sources("scripts")].flatMap(({ text }) => matches(text, NAMED)),
     ...DEPLOYMENT.flatMap((file) => matches(readFileSync(path.join(ROOT, file), "utf8"), SUBSTITUTED))]);
