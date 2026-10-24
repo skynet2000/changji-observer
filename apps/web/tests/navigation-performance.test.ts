@@ -518,6 +518,23 @@ test('empty searches can clear filters without losing their query and explain fu
   }
 });
 
+test('a query typed before hydration survives hydration and submits with its filters',async()=>{
+  const context=await chrome.newContext({viewport:{width:1280,height:900}}),page=await context.newPage();
+  let release!:()=>void;
+  const hydration=new Promise<void>(resolve=>{release=resolve;});
+  try{
+    await page.route(/\/assets\/entry\.client-[^/]+\.js$/,async route=>{await hydration;await route.continue();});
+    await page.goto(origin+'/all?q=招聘&tab=relevance&category=career&tag=组织调整',{waitUntil:'commit'});
+    const input=page.getByRole('textbox',{name:'搜索标题、摘要与正文',exact:true});
+    await input.fill('岗位');
+    release();
+    await expect(page.locator('[role="dialog"][aria-label="搜索"]')).toHaveCount(1);
+    await expect(input).toHaveValue('岗位');
+    await input.press('Enter');
+    await expect(page).toHaveURL(url=>url.searchParams.get('q')==='岗位'&&url.searchParams.get('tab')==='relevance'&&url.searchParams.get('category')==='career'&&url.searchParams.get('tag')==='组织调整');
+  }finally{release();await context.close();}
+});
+
 test('editing a full-text query preserves its search mode and filters on both layouts',async()=>{
   for(const width of [390,1280]){
     const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();

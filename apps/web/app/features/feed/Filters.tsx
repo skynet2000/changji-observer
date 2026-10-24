@@ -106,10 +106,16 @@ function useSlashFocus(ref: React.RefObject<HTMLInputElement | null>) {
 /** Desktop search field (GET /all?q=…): at the end of the filter row as the same grey track, at the height of md tabs, with a "/" hint. */
 export function SearchField({ defaultValue = "", keep = {} }: { defaultValue?: string; keep?: Record<string, string | null> }) {
   const translate = useText();
-  const [value, setValue] = useState(defaultValue);
+  const [hasText, setHasText] = useState(!!defaultValue);
   const navigation = useNavigation();
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => setValue(defaultValue), [defaultValue]);
+  // Keep pre-hydration edits; only a different URL query resets the field.
+  const previousQuery = useRef(defaultValue);
+  useEffect(() => {
+    if (inputRef.current && previousQuery.current !== defaultValue) inputRef.current.value = defaultValue;
+    previousQuery.current = defaultValue;
+    setHasText(!!inputRef.current?.value);
+  }, [defaultValue]);
   useSlashFocus(inputRef);
   const searching = navigation.state === "loading" && navigation.location?.pathname === "/all" && !!new URLSearchParams(navigation.location.search).get("q");
   const searchLabel = keep.tab === "relevance" ? "搜索标题、摘要与正文" : "搜索标题与摘要";
@@ -126,19 +132,20 @@ export function SearchField({ defaultValue = "", keep = {} }: { defaultValue?: s
         ref={inputRef}
         id="site-search"
         name="q"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        defaultValue={defaultValue}
+        onInput={(e) => setHasText(!!e.currentTarget.value)}
         placeholder={translate(keep.tab === "relevance" ? "全文搜索…" : "搜索标题、摘要…")}
         maxLength={200}
         autoComplete="off"
         className="h-[42px] w-full rounded-full bg-bg-sunk pl-10 pr-10 text-[14px] text-ink outline-none ring-1 ring-inset ring-line-soft transition-[background-color,box-shadow] placeholder:text-ink-4 hover:ring-line-strong focus:bg-surface focus:shadow-[0_0_0_3px_var(--accent-soft)] focus:ring-accent dark:bg-bg-muted/60 dark:focus:bg-surface"
       />
-      {value ? (
+      {hasText ? (
         <button
           type="button"
           aria-label={translate("清空")}
           onClick={() => {
-            setValue("");
+            if (inputRef.current) inputRef.current.value = "";
+            setHasText(false);
             inputRef.current?.focus();
           }}
           className="absolute right-3 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-ink-4 transition-colors hover:bg-bg-sunk hover:text-ink"
