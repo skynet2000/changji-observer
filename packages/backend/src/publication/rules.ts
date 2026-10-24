@@ -36,7 +36,7 @@ export function isPoolEligible(input: {
   category?: string | null;
   editorialSelection?: boolean;
 }): boolean {
-  const focused = input.scope !== "composite" || !!input.category || input.editorialSelection === true;
+  const focused = !["composite", "unknown"].includes(input.scope ?? "") || !!input.category || input.editorialSelection === true;
   return focused && input.participationMode === "editorial" && input.relevance === "pass" && !!input.title && (!!input.summary || input.originalPost === true);
 }
 

@@ -30,6 +30,18 @@ test("unfocused roundups stay out of the pool; an audited focus and human select
   assert.equal((await state()).selected,true,'the admission repair preserves explicit human selection');
 });
 
+test("material with unknown scope and no category waits for review instead of entering the pool", async () => {
+  const id = `unknown-pool-${tag()}`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${id},'Insufficient material','rss','T1','editorial')`;
+  await sql`INSERT INTO articles (id,source_id,identity_key,url,title,discovered_at,timeline_at)
+    VALUES (${id},${id},${id},${`https://example.org/${id}`},'片段提到公司，但无法判断主线',now(),now())`;
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,summary_zh,output)
+    VALUES (${id},1,'rule','pass','只有简短片段，正文未能确认。','{"scope":"unknown"}')`;
+  await publishArticle(id);
+  const [p] = await sql`SELECT eligible FROM publications WHERE article_id=${id}`;
+  assert.equal(p!.eligible,false);
+});
+
 test("latest scope stays correlated to an outer x membership and candidate counts", async () => {
   const source = `scope-${tag()}`;
   await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${source}, 'Scope fixture', 'rss', 'T1', 'editorial')`;
