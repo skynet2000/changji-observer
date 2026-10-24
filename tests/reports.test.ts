@@ -11,6 +11,7 @@ import { publishArticle } from "@aihot/backend/publication/publish";
 import { loadReport } from "@aihot/backend/publication/reports";
 import { composeDaily, dueDaily, dueMonthly, dueWeekly } from "@aihot/backend/reports/compose";
 import { SITE } from "@aihot/site";
+import { arrangeDaily, type EditionEntry } from "@aihot/backend/reports/edition";
 
 const T = tag();
 const SOURCE = `test-reports-${T}`;
@@ -18,6 +19,21 @@ const WEEK = "2098-W20";
 after(async () => {
   await stopBoss();
   await closeDb();
+});
+
+test("topic-classified analysis keeps the commentary follow-up limit", () => {
+  const make = (id: string, category: string, tags: string[], previous: boolean): EditionEntry => ({
+    entry: { itemId: id, factId: id, storyPublicId: id, title: id, summary: id, sourceName: id, sourceUrl: "https://example.com/", sourceId: id, firstParty: true, role: "官方", score: 80, publishedAt: new Date().toISOString(), sources: 1 },
+    category, tags, storyId: null, mentions: new Set(), sourceIds: new Set([id]), authority: 0, importance: 80,
+    previous: previous ? { key: "2098-01-01", title: "已报道" } : null,
+  });
+  for (const [category, tags] of [["opinion", []], ["career", ["深度分析"]], ["ai-products", ["大佬观点"]]] as const) {
+    const fresh = make("fresh", "industry", [], false), follow = make("follow", category, [...tags], true);
+    assert.deepEqual(arrangeDaily([fresh, follow]).flashes.map(e => e.entry.itemId), ["follow"]);
+    follow.entry.sources = 4;
+    assert.equal(arrangeDaily([fresh, follow]).main.length, 2, "independent coverage still earns a main entry");
+  }
+  assert.equal(arrangeDaily([make("fresh", "industry", [], false), make("new-action", "career", [], true)]).main.length, 2);
 });
 
 test("a late run writes the issue that was due, not today's", () => {

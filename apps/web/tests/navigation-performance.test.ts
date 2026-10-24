@@ -131,7 +131,7 @@ test('SSR list and visited query variants return offline without another read',a
     await context.setOffline(false);
     await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'大厂动态',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务与产品',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务竞争',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
@@ -194,9 +194,9 @@ test('intent on a selected link preserves visited data and the next revisit star
     await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'大厂动态',exact:true}).focus();
     await page.waitForTimeout(150);
-    await page.getByRole('link',{name:'业务与产品',exact:true}).click();
+    await page.getByRole('link',{name:'业务竞争',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'业务与产品',exact:true}).focus();
+    await page.getByRole('link',{name:'业务竞争',exact:true}).focus();
     await page.waitForTimeout(150);
     const before=requests.length;
     await page.getByRole('link',{name:'大厂动态',exact:true}).click();
@@ -377,7 +377,7 @@ test('event reports recover from invalid responses, timeouts and stale refreshes
 
 
 test('reader navigation has four categories on desktop and phone; old model links select business',async()=>{
-  const labels=['全部','大厂动态','职场与组织','业务与产品','行业观察'];
+  const labels=['全部','大厂动态','组织人事','业务竞争','政策监管'];
   for(const width of [390,1280]){
     const context=await chrome.newContext({viewport:{width,height:900}});
     const page=await context.newPage();
@@ -389,7 +389,7 @@ test('reader navigation has four categories on desktop and phone; old model link
       await expect(page.getByRole('button',{name:/^筛选/})).toHaveCount(0);
       await page.goto(origin+'/?category=ai-models');
       await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
-      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务与产品',exact:true})).toHaveAttribute('aria-current','page');
+      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务竞争',exact:true})).toHaveAttribute('aria-current','page');
     }finally{await context.close();}
   }
 });
@@ -427,9 +427,9 @@ test('phone navigation marks All independently, all categories are visible and r
       await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='career');
       const rail=page.getByRole('navigation',{name:'栏目',exact:true});
       await expect(rail).toBeVisible();
-      await rail.getByRole('link',{name:'行业观察',exact:true}).click();
-      await expect(page).toHaveURL(url=>url.searchParams.get('category')==='opinion'&&url.searchParams.get('q')==='岗位');
-      const selected=rail.getByRole('link',{name:'行业观察',exact:true});
+      await rail.getByRole('link',{name:'政策监管',exact:true}).click();
+      await expect(page).toHaveURL(url=>url.searchParams.get('category')==='policy'&&url.searchParams.get('q')==='岗位');
+      const selected=rail.getByRole('link',{name:'政策监管',exact:true});
       await expect(selected).toHaveAttribute('aria-current','page');
       await expect(selected).toBeInViewport({ratio:0.99}); // WebKit rounds fractional scroll offsets.
       const bounds=await rail.boundingBox(),choice=await selected.boundingBox();
@@ -448,7 +448,7 @@ test('phone categories, tags and query can each be cleared independently without
   try{
     await page.goto(origin+'/all?category=career&tag=组织调整&q=岗位');
     const categories=page.getByRole('navigation',{name:'栏目',exact:true});
-    await categories.getByRole('link',{name:'业务与产品',exact:true}).click();
+    await categories.getByRole('link',{name:'业务竞争',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='ai-products'&&url.searchParams.get('tag')==='组织调整');
     await page.getByRole('link',{name:'取消搜索：岗位',exact:true}).click();
     await expect(page).toHaveURL(url=>!url.searchParams.has('q')&&!url.searchParams.has('tab')&&url.searchParams.get('category')==='ai-products'&&url.searchParams.get('tag')==='组织调整');
@@ -464,11 +464,11 @@ test('category changes reset pagination but keep search and tag; desktop can cle
   const context=await chrome.newContext({viewport:{width:1024,height:900}}),page=await context.newPage();
   try{
     await page.goto(origin+'/all?channel=firstParty&tag=组织调整&q=岗位&page=2&deep=1&anchorAt=old');
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&!url.searchParams.has('channel')&&url.searchParams.get('q')==='岗位'&&!['page','deep','anchorAt'].some(key=>url.searchParams.has(key)));
     await page.getByRole('link',{name:'取消标签：组织调整',exact:true}).click();
     await expect(page).toHaveURL(url=>!url.searchParams.has('tag')&&url.searchParams.get('category')==='career'&&!url.searchParams.has('channel'));
-    await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'职场与组织',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true})).toHaveAttribute('aria-current','page');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
 });
@@ -482,7 +482,7 @@ test('phone search preserves feed filters and can change category without losing
     await search.getByRole('searchbox').fill('岗位');
     await search.getByRole('searchbox').press('Enter');
     await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='industry'&&!url.searchParams.has('channel')&&url.searchParams.get('tag')==='组织调整');
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'职场与组织',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&!url.searchParams.has('channel'));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
@@ -494,8 +494,8 @@ test('desktop category filters are reachable and preserve search',async()=>{
   try{
     await page.goto(origin+'/all?category=career&q=招聘');
     await expect(page.getByRole('button',{name:/^筛选/})).toHaveCount(0);
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'行业观察',exact:true}).click();
-    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='opinion'&&url.searchParams.get('q')==='招聘'&&!url.searchParams.has('channel'));
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'政策监管',exact:true}).click();
+    await expect(page).toHaveURL(url=>url.searchParams.get('category')==='policy'&&url.searchParams.get('q')==='招聘'&&!url.searchParams.has('channel'));
     await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toHaveCount(0);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false);
   }finally{await context.close();}
@@ -619,7 +619,7 @@ test('top hotspots precede one reading column and phone feeds use one toolbar',a
         }
         const rail=page.getByRole('navigation',{name:'栏目',exact:true});
         for(const link of await rail.getByRole('link').all())await expect(link).toBeInViewport({ratio:0.99});
-        const choice=rail.getByRole('link',{name:'行业观察',exact:true});
+        const choice=rail.getByRole('link',{name:'政策监管',exact:true});
         await choice.click();
         await expect(choice).toHaveAttribute('aria-current','page');
         await expect(choice).toBeInViewport({ratio:0.99});

@@ -1,191 +1,176 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
-    <img src="docs/assets/banner-light.png" alt="AIHOT: every field can have its own AIHOT. Many sources flow into the selection in the middle, which then branches out to law, HR, finance and other fields" width="100%">
-  </picture>
-</p>
+<p align="center"><img src="site/brand/logo.svg" width="80" height="80" alt="Changji Observer logo"></p>
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-176b75?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Node.js-24-176b75?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 24">
-  <img src="https://img.shields.io/badge/PostgreSQL-17-176b75?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 17">
-  <img src="https://img.shields.io/badge/Docker-Compose-176b75?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose">
-  <a href="https://aihot.news"><img src="https://img.shields.io/badge/live%20site-aihot.news-202a30?style=flat-square" alt="Live site aihot.news"></a>
-</p>
+# Changji Observer · 厂际观察
 
-<p align="center">
-  <b>A website framework that finds the news and writes the daily briefing by itself.</b><br>
-  Swap in your own sources and your own know-how for what matters, and it becomes the news site for your field.
-</p>
+**Internet. Companies. People.** A news aggregation and reading site for employees at medium and large internet companies, focused on company development, business competition, organizational changes and working life.
 
-<p align="center">
-  <a href="README.md">简体中文</a> · <b>English</b>
-</p>
+[Website](https://innews.site/) · [简体中文](README.md) · [Architecture](docs/architecture.md) · [Source configuration](docs/sources.md) · [Maintenance](docs/maintenance.md)
 
-<p align="center">
-  <a href="#run-it">Run it</a> ·
-  <a href="#make-it-your-field">Make it your field</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="#documentation">Documentation</a> ·
-  <a href="https://github.com/KKKKhazix/AIHOT/discussions">Discussions</a>
-</p>
+This is [skynet2000/changji-observer](https://github.com/skynet2000/changji-observer), customized from [KKKKhazix/AIHOT](https://github.com/KKKKhazix/AIHOT). This project maintains its own brand, editorial scope, sources, selection rules, reader accounts, bilingual reading and UI. The upstream MIT license and attribution are retained. Internal npm package names, some environment variables and database identifiers still use `aihot`.
 
-<br>
+## Editorial scope and reading features
 
-## What this is
+- Focus on Chinese internet companies and their competitors, including overseas developments with a direct connection to domestic businesses or jobs.
+- Cover business performance, competition, hiring and layoffs, pay and performance reviews, reorganizations, staff letters and sourced workplace controversies. Preserve attribution, disputed claims and company responses.
+- AI keywords, funding, an ex-big-tech founder or a hiring story do not automatically qualify an article. Merchant tutorials, shopping offers, routine hardware reviews and pure implementation details are not automatically in scope.
+- Four reading sections: **Company Developments, Organization & People, Business Competition, Policy & Regulation**. Company Developments covers company-level performance, funding, acquisitions and group strategy; Organization & People includes jobs, pay, work rules and employee conditions; Business Competition covers products, monetization and market moves; Policy & Regulation covers external rules, investigations and penalties. Analysis, interviews and staff letters are formats rather than primary sections.
+- Selected news, all news, event-based hotlists, topics and daily/weekly/monthly editions. Related reporting is folded into events with expandable developments and sources.
+- Responsive desktop/mobile layouts, light/dark themes, and Chinese/English reading. Every fresh open or reload starts in Chinese; explicitly choosing EN persists through in-site navigation. Translations are prepared in the background, with a visible original-text fallback.
+- Optional Google/GitHub reader login synchronizes bookmarks and read history. Anonymous reading remains available. The two providers currently create separate accounts; administrator authentication is separate.
 
-[AIHOT](https://aihot.news) is an AI news site I built. Every day it collects material from a set of sources. A language model screens every item, then scores the promising ones twice, independently, to pick what is really worth reading, and writes a headline and a summary for each. Reports of the same story from different sources are clustered into one event, and events are ranked by how many sources are talking about them. Every morning it publishes a daily briefing.
+See [Section boundaries and legacy compatibility](docs/categories.md) for classification details.
 
-This repository is its engine and framework: the website, the admin, the selection pipeline, the clustering and heat algorithms, and **the full text of every prompt and every selection threshold**.
+## Architecture
 
-## Why open source
+Stack: **Node.js ≥ 24.11, TypeScript, React 19, React Router SSR, Fastify, PostgreSQL 17, pg-boss, Tailwind CSS, Docker Compose and Caddy**.
 
-Over the past half year, many friends working in law, HR, finance and precious metals have asked me whether I could build one for their field.
+```mermaid
+flowchart TB
+  Sources["RSS / web pages / JSON / external ingestion"] --> Worker["worker: collection and background jobs"]
+  Worker <--> DB[("PostgreSQL 17: content, events, jobs, receipts")]
+  Worker --> Router["Model routing and usage accounting"]
+  Router --> Free["Intern: preferred channel"]
+  Free -->|"One fallback on rate limit, failure or invalid output"| Paid["DeepSeek: paid channel"]
+  DB --> Publication["Shared public read layer: publication/"]
+  Publication --> API["api: Fastify"]
+  API --> Web["web: React Router SSR"]
+  API --> Exits["RSS / API v1 / MCP / Agent Markdown"]
+  Reader["Reader login and sync module"] <--> DB
+  API <--> Reader
+```
 
-I can't. I don't know your field. I don't know which sources are useful, or what kind of news counts as news to you.
+| Component | Location | Responsibility |
+| --- | --- | --- |
+| Web | `apps/web/` | Pages, navigation, search, login entry and language display; reads the API over HTTP, without database or model credentials |
+| API | `apps/api/` | Site and public APIs, RSS, MCP, admin and reader-module routing |
+| Worker | `apps/worker/` | Collection, model processing, grouping, hotlists, editions, translation and retries |
+| Business logic | `packages/backend/` | Source adapters, content processing, model routing and receipts, events, publication, editions and operations |
+| Shared contracts | `packages/contracts/` | API types, taxonomy and module contracts |
+| Site and industry configuration | `site/`, `industry/` | Brand, copy, models, taxonomy, topics, sources, prompts and selection thresholds |
+| Extensions | `modules/reader/`, `modules/language/` | OAuth and cross-device reading state; English UI/content/edition translations |
+| Data and deployment | `database/migrations/`, `deploy/` | Schema migrations, HTTPS, backups and server email jobs |
 
-But you do.
+Public news outputs share `publication/` for visibility, withdrawals, selection and full-text permissions. Accounts and bookmarks use separate private interfaces. Docker's `setup` container migrates and seeds, then exits; web, API, worker and PostgreSQL keep running. Caddy provides HTTPS. Models run at API providers: **no local large-model deployment or GPU is required**.
 
-Since I can't do it for everyone, I'm handing the spark to all of you.
+### Processing pipeline
 
-## Before you start
+1. **Collect and trace:** fetch enabled sources, preserve original URLs and publication dates, deduplicate URLs and extract article text as needed. RSS/page downloads normally do not call a language model.
+2. **Filter and select:** check relevance, then independently score candidates twice using published prompts. Source-tier thresholds, evidence and duplicate checks determine selection; manual decisions take precedence.
+3. **Write and structure:** generate Chinese titles, summaries and applicable recommendation reasons; extract category, tags, entities and current facts. Technical terms or company names alone are not evidence of employee relevance.
+4. **Group events:** distinguish identical facts, follow-up developments and unrelated stories. Candidate retrieval uses optional embeddings, or text similarity when embeddings are not configured, followed by model review where needed. Grouping still requires ongoing spot checks.
+5. **Rank and publish editions:** event heat uses independent sources and time decay, not page views or Weibo search data. Daily editions use rules; weekly/monthly editions compile dailies, with models assisting only overviews and section introductions.
+6. **Serve and translate:** readers receive stored public results. Background workers prepare and validate English translations. **Reading, searching, changing language and signing in do not trigger model calls.**
 
-- **The interface and everything the site writes are in Chinese.** The prompts in [`industry/prompts/`](industry/prompts/) set the output language; the interface text is in [`site/site.ts`](site/site.ts) and in the code. To run it in another language, ask your agent to translate those (see [Make it your field](#make-it-your-field)). The other documents in this repository are in Chinese too; coding agents read them without trouble.
-- **I'm not a professional developer.** I started out as a designer, and half a year ago I could barely read code. I rewrote this codebase together with AI. It is much cleaner than before, but there are surely parts that aren't written well. Issues are welcome. I may not reply quickly, and I apologise in advance.
-- **This is AIHOT's engine.** It is the same engine code that runs AIHOT in production, exported directly from it, not a carefully polished general-purpose framework. I'll try to bring AIHOT's updates over, but I can't promise every one. Features that only make sense for AI, such as the model leaderboard, the Codex reset monitor and the milestone timelines on topic pages, stay on AIHOT, along with AIHOT's own operations tools.
-- **AIHOT's source list and operating data are not included.** The repository ships 18 public AI news sources as a demo, enough to run it and see what it does. The real sources should be your own field's.
-- **Please don't use AIHOT's name or logo.** Put your own name on it, and it's your site.
+Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, monthly on day 1 at 10:30; see [`EDITION_TIMES`](site/site.ts). A successfully assessed period with no qualifying stories may have a genuine empty edition; upstream failures must not be disguised as empty editions. Ordinary reruns do not overwrite published snapshots.
 
-## How it works
+## Information sources
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-dark.png">
-  <img src="docs/assets/how-light.png" alt="Six stages: collect, pre-screen, score twice, write, cluster, heat and publish" width="100%">
-</picture>
+### Configuration versus runtime status
 
-An item comes in from a source, is checked for duplicates, and pre-screened. Items that might matter are scored twice, independently, get a headline and a summary, are clustered with other reports into an event, and count toward its heat. X posts with no text or only links keep their original links and media without a writing or translation model call. An item enters the selection only if its score clears the threshold and it doesn't repeat news already selected. The daily briefing is compiled from the day's top stories by rule; weekly and monthly reports are compiled from the dailies. Every step's prompt is in [`industry/prompts/`](industry/prompts/), so changing the standard doesn't mean changing code. See [Selection and calibration](docs/selection.md).
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-24: 79 configurations, 58 enabled by default**:
 
-### Clustering and heat
+| Adapter | Enabled | Meaning |
+| --- | ---: | --- |
+| RSS | 28 | Native feeds and explicitly identified third-party RSS bridges |
+| Web lists | 22 | Company newsrooms, media sections and official public Weibo pages |
+| JSON lists | 6 | Public Jike activity and media JSON data |
+| External ingestion | 2 | Receives upstream script submissions; does not poll by itself |
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-dark.png">
-  <img src="docs/assets/cluster-light.png" alt="Reports from five sources cluster into one event, and the event enters the current trending list" width="100%">
-</picture>
+That is **56 polling endpoints and 2 ingestion endpoints**, not 58 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
-The same thing happens once: the official site posts it, ten outlets repeat it, X argues about it all day. Readers only need to see it once. AIHOT clusters these into one **event**. It looks for candidates from the past two weeks by embedding the headline and summary (or, without an embedding service, by text overlap), then asks a model whether they are the same story, a follow-up, or two different stories. When in doubt it merges, and before writing, a model reviews the merge again (the review can use a different provider; set `GROUP_REVIEW_MODEL`).
+### Main configured sources
 
-**Heat** is computed per event, not per article: within 48 hours, each independent source counts once, halving every 24 hours. Repeated fetches don't add up, and one outlet posting ten articles still counts once, so what ranks at the top is what many people are really talking about.
+| Group | Sources |
+| --- | --- |
+| Chinese business and industry media | 36Kr, Huxiu, Jiemian, 21st Century Business Herald, Yicai, National Business Daily, TMTPost, Leiphone, PingWest, TechNode, LatePost, Shenwang, Yuanchuan Research and Internet Guaitao |
+| Chinese technology and platform news | IT Home, ifanr, cnBeta, MyDrivers, GeekPark, DoNews, Sanyan Tech, Bianews, QbitAI, iFeng Tech, The Paper and Sina Tech |
+| Company publications | Alibaba Alizila, Tencent, Meituan, JD, OpenAI, Anthropic, Google, Microsoft and Meta newsrooms/blogs |
+| International media | TechCrunch, The Information, CNBC, Bloomberg, The Guardian, BBC, Rest of World, South China Morning Post, Business Insider and Semafor |
+| Public Jike accounts | Internet Fangjian Bagua, Pan Luan, Lanxi and Weixi; preserve author attribution and evidence limits |
+| Official Weibo | Alibaba, Tencent, JD and Meituan; verified company accounts only, no individual Weibo bloggers |
+| External ingestion | HubSpot SEC filings and Eastmoney's Jiemian republications; ongoing updates depend on upstream push scripts |
 
-### Speed
+LatePost, Shenwang, Yuanchuan and Internet Guaitao use public Wechat2RSS bridges listed in [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml). **These are not publisher-operated RSS feeds** and may be delayed or unavailable. A configured URL does not grant copyright or republication permission.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/perf-dark.png">
-  <img src="docs/assets/perf-light.png" alt="Measured on AIHOT in production: pages 10 ms median, 95% within 50 ms; API 6 ms median, 95% within 12 ms; article pages 95% within 14 ms" width="100%">
-</picture>
+### Social scope and limitations
 
-## What you get
+- **X:** internet-company official accounts and industry commentators through free public entry points only. Coverage remains incomplete; framework support for paid SocialData is not evidence that this deployment subscribes to it.
+- **Weibo and Xiaohongshu:** verified company official accounts only, no personal bloggers. Stable direct access to Xiaohongshu official content remains unfinished and is not counted as an enabled source above.
+- **Availability:** the latest Seoul check of Alizila returned 403. Other endpoints may time out, require login, rate-limit or change structure. Failures are recorded and backed off, rather than treating login pages or empty results as successful collection.
+- **Access and rights:** paywalled full text may be unavailable. Publish summaries and original links by default; displaying or syndicating full text requires the appropriate source permission.
 
-| | |
-|---|---|
-| **Six kinds of sources** | RSS, web listing pages, JSON APIs, X accounts, WeChat Official Accounts, and content your own scripts push in. Sources come in three tiers (official first-hand; official and semi-official accounts; media and individuals), each with its own selection threshold. Fetch frequency adjusts to how often a source publishes |
-| **Selection** | A pre-screen, then two independent scores on the same rubric, then a threshold set by the source's tier. One piece of news takes one slot; the same news reworded doesn't get in. All prompts and thresholds are public and editable; calibrate them in SelectBench with samples you labelled yourself |
-| **Writing** | Headlines, answer-first summaries, reasons to read, full translation of foreign-language text; categories, tags and news facts extracted separately; guards against the model putting companies the original never mentioned into a headline |
-| **Clustering** | Reports of the same story from different sources become one event, with follow-ups under the same event and an overview on the event page. Follow-ups and the report timeline switch together between newest first and oldest first. Manual corrections to clustering are never overwritten |
-| **Trending** | Heat per event: the more independent sources, the higher, and discussion on X counts too. Compared with six hours earlier, fast risers are marked rising and newcomers are marked new |
-| **Daily, weekly and monthly reports** | A daily briefing every day (08:00 by default), compiled from the day's top stories by rule: one entry per story, a story already covered returns only when it has news, and no model is called. A weekly report every Monday and a monthly report on the 1st (10:00 and 10:30 by default), compiled from the dailies; the model writes only the overview and section introductions. Change the times in `EDITION_TIMES` in `site/site.ts` |
-| **Topics and search** | Topic pages of three kinds: companies, directions and content formats; search over headlines and summaries, and full-text relevance search |
-| **Reading preferences** | Light and dark appearance, with the site's default font or the browser's default font. Saved items and reading preferences stay on the device and can be exported and imported as a backup |
-| **For agents** | RSS (selection, everything, full text, daily, weekly, monthly), a public API, MCP, Agent Markdown and `llms.txt`: the same content for people and for agents |
-| **Admin** | Source management and trial fetches, content diagnostics and manual score corrections, selection evaluation, a separate model for each step, budget breakers for paid services, run history and alerts |
+Polling uses a **60-minute baseline** per enabled automatic source; failure backoff can extend it. Hourly polling does not guarantee hourly new articles. Initial imports and old articles retain original publication dates; unknown dates are held from public release rather than replaced with collection timestamps.
 
-## A quick look
+## Models and costs
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/shots-dark.png">
-  <img src="docs/assets/shots-light.png" alt="The daily selection on the home page, and the river of sources on the about page" width="100%">
-</picture>
+Production attempts the preferred free channel **for each logical model task**, with one paid fallback only if that task encounters a channel problem:
 
-<p align="center"><sub>Screenshots from a local site running on the demo sources, under the default name MyHOT.</sub></p>
+| Work | Preferred | Fallback |
+| --- | --- | --- |
+| Relevance, writing, structure, grouping/review, digests, weekly/monthly assistance and translation | Intern / `deepseek-v4.1-flash-1017`, preset `intern-flash` | Official DeepSeek / `deepseek-flash` |
+| Two independent selection scores | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
 
-## Run it
+Presets live in [`site/models.ts`](site/models.ts). Effective precedence is **admin settings → environment variables → code defaults**. A fresh checkout still defaults to DeepSeek; adding an Intern key alone does not switch every step. Follow [Routing](docs/model-routing.md) and verify each active choice. The paid official name is a provider alias, not a permanent date-pinned version guarantee.
 
-To create your own independent site, click [Use this template](https://github.com/KKKKhazix/AIHOT/generate) and clone the repository it creates. To keep merging upstream updates or to contribute, fork it instead. The commands below are for trying it out directly.
+Free availability depends on platform quotas, RPM/TPM and channel capacity. Paid fallback consumes balance. The current owner has removed the CNY amount cap while retaining request limits, concurrency, kill switches and receipt protection. An unknown request outcome can still have a cost; do not retry blindly. Dashboard/email amounts estimate this site's receipts, not the provider's final bill or other projects using the same key.
 
-You need [Docker](https://docs.docker.com/get-started/get-docker/), [Node.js 24](https://nodejs.org/en/download) (to run `init-env`, which generates the configuration), and an API key for any OpenAI-compatible model API (DeepSeek, Qwen, Zhipu GLM and so on).
+## Run locally
 
-`init-env` configures DeepSeek by default. For another provider, change `LLM_BASE_URL`, `LLM_MODEL` and `LLM_EXTRA_JSON` in `.env`, following the examples in `.env.example`. With a reasoning model (one that thinks before answering), also set `LLM_REASONING_TOKENS` to leave output room for the reasoning.
+Install Node.js ≥ 24.11 and Docker Compose. Never replace an existing production environment with empty settings.
 
 ```bash
-git clone https://github.com/KKKKhazix/AIHOT.git myhot
-cd myhot
-node scripts/init-env.ts --llm-key <your model API key>
+git clone https://github.com/skynet2000/changji-observer.git
+cd changji-observer
+node scripts/init-env.ts
+```
+
+Initialization creates random admin/signing credentials. Fill model credentials in your local `.env`; do not put secrets in shell commands, chat or Git. Collection and model calls default to disabled, so you can inspect an empty site first:
+
+```bash
 docker compose up -d --build
 ```
 
-Open <http://localhost:3000>. The admin is at `/admin`, and the admin password is `ADMIN_PASSWORD` in `.env`. Content starts to appear after a minute or two, and the first import takes about half an hour to process.
+Open <http://localhost:3000>; admin is at `/admin`. Verify sources and each model step, then set `COLLECT_ENABLED=true` and `MODEL_CALLS_ENABLED=true` in `.env` when ready and run `docker compose up -d`. Initial processing time and cost depend on sources, channel capacity and backlog, rather than a fixed completion time.
 
-For machines without Node, servers in mainland China, domains and HTTPS, or running directly on Linux or macOS without Docker (WSL2 on Windows), see [Deployment](docs/deploy.md).
+Google/GitHub login requires separate OAuth applications, callback configuration and privacy acceptance; it is off by default. See [Reader login](docs/reader-login.md). HTTPS, native development and upgrades are covered in [Deployment](docs/deploy.md).
 
-Once the site is up, `/agent` lets you copy how to connect over MCP, RSS or the API; agents that can only read web pages start from `/api/v1/agent`; the API description is at `/openapi-v1.json`.
+## Checks and releases
 
-## Make it your field
-
-The easiest way: open your coding agent (Claude Code or Codex both work), give it this repository, and say:
-
-```text
-Please read AGENTS.md and docs/customize.md, and turn this site into a news site for the "XX" field.
-What I care about: … (the sources you want to watch, what news you think matters and what doesn't; the more specific the better).
-If the site should be in English (or another language), also translate the interface text and rewrite the prompts in industry/prompts/ to write in that language.
-When you're done, run npm run typecheck, npm test and node scripts/smoke.ts, and tell me which decisions are still mine to make.
+```bash
+npm ci
+npm run typecheck
+DATABASE_URL=postgres://127.0.0.1:5432/changji_test npm test
+npm run build -w @aihot/web
+node --test apps/web/tests/*.test.ts
+python3 -m unittest discover -s deploy/tests
+node scripts/smoke.ts --base http://localhost:3000
 ```
 
-Nearly everything to change is in the [`site/`](site/) and [`industry/`](industry/) folders; the code itself mostly stays as it is:
+Backend tests require PostgreSQL 17 and an account allowed to create databases. Database names must end in `_test` or `_ci`; never use production. Install browser engines first with `npx playwright install chromium webkit` (`--with-deps` may be needed on Linux). Smoke checks require a running site. Tests use local stubs rather than real collection/model providers. GitHub Actions also verifies Docker startup.
 
-| File | What to change |
-|---|---|
-| `site/site.ts` | Site name, field terms, publishing times, home page copy, about page, the wording on items and reports, the categories of the public interfaces |
-| `industry/taxonomy.ts`, `industry/topics.json` | Categories, tags, topics |
-| `industry/sources.json` | The sources imported on first start |
-| `industry/prompts/` | The selection standard and the writing requirements. **Your field's know-how goes here** |
-| `industry/selection.ts` | Selection thresholds |
-| `site/models.ts` | Which model each step uses by default (optional: otherwise every step uses the one in `.env`) |
-| `site/brand/`, `site/pages/`, `site/public/`, `site/changelog.json` | Icons and logo, terms of use and privacy notice, files served from the site root such as `robots.txt`, the changelog |
-| `modules/` | Features the framework doesn't have and only your site needs, as modules; see “模块” in [Architecture](docs/architecture.md#模块) |
+Release order: **checks → backup → push this repository → deploy/migrate → verify the public site**. Git does not synchronize databases, uploaded files, credentials or receipts. Do not run `docker compose down -v` and delete persistent data. See [Migration rules](docs/architecture.md#数据库迁移).
 
-What is most worth your time is the scoring rubric (`industry/prompts/selection-score.md`) and the thresholds: take one or two hundred items you labelled yourself, run them through `scripts/eval-selection.ts`, see how accurately it selects, and go back and adjust. How to do it is in [Selection and calibration](docs/selection.md).
+## Operations and documentation
 
-## Documentation
+The website and jobs run on a cloud server, independently of the owner's computer; server downtime still affects them.
 
-The documents below are in Chinese.
+- **Cost email:** server-side daily email at 09:00 Asia/Shanghai for the preceding rolling 24 hours, starting 2026-10-25; no Codex scheduler dependency.
+- **Fault email:** server-side checks every five minutes, notifying persistent faults and one recovery. Independent off-server monitoring for complete server/network outages is not yet configured.
+- **Backups:** daily same-server backups retain seven copies. Automated offsite backups remain deferred; same-server copies cannot survive total server/disk loss.
+- **Ongoing work:** independent selection evaluation, historical grouping spot checks and free social-source coverage remain incomplete; selection and grouping are not guaranteed error-free.
 
 | Document | Contents |
-|---|---|
-| [Make it your field](docs/customize.md) | Site name, categories, topics, sources, prompts, thresholds, models, brand, step by step |
-| [Sources](docs/sources.md) | How to configure the six kinds of sources, tiers and full text, fetch frequency, older articles and archives, a fixed starting point with `publishedAfter`, the external push interface |
-| [Selection and calibration](docs/selection.md) | How an item becomes a selection and goes into the daily, weekly and monthly reports, and how to calibrate with your own samples |
-| [Event grouping and relation evaluation](docs/grouping.md) | How relations between events are judged, and how to evaluate with your own labelled pairs |
-| [Overview evaluation](docs/story-digest-evaluation.md) | Before changing the event overview prompt, how to compare versions side by side on the same events |
-| [Deployment](docs/deploy.md) | Docker, domains and HTTPS, mainland China, updates, backups, what it costs, and running on Linux or macOS (WSL2 on Windows) without Docker |
-| [Architecture](docs/architecture.md) | Three processes, the rules that don't change, directories, modules, database migrations, public outputs, tests |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Process boundaries, public outputs and migrations |
+| [Sources](docs/sources.md) | Adapters, tiers, permissions, timestamps and external ingestion |
+| [Selection](docs/selection.md) | Prompts, owner labels and evaluation limits; current thresholds are authoritative in `industry/selection.ts` |
+| [Event grouping](docs/grouping.md) | Facts, developments and relationship evaluation |
+| [Model routing](docs/model-routing.md) | Preferred channel, paid fallback and receipts |
+| [Language](docs/language.md) / [Reader login](docs/reader-login.md) | Translation and account sync |
+| [Deployment](docs/deploy.md) / [Maintenance](docs/maintenance.md) | Operation, upgrades, backups and troubleshooting |
+| [Server email](docs/cost-email.md) | Cost, fault and recovery notifications |
+| [Security reporting](SECURITY.md) | Vulnerability reporting channel |
 
-Stack: Node.js 24 · TypeScript · React Router (server-side rendering) · Fastify · PostgreSQL · pg-boss · Tailwind CSS · Docker Compose.
+## Attribution and license
 
-## Community and contributing
-
-Questions about deploying and using it go to [Q&A](https://github.com/KKKKhazix/AIHOT/discussions/categories/q-a), new ideas to [Ideas](https://github.com/KKKKhazix/AIHOT/discussions/categories/ideas), and you're welcome to share the news site you built for your field in [Show and tell](https://github.com/KKKKhazix/AIHOT/discussions/categories/show-and-tell). Writing in English is fine.
-
-For a bug or a concrete feature request, [open an issue](https://github.com/KKKKhazix/AIHOT/issues/new/choose). Before changing code, read the [contributing guide](CONTRIBUTING.md); report security vulnerabilities through the [private reporting channel](SECURITY.md).
-
-## Finally
-
-AIHOT was once just a tiny, tiny thought on one of countless late nights.
-
-I don't know what it will be turned into, or how far it will go. But that may be the most romantic thing about open source.
-
-The rest of the road is yours.
-
-<p align="right">— 数字生命卡兹克 (Khazix)</p>
-
-## License
-
-The code is under the [MIT License](LICENSE). The AIHOT name and logo are not covered by the license. The fonts have their own licenses; see [NOTICE](NOTICE).
+Thanks to [AIHOT](https://github.com/KKKKhazix/AIHOT) for the underlying framework and to public publishers and RSS maintainers. Original copyright notices are retained under the [MIT license](LICENSE). AIHOT's name and logo are not used as this site's brand. Fonts and third-party assets follow [NOTICE](NOTICE). News copyrights remain with their publishers; the code license does not grant rights to republish full articles.

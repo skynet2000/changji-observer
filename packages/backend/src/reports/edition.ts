@@ -395,7 +395,8 @@ export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; f
     const related = [...(e.entry.related ?? []), ...roundups.flatMap((r) => [asRelated(r.entry), ...(r.entry.related ?? [])])];
     return { ...e, sourceIds, entry: { ...e.entry, sources: sourceIds.size, related } };
   });
-  const earned = (e: EditionEntry) => !e.previous || (e.authority < 3 && !COMMENTARY.has(e.category ?? "")) || e.entry.sources >= FOLLOW_UP_SOURCES;
+  const commentary = (e: EditionEntry) => COMMENTARY.has(e.category ?? "") || e.tags.some(tag => ["深度分析", "大佬观点", "教程/实践"].includes(tag));
+  const earned = (e: EditionEntry) => !e.previous || (e.authority < 3 && !commentary(e)) || e.entry.sources >= FOLLOW_UP_SOURCES;
   // A day of nothing but follow-ups still has entries in full.
   const full = live.some(earned) ? earned : () => true;
   const main: EditionEntry[] = [];

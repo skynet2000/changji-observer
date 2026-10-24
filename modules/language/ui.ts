@@ -3,7 +3,7 @@ export const englishUi: Record<string, string> = {
   "厂际观察": "厂际观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
   "热点榜": "Trending", "互联网日报": "Daily brief", "互联网周报": "Weekly brief", "互联网月报": "Monthly brief",
   "日报": "Daily", "周报": "Weekly", "月报": "Monthly", "主题": "Topics", "收藏": "Saved", "我的": "Me",
-  "大厂动态": "Companies", "职场与组织": "Work & people", "业务与产品": "Business & products", "行业观察": "Industry",
+  "大厂动态": "Company developments", "组织人事": "Organization & people", "业务竞争": "Business competition", "政策监管": "Policy & regulation", "职场与组织": "Work & people", "业务与产品": "Business & products", "行业观察": "Industry",
   "Agent 接入": "Agent access", "关于": "About", "更新日志": "Changelog", "反馈": "Feedback", "返回": "Back",
   "主导航": "Main navigation", "底部导航": "Bottom navigation", "外观": "Appearance", "不限": "All categories",
   "深色": "Dark", "浅色": "Light", "跟随系统": "System",
