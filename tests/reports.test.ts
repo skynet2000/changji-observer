@@ -71,3 +71,15 @@ test("a weekly that froze no summaries shows the articles' public summaries", as
   await publishArticle(articleId);
   assert.equal((await loadReport("weekly", WEEK))?.sections[0]?.items[0]?.firstParty, false);
 });
+
+test("a frozen issue uses the current brand without treating its former masthead as news", async () => {
+  const key = "2098-W21";
+  const content = { kind: "weekly", title: `厂际观察 周报 · ${key}`, overview: "原有内容", themes: [] };
+  await sql`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at, origin)
+            VALUES ('weekly', ${key}, now(), now(), ${sql.json(content as never)}, now(), 'imported')`;
+  const report = await loadReport("weekly", key);
+  assert.equal(report?.title, `${SITE.name} 周报 · ${key}`);
+  assert.equal(report?.lead, null);
+  const [stored] = await sql`SELECT content FROM reports WHERE kind = 'weekly' AND key = ${key}`;
+  assert.equal(stored!.content.title, content.title, "the original publication snapshot is unchanged");
+});

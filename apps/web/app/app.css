@@ -583,7 +583,7 @@
   background: color-mix(in srgb, var(--bg) 60%, var(--surface));
 }
 
-/* 厂际观察: an editorial shell with a fixed reading measure and a single account entry. */
+/* 大厂观察: an editorial shell with a fixed reading measure and a single account entry. */
 .site-header { box-shadow: 0 1px 12px rgb(16 33 61 / .035); position: sticky; top: 0; z-index: 50; height: var(--masthead-h); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(16px); }
 .site-header-inner { height: 100%; padding: 0 28px 0 0; display: flex; align-items: center; gap: 28px; }
 .site-brand { display: flex; align-items: center; align-self: stretch; flex-shrink: 0; width: var(--sidebar-w); padding-left: 23px; border-right: 1px solid var(--line); color: var(--ink); }

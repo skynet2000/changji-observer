@@ -1,6 +1,6 @@
 // Reviewed interface labels. Longer public interface copy is filled by the worker's saved translations.
 export const englishUi: Record<string, string> = {
-  "厂际观察": "厂际观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
+  "大厂观察": "大厂观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
   "热点榜": "Trending", "互联网日报": "Daily brief", "互联网周报": "Weekly brief", "互联网月报": "Monthly brief",
   "日报": "Daily", "周报": "Weekly", "月报": "Monthly", "主题": "Topics", "收藏": "Saved", "我的": "Me",
   "大厂动态": "Company developments", "组织人事": "Organization & people", "业务竞争": "Business competition", "政策监管": "Policy & regulation", "职场与组织": "Work & people", "业务与产品": "Business & products", "行业观察": "Industry",
@@ -34,7 +34,7 @@ export const englishUi: Record<string, string> = {
   "星期日": "Sunday", "星期一": "Monday", "星期二": "Tuesday", "星期三": "Wednesday", "星期四": "Thursday", "星期五": "Friday", "星期六": "Saturday",
   "周日": "Sun", "周一": "Mon", "周二": "Tue", "周三": "Wed", "周四": "Thu", "周五": "Fri", "周六": "Sat",
   "登录": "Sign in", "登录 / 注册": "Sign in", "登录并同步": "Sign in to sync", "读者账号": "Reader account",
-  "登录厂际观察": "Sign in to 厂际观察", "我的阅读记录": "My reading", "收藏好内容，换台设备接着读。": "Save good stories. Keep reading on any device.",
+  "登录大厂观察": "Sign in to 大厂观察", "我的阅读记录": "My reading", "收藏好内容，换台设备接着读。": "Save good stories. Keep reading on any device.",
   "使用 Google 登录": "Continue with Google", "使用 GitHub 登录": "Continue with GitHub", "无需设置密码 · 首次登录自动创建账号": "No password needed · Your first sign-in creates an account",
   "我的收藏与同步": "Saved stories & sync", "收藏与已读，随身同步": "Sync your reading", "查看我的收藏": "View saved stories",
   "立即同步": "Sync now", "退出登录": "Sign out", "导入本机记录": "Import local reading",
@@ -45,7 +45,7 @@ export const englishUi: Record<string, string> = {
   "按事件最新进展排列 · 同一事件合并展示，可展开查看进展": "By latest development · Expand grouped reports to see developments",
   " 期": "", "第 ": "Issue ", " 条": " items", " 件": " items", "互联网 · 每日要闻": "INTERNET · DAILY BRIEF",
   "每日08:00出刊": "Published at 08:00 Beijing", "每日 08:00 出刊": "Published at 08:00 Beijing", "（本期完）": "END OF ISSUE",
-  "厂际观察 日报": "厂际观察 Daily", "厂际观察 周报": "厂际观察 Weekly", "厂际观察 月报": "厂际观察 Monthly",
+  "大厂观察 日报": "大厂观察 Daily", "大厂观察 周报": "大厂观察 Weekly", "大厂观察 月报": "大厂观察 Monthly",
   "根据公开来源自动编辑，每条均附原文": "Compiled from public sources, with links to every original report",
   "根据公开来源自动综合，每条均附原文": "Summarised from public sources, with links to every original report",
   "日报合订本": "Daily archive", "往期周报": "Weekly archive", "往期月报": "Monthly archive",

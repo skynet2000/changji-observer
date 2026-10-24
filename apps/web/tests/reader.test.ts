@@ -100,7 +100,7 @@ test("account entries stay in navigation and login choices fit phone, desktop an
       assert.ok(entryBox && entryBox.y < 80 && entryBox.x > width / 2, "account is at the top right on phone and desktop");
       await page.screenshot({ path: fileURLToPath(new URL(`../../../outputs/账号入口-${width}-20261021.png`, import.meta.url)), fullPage: true });
       await entry.click();
-      await expect(page.getByRole("heading", { name: "登录厂际观察", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "登录大厂观察", exact: true })).toBeVisible();
       for (const name of ["Google", "GitHub"]) {
         const choice = page.getByRole("link", { name: `使用 ${name} 登录`, exact: true });
         await expect(choice).toBeVisible();

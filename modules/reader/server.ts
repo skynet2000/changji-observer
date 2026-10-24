@@ -92,7 +92,7 @@ export function registerReader(app: FastifyInstance) {
         });
         if (typeof result.access_token !== "string" || (result.token_type && String(result.token_type).toLowerCase() !== "bearer")) throw new Error("invalid identity token");
         const profile = await json(p === "google" ? "https://openidconnect.googleapis.com/v1/userinfo" : "https://api.github.com/user", {
-          headers: { authorization: `Bearer ${result.access_token}`, accept: "application/json", "user-agent": "ChangjiObserver" },
+          headers: { authorization: `Bearer ${result.access_token}`, accept: "application/json", "user-agent": "DachangObserver" },
         });
         const subject = p === "google" ? profile.sub : profile.id;
         if (!(typeof subject === "string" && subject.length > 0 && subject.length <= 200) && !(p === "github" && Number.isSafeInteger(subject) && Number(subject) > 0)) throw new Error("missing identity subject");

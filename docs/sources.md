@@ -220,7 +220,7 @@ http.createServer((req, res) => {
   - `publisherRole`：`T1_5` 账号的身份，`organization`（机构官方账号）或 `person`（官方人员）。再填上信源的 `owner_entity_id`（`industry/taxonomy.ts` 的 `ENTITIES` id），这个账号发的、主体正是这家公司的新闻，就能当代表报道（排在 `T1` 之后）。
 - **全文**：`site_fulltext` 决定站内能不能显示全文，`syndicate_fulltext` 决定全文 RSS 能不能带正文。两者**默认都关**，只显示摘要和原文链接；来源明确允许时再打开。公众号、付费墙内容不会因为技术上抓得到就获得全文展示。
 
-## 厂际观察新增国内商业媒体（2026-10-24）
+## 大厂观察新增国内商业媒体（2026-10-24）
 
 新增晚点 LatePost、深网（腾讯新闻）、远川研究所、互联网怪盗团，均使用 BestBlogs 公开维护的 Wechat2RSS 桥接入口。地址来自 [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml)，并在首尔实际解析了正文、原文链接与发布时间；不是媒体自己提供的官方 RSS，桥接服务仍可能延迟或中断。晚点对话虽然可解析，但最新内容停在2025年，不作为本轮新增来源。
 
@@ -228,7 +228,7 @@ http.createServer((req, res) => {
 
 ## 抓取频率
 
-厂际观察按用户2026-10-23的最新要求，启用的自动采集来源统一为每60分钟一次；失败退避可更长。下面的自适应节奏是框架在未配置站点固定间隔时的行为，不代表本站当前配置。`external` 仅接收外部推送，不因 enabled 就代表已接通自动轮询。
+大厂观察按用户2026-10-23的最新要求，启用的自动采集来源统一为每60分钟一次；失败退避可更长。下面的自适应节奏是框架在未配置站点固定间隔时的行为，不代表本站当前配置。`external` 仅接收外部推送，不因 enabled 就代表已接通自动轮询。
 
 每个信源有自己的抓取间隔。每天 04:20 会按近 7 天的产出自动调整：产出多的抓得勤，最短 15 分钟（经 Jina 读的网页列表最短 60 分钟）；最长的，一般信源 60 分钟，X 账号和经 Jina 读的网页列表 120 分钟，只作热度证据的 180 分钟。合并搜索的 X 账号跟着合并后的节奏：进精选的半小时一次，只作热度证据的一小时一次。
 
@@ -267,7 +267,7 @@ Content-Type: application/json
 - 在后台暂停信源后，推送接口返回 409，不再接收新文章；恢复信源后可以继续推送。
 - 条目的 `raw._aihot.backfill` 为 `true` 时按历史回灌处理（不进入“今天”、不推送）。
 
-### 微博公开原帖（厂际观察）
+### 微博公开原帖（大厂观察）
 
 `web_list` 的 `adapter: "weibo_profile"` 读取已核验账号的服务端 HTML；例如 `url: "https://weibo.com/foxshuo"`，并用 `allowUrlPrefixes: ["https://weibo.com/1560906700/"]` 限定作者。
 

@@ -1,6 +1,6 @@
-<p align="center"><img src="site/brand/logo.svg" width="80" height="80" alt="厂际观察 Logo"></p>
+<p align="center"><img src="site/brand/logo.svg" width="80" height="80" alt="大厂观察 Logo"></p>
 
-# 厂际观察 · Changji Observer
+# 大厂观察 · Dachang Observer
 
 **互联网 · 公司 · 人。** 面向互联网中大厂职场人的资讯聚合与阅读网站，关注企业经营、业务竞争、组织人事及员工处境。
 

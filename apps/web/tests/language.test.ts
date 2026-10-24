@@ -75,7 +75,7 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       await page.locator('a[href="/daily"]').filter({ visible: true }).first().click();
       await expect(page.getByText(translated["本期关注公司组织调整与岗位变化。"], { exact: true })).toBeVisible();
       await expect(page.getByText("Previous day · Oct 20", { exact: true })).toBeVisible();
-      await expect(page.getByRole("main").locator("footer")).toContainText("厂际观察 Daily · Compiled from public sources, with links to every original report · Daily archive");
+      await expect(page.getByRole("main").locator("footer")).toContainText("大厂观察 Daily · Compiled from public sources, with links to every original report · Daily archive");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "daily layout fits the same viewport");
       if (width >= 961) {
         await expect(page.getByRole("navigation", { name: "Main navigation", exact: true }).getByRole("link", { name: "Daily brief", exact: true })).toHaveAttribute("aria-current", "page");

@@ -127,7 +127,7 @@ node --env-file=.env scripts/eval-selection.ts --gold .data/gold.jsonl --split d
 后台“模型与评测”页能看到每一步当前用哪个模型、近期的成功率、耗时和 token 用量，也能直接切换（只影响之后的新任务）。换评分模型之前，先用 `--models` 在同一批样本上比一比。
 
 
-## 厂际观察：站长首轮标注（2026-10-18）
+## 大厂观察：站长首轮标注（2026-10-18）
 
 10 条交互标注已保存到 `industry/editorial-samples.json`，原始结果与前后对照在 `outputs/精选校准-第一轮-结果.md`。1 条精选、9 条只放全部；“只放全部”只表示不精选，不能误作预筛排除。预筛全部通过。
 

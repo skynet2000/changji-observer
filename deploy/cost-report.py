@@ -51,9 +51,9 @@ def money(value):
 
 def message(report, sender, recipient, day):
     msg = EmailMessage()
-    msg['From'] = formataddr(('厂际观察', sender))
+    msg['From'] = formataddr(('大厂观察', sender))
     msg['To'] = recipient
-    msg['Subject'] = f'厂际观察｜过去24小时模型费用｜{day}'
+    msg['Subject'] = f'大厂观察｜过去24小时模型费用｜{day}'
     msg['Message-ID'] = f'<changji-cost-{day}@innews.site>'
     msg['Date'] = format_datetime(datetime.now(ZoneInfo('Asia/Shanghai')))
     rows = [f"统计窗口（北京时间）：{report['start']} 至 {report['end']}",

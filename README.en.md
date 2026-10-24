@@ -1,6 +1,6 @@
-<p align="center"><img src="site/brand/logo.svg" width="80" height="80" alt="Changji Observer logo"></p>
+<p align="center"><img src="site/brand/logo.svg" width="80" height="80" alt="Dachang Observer logo"></p>
 
-# Changji Observer · 厂际观察
+# Dachang Observer · 大厂观察
 
 **Internet. Companies. People.** A news aggregation and reading site for employees at medium and large internet companies, focused on company development, business competition, organizational changes and working life.
 

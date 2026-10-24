@@ -50,6 +50,7 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('异常：后台心跳中断', first.get_content())
         self.assertIn('恢复：后台心跳中断', last.get_content())
         self.assertEqual(first['To'], 'owner@example.com')
+        self.assertIn('大厂观察', first['Subject'])
 
     def test_ambiguous_delivery_is_not_repeated(self):
         self.run_check(FAULT)

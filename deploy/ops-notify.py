@@ -86,7 +86,7 @@ def message(raised, recovered, sender, recipient, at):
     msg['From'] = sender
     msg['To'] = recipient
     msg['Date'] = format_datetime(at)
-    msg['Subject'] = f'厂际观察｜运行异常 {len(raised)} 项 · 恢复 {len(recovered)} 项'
+    msg['Subject'] = f'大厂观察｜运行异常 {len(raised)} 项 · 恢复 {len(recovered)} 项'
     msg['Message-ID'] = f'<changji-ops-{at.strftime("%Y%m%d%H%M%S%f")}@innews.site>'
     lines = ['检查时间（北京时间）：'+at.strftime('%Y-%m-%d %H:%M:%S')]
     for label, rows in (('异常', raised), ('恢复', recovered)):

@@ -44,6 +44,8 @@ class CostReportTests(unittest.TestCase):
         self.assertIn('2026-10-24 09:00', body)
         self.assertIn('最终以供应商账单为准', body)
         self.assertEqual(msg['To'],'owner@example.com')
+        self.assertIn('大厂观察', msg['Subject'])
+        self.assertIn('大厂观察', msg['From'])
 
     def test_never_send_before_first_day(self):
         with patch.dict(os.environ,{'COST_EMAIL_START_DATE':'2999-01-01'}):

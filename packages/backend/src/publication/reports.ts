@@ -173,10 +173,14 @@ function periodOverview(content: Record<string, any>, kind: "weekly" | "monthly"
 }
 
 /** A weekly or monthly's own headline; the composer's "<site name> 周报 · 2026-W38" names the issue, not its news. */
+function periodIssueTitle(text: string): boolean {
+  // Frozen issues keep the name used when composed, including before a site rename.
+  return /^.+ [周月]报 · \d{4}-(?:W\d{2}|\d{2})$/.test(text);
+}
+
 function periodicHeadline(content: Record<string, any>): string | null {
   const text = String(content.headline ?? content.title ?? "");
-  const issueName = text.startsWith(`${SITE.name} `) && /^[周月]报 · /.test(text.slice(SITE.name.length + 1));
-  return text && !issueName ? text : null;
+  return text && !periodIssueTitle(text) ? text : null;
 }
 
 /** Check only the first possible lead of each report; advance reports whose candidate was withdrawn. */
@@ -361,7 +365,8 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
   const cover = picture && leadItem ? { ...picture, caption: kind === "daily" || c.leadItemId ? null : leadItem.title } : null;
   const headline = kind === "daily" ? null : periodicHeadline(c);
   const title = kind === "daily" ? `${withSubject("日报")} · ${key}`
-    : String((hasCitedLead && c.title === headline ? named?.title : c.title) ?? (kind === "weekly" ? `${SITE.name} 周报 · ${key}` : `${SITE.name} 月报 · ${key}`));
+    : periodIssueTitle(String(c.title ?? "")) ? `${SITE.name} ${kind === "weekly" ? "周报" : "月报"} · ${key}`
+      : String((hasCitedLead && c.title === headline ? named?.title : c.title) ?? `${SITE.name} ${kind === "weekly" ? "周报" : "月报"} · ${key}`);
   return {
     kind,
     key,

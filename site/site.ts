@@ -9,7 +9,7 @@
  */
 export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
 
-/** 厂际观察所有启用信源每小时采集，失败时仍保留退避。 */
+/** 大厂观察所有启用信源每小时采集，失败时仍保留退避。 */
 export function collectionIntervalMinutes(): number {
   return 60;
 }
@@ -23,14 +23,14 @@ export const EDITION_WHEN = {
 
 export const SITE = {
   /** 站名：导航、页面标题、分享图、RSS、MCP、后台都用它。 */
-  name: "厂际观察",
+  name: "大厂观察",
   /**
    * 行业词：拼进默认说法里，比如“AI 日报”“AI 动态”。
    * 改成“法律”“HR”“黄金”之类，页面上就会变成“法律日报”“法律动态”。
    */
   subject: "互联网",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "厂际观察 — 互联网行业资讯与每日精选",
+  homeTitle: "大厂观察 — 互联网行业资讯与每日精选",
   /** 主题目录页（/topics）的标题。 */
   topicsTitle: "互联网主题：公司、产品与行业变化",
   /** 反馈表单输入框里的示例。 */
@@ -46,7 +46,7 @@ export const SITE = {
   /** 一行小字：分享图、海报下方。 */
   tagline: "看懂互联网行业与企业发展",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
-  keywords: ["厂际观察", "互联网资讯", "互联网日报", "互联网行业动态", "产品动态", "阿里巴巴", "电商", "本地生活", "即时零售", "组织人才", "职业成长"] as string[],
+  keywords: ["大厂观察", "互联网资讯", "互联网日报", "互联网行业动态", "产品动态", "阿里巴巴", "电商", "本地生活", "即时零售", "组织人才", "职业成长"] as string[],
   /** 网站开始收录的年份（结构化数据的时间范围，选填）。 */
   since: null as string | null,
   /** 界面语言（HTML lang、og:locale）。 */
@@ -75,12 +75,12 @@ export const SITE = {
   github: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
   organization: {
-    name: "厂际观察",
+    name: "大厂观察",
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },
   /** 抓取信源时报上的名字和版本（User-Agent 里用），不要冒用别的站。 */
-  crawlerName: "ChangjiGuanchaBot/1.0",
+  crawlerName: "DachangGuanchaBot/1.0",
 } as const;
 
 /** 使用规则和隐私说明两页（正文在 pages/ 里）。 */
@@ -340,7 +340,7 @@ function spokenTime(time: string): string {
 /** 首页还没有精选时，给读者一个清晰的内容导览。 */
 /** Public feed masthead, kept with the site's other copy. */
 export const FEED_EDITORIAL = {
-  imprint: "CHANGJI OBSERVER", kicker: "互联网 · 公司 · 人",
+  imprint: "DACHANG OBSERVER", kicker: "互联网 · 公司 · 人",
   featuredTitle: "看见大厂的下一步。", allTitle: "行业变化，持续发生。",
   featuredLead: "追踪企业发展，关注职场处境。把分散的消息，读成有脉络的变化。",
   allLead: "从业务竞争到组织变动，沿着时间读懂事情的来龙去脉。",
