@@ -10,7 +10,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { itemFeed } from "@aihot/backend/publication/feeds";
 import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { v1Items } from "@aihot/backend/publication/v1";
-import { CATEGORY_KEYS, READER_CATEGORY_OPTIONS, PUBLIC_API_CATEGORY_KEYS, toPublicApiCategory } from "@aihot/contracts/taxonomy";
+import { CATEGORY_KEYS, READER_CATEGORY_OPTIONS, PUBLIC_API_CATEGORY_KEYS, toPublicApiCategory, readerCategory, readerCategoryLabel } from "@aihot/contracts/taxonomy";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { MCP_TOOL_NAMES } from "@aihot/contracts/mcp";
 import { buildApp } from "../apps/api/src/app.ts";
@@ -92,4 +92,18 @@ test("HTTP, Agent, MCP and discovery agree on the public categories and returned
       assert.ok(items.every((item) => item.category === key));
     }
   }
+});
+
+test("employee-first six categories partition every legacy address exactly once", () => {
+  assert.deepEqual(READER_CATEGORY_OPTIONS.map(c=>[c.key,c.label]),[
+    ['jobs','裁员与招聘'],['workplace','薪酬与职场'],['career','人事与组织'],
+    ['industry','经营与资本'],['ai-products','业务与竞争'],['policy','政策与监管'],
+  ]);
+  const members=READER_CATEGORY_OPTIONS.flatMap(c=>[...c.members]);
+  assert.equal(new Set(members).size,members.length,'no category leaks into two tabs');
+  assert.deepEqual([...members].sort(),[...CATEGORY_KEYS].sort());
+  for(const key of CATEGORY_KEYS){assert.ok(PUBLIC_API_CATEGORY_KEYS.includes(key));assert.ok(readerCategoryLabel(key));}
+  assert.equal(readerCategory('ecommerce'),'ai-products');
+  assert.equal(readerCategory('career'),'career');
+  assert.notEqual(readerCategory('jobs'),readerCategory('workplace'));
 });

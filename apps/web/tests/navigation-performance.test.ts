@@ -18,7 +18,7 @@ import { startWebServer, type WebServer } from "./web-server.ts";
 
 const at = '2026-10-04T08:00:00.000Z';
 const item: FeedItemSummary = {id:'navigation-fixture',title:'性能检查文章',summary:'固定摘要',reason:'固定推荐理由',source:{name:'Fixture'},publishedAt:at,timelineAt:at,category:'ai-models',tags:[],score:80,selected:true,channel:'news',x:null};
-const topHot: HotStripEntry[] = Array.from({length:5},(_,i)=>({rank:i+1,title:`大厂热点 ${i+1}：组织调整与业务竞争的最新进展`,heat:100-i,trend:'up',storyPublicId:'fixture',itemId:null,participants:[],participantCount:0}));
+const topHot: HotStripEntry[] = Array.from({length:5},(_,i)=>({rank:i+1,title:`大厂热点 ${i+1}：组织调整与业务与竞争的最新进展`,heat:100-i,trend:'up',storyPublicId:'fixture',itemId:null,participants:[],participantCount:0}));
 const detail: SiteItemDetail = {...item,x:null,originalTitle:'Fixture article',links:{original:'https://example.org/article'},discoveredAt:at,story:null,readingMode:'full',author:null,body:{zh:'<p>固定正文</p>',original:null,zhKind:'translation',complete:true},outline:[],relatedStories:[],topics:[],indexable:true,markdownAvailable:true,group:null,hasTranslation:true,bodyLanguage:'zh'};
 const codeSource='import json\n\nwith open("data.json") as file:\n    data = json.load(file)\n\nfor record in data:\n    print(record["title"])\n';
 const readerBody=Array.from({length:30},(_,i)=>`<p>阅读段落 ${i}：先阅读文章，再查看后面的代码和图片。正文保持可读，图片和代码在需要时增强。</p>`).join('')
@@ -103,8 +103,8 @@ test('empty home explains its purpose; category navigation preserves the filtere
       try{
         await page.goto(origin+'/');
         await expect(page.getByRole('status')).toContainText('精选内容尚未发布');
-        await expect(page.getByRole('heading',{name:'职场与组织',exact:true})).toBeVisible();
-        await page.getByRole('link',{name:/职场与组织.*组织调整/}).click();
+        await expect(page.getByRole('heading',{name:'人事与组织',exact:true})).toBeVisible();
+        await page.getByRole('link',{name:/人事与组织.*高管任免/}).click();
         await expect(page).toHaveURL(/category=career/);
         await expect(page.getByText('这个筛选下还没有精选内容')).toBeVisible();
         await expect(page.getByRole('link',{name:'清除筛选',exact:true})).toBeVisible();
@@ -129,9 +129,9 @@ test('SSR list and visited query variants return offline without another read',a
     await page.goBack();
     await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible({timeout:1500});
     await context.setOffline(false);
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'大厂动态',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'经营与资本',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务竞争',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务与竞争',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
@@ -190,16 +190,16 @@ test('intent on a selected link preserves visited data and the next revisit star
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
     await page.goto(origin+'/');
-    await page.getByRole('link',{name:'大厂动态',exact:true}).click();
+    await page.getByRole('link',{name:'经营与资本',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'大厂动态',exact:true}).focus();
+    await page.getByRole('link',{name:'经营与资本',exact:true}).focus();
     await page.waitForTimeout(150);
-    await page.getByRole('link',{name:'业务竞争',exact:true}).click();
+    await page.getByRole('link',{name:'业务与竞争',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'业务竞争',exact:true}).focus();
+    await page.getByRole('link',{name:'业务与竞争',exact:true}).focus();
     await page.waitForTimeout(150);
     const before=requests.length;
-    await page.getByRole('link',{name:'大厂动态',exact:true}).click();
+    await page.getByRole('link',{name:'经营与资本',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 industry',exact:true})).toBeVisible();
     assert.deepEqual(requests.slice(before),[],'neither prefetch nor navigation may evict and reload a still-valid visited page');
   }finally{await context.close();}
@@ -377,7 +377,7 @@ test('event reports recover from invalid responses, timeouts and stale refreshes
 
 
 test('reader navigation has four categories on desktop and phone; old model links select business',async()=>{
-  const labels=['全部','大厂动态','组织人事','业务竞争','政策监管'];
+  const labels=['全部','裁员与招聘','薪酬与职场','人事与组织','经营与资本','业务与竞争','政策与监管'];
   for(const width of [390,1280]){
     const context=await chrome.newContext({viewport:{width,height:900}});
     const page=await context.newPage();
@@ -385,11 +385,15 @@ test('reader navigation has four categories on desktop and phone; old model link
       await page.goto(origin+'/');
       const nav=page.getByRole('navigation',{name:'栏目',exact:true});
       assert.deepEqual(await nav.getByRole('link').allTextContents(),labels);
-      for(const label of labels)await expect(nav.getByRole('link',{name:label,exact:true})).toBeInViewport({ratio:0.99});
+      for(const label of labels){
+        const link=nav.getByRole('link',{name:label,exact:true});
+        await link.scrollIntoViewIfNeeded();
+        await expect(link).toBeInViewport({ratio:0.99});
+      }
       await expect(page.getByRole('button',{name:/^筛选/})).toHaveCount(0);
       await page.goto(origin+'/?category=ai-models');
       await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
-      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务竞争',exact:true})).toHaveAttribute('aria-current','page');
+      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'业务与竞争',exact:true})).toHaveAttribute('aria-current','page');
     }finally{await context.close();}
   }
 });
@@ -427,9 +431,9 @@ test('phone navigation marks All independently, all categories are visible and r
       await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='career');
       const rail=page.getByRole('navigation',{name:'栏目',exact:true});
       await expect(rail).toBeVisible();
-      await rail.getByRole('link',{name:'政策监管',exact:true}).click();
+      await rail.getByRole('link',{name:'政策与监管',exact:true}).click();
       await expect(page).toHaveURL(url=>url.searchParams.get('category')==='policy'&&url.searchParams.get('q')==='岗位');
-      const selected=rail.getByRole('link',{name:'政策监管',exact:true});
+      const selected=rail.getByRole('link',{name:'政策与监管',exact:true});
       await expect(selected).toHaveAttribute('aria-current','page');
       await expect(selected).toBeInViewport({ratio:0.99}); // WebKit rounds fractional scroll offsets.
       const bounds=await rail.boundingBox(),choice=await selected.boundingBox();
@@ -448,7 +452,7 @@ test('phone categories, tags and query can each be cleared independently without
   try{
     await page.goto(origin+'/all?category=career&tag=组织调整&q=岗位');
     const categories=page.getByRole('navigation',{name:'栏目',exact:true});
-    await categories.getByRole('link',{name:'业务竞争',exact:true}).click();
+    await categories.getByRole('link',{name:'业务与竞争',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='ai-products'&&url.searchParams.get('tag')==='组织调整');
     await page.getByRole('link',{name:'取消搜索：岗位',exact:true}).click();
     await expect(page).toHaveURL(url=>!url.searchParams.has('q')&&!url.searchParams.has('tab')&&url.searchParams.get('category')==='ai-products'&&url.searchParams.get('tag')==='组织调整');
@@ -464,11 +468,11 @@ test('category changes reset pagination but keep search and tag; desktop can cle
   const context=await chrome.newContext({viewport:{width:1024,height:900}}),page=await context.newPage();
   try{
     await page.goto(origin+'/all?channel=firstParty&tag=组织调整&q=岗位&page=2&deep=1&anchorAt=old');
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'人事与组织',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&!url.searchParams.has('channel')&&url.searchParams.get('q')==='岗位'&&!['page','deep','anchorAt'].some(key=>url.searchParams.has(key)));
     await page.getByRole('link',{name:'取消标签：组织调整',exact:true}).click();
     await expect(page).toHaveURL(url=>!url.searchParams.has('tag')&&url.searchParams.get('category')==='career'&&!url.searchParams.has('channel'));
-    await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'人事与组织',exact:true})).toHaveAttribute('aria-current','page');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
 });
@@ -482,7 +486,7 @@ test('phone search preserves feed filters and can change category without losing
     await search.getByRole('searchbox').fill('岗位');
     await search.getByRole('searchbox').press('Enter');
     await expect(page).toHaveURL(url=>url.pathname==='/all'&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('category')==='industry'&&!url.searchParams.has('channel')&&url.searchParams.get('tag')==='组织调整');
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'组织人事',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'人事与组织',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='career'&&url.searchParams.get('q')==='岗位'&&!url.searchParams.has('channel'));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   }finally{await context.close();}
@@ -494,7 +498,7 @@ test('desktop category filters are reachable and preserve search',async()=>{
   try{
     await page.goto(origin+'/all?category=career&q=招聘');
     await expect(page.getByRole('button',{name:/^筛选/})).toHaveCount(0);
-    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'政策监管',exact:true}).click();
+    await page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'政策与监管',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='policy'&&url.searchParams.get('q')==='招聘'&&!url.searchParams.has('channel'));
     await expect(page.getByRole('link',{name:'取消筛选：一手',exact:true})).toHaveCount(0);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth),false);
@@ -618,14 +622,42 @@ test('top hotspots precede one reading column and phone feeds use one toolbar',a
           const box=await link.boundingBox(); assert.ok(box&&box.height>=44,'hot links remain touch targets');
         }
         const rail=page.getByRole('navigation',{name:'栏目',exact:true});
-        for(const link of await rail.getByRole('link').all())await expect(link).toBeInViewport({ratio:0.99});
-        const choice=rail.getByRole('link',{name:'政策监管',exact:true});
+        for(const link of await rail.getByRole('link').all()){
+          await link.scrollIntoViewIfNeeded();
+          await expect(link).toBeInViewport({ratio:0.99});
+        }
+        const choice=rail.getByRole('link',{name:'政策与监管',exact:true});
         await choice.click();
         await expect(choice).toHaveAttribute('aria-current','page');
         await expect(choice).toBeInViewport({ratio:0.99});
         const bounds=await rail.boundingBox();assert.ok(bounds&&bounds.height<54,'categories occupy one row');
       }
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }finally{await context.close();}
+  }
+});
+
+test('six categories preserve search and tags across Chinese and English, including narrow layouts',async()=>{
+  const choices=[['jobs','裁员与招聘','Jobs & hiring'],['workplace','薪酬与职场','Pay & workplace'],['career','人事与组织','People & organization'],['industry','经营与资本','Finance & capital'],['ai-products','业务与竞争','Business & competition'],['policy','政策与监管','Policy & regulation']];
+  for(const width of [320,390,1024,1280]){
+    const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();
+    try{
+      await page.goto(origin+'/all?q=岗位&tag=组织调整');
+      for(const language of ['zh','en']){
+        if(language==='en')await page.getByRole('button',{name:'Switch to English'}).click();
+        const rail=page.getByRole('navigation',{name:language==='zh'?'栏目':'Category',exact:true});
+        for(const [key,zh,en] of choices){
+          const choice=rail.getByRole('link',{name:language==='zh'?zh:en,exact:true});
+          await choice.click();
+          await expect(page).toHaveURL(url=>url.searchParams.get('category')===key&&url.searchParams.get('q')==='岗位'&&url.searchParams.get('tag')==='组织调整');
+          await expect(choice).toHaveAttribute('aria-current','page');
+          await expect(choice).toBeInViewport({ratio:0.99});
+        }
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        await page.screenshot({path:`outputs/六栏导航-${width}-${language}-20261024.png`,fullPage:true});
+      }
+      await page.reload();
+      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'政策与监管',exact:true})).toBeInViewport({ratio:0.99});
     }finally{await context.close();}
   }
 });

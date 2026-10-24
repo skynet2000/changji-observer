@@ -39,14 +39,19 @@ export function CategoryTabs({ base, category, className = "" }: { base: string;
   const [params] = useSearchParams();
   const rail = useRef<HTMLElement>(null);
   useEffect(() => {
-    const nav = rail.current;
-    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return;
-    const bounds = nav.getBoundingClientRect(), item = active.getBoundingClientRect();
-    if (item.left < bounds.left || item.right > bounds.right) {
-      nav.scrollTo({ left: nav.scrollLeft + item.left - bounds.left - (bounds.width - item.width) / 2 });
-    }
-  }, [category]);
+    const revealActive = () => {
+      const nav = rail.current;
+      const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return;
+      const bounds = nav.getBoundingClientRect(), item = active.getBoundingClientRect();
+      if (item.left < bounds.left || item.right > bounds.right) {
+        nav.scrollTo({ left: nav.scrollLeft + item.left - bounds.left - (bounds.width - item.width) / 2 });
+      }
+    };
+    revealActive();
+    window.addEventListener("resize", revealActive);
+    return () => window.removeEventListener("resize", revealActive);
+  }, [category, translate]);
   return <nav ref={rail} aria-label={translate("栏目")} className={`category-tabs ${className}`}>
     {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
       aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}

@@ -1,10 +1,12 @@
 // A classification correction moves the same frozen entry; it never composes another issue or pays
 // a writer. The override, publication, report revisions and audit commit in the caller's transaction.
-import { RELEASE } from "@aihot/industry/taxonomy";
+import { CATEGORIES, RELEASE } from "@aihot/industry/taxonomy";
 import type { Tx } from "../db.ts";
 import { isRelease } from "../editorial/vocabulary.ts";
 import { emit } from "../modules.ts";
 import { SECTION_ORDER, sectionOf } from "./edition.ts";
+
+const classificationSections = new Set([...SECTION_ORDER, ...CATEGORIES.flatMap(c => "legacySections" in c ? [...c.legacySections] : [])]);
 
 interface Entry { itemId: string; followUp?: string; firstParty?: boolean; role?: string; [key: string]: unknown }
 interface Group { label?: string; heading?: string; summary?: unknown; items?: Entry[]; storyRefs?: Entry[]; [key: string]: unknown }
@@ -28,7 +30,7 @@ export async function correctReportClassification(tx: Tx, articleId: string, rea
     const entriesKey = daily ? "items" : "storyRefs";
     const from = groups.find(g => g[entriesKey]?.some(e => e.itemId === articleId));
     // Older, hand-written theme headings are not taxonomy columns; do not reinterpret their prose.
-    if (!from || !SECTION_ORDER.includes(from[labelKey] ?? "")) continue;
+    if (!from || !classificationSections.has(from[labelKey] ?? "")) continue;
     const label = sectionOf(item.category);
     if (from[labelKey] !== label) {
       const moving = from[entriesKey]!.filter(e => e.itemId === articleId);

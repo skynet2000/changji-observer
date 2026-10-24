@@ -306,10 +306,12 @@ export const FEED_COPY = {
 
 /** 面向互联网中大厂职场人的阅读栏目；细分类仍用于后台判断和既有订阅。 */
 export const READER_CATEGORIES = [
-  { key: "industry", label: "大厂动态", members: ["industry", "opinion", "paper"] },
-  { key: "career", label: "组织人事", members: ["career"] },
-  { key: "ai-products", label: "业务竞争", members: ["ai-products", "ecommerce", "local-life", "ai-models", "tip"] },
-  { key: "policy", label: "政策监管", members: ["policy"] },
+  { key: "jobs", label: "裁员与招聘", members: ["jobs"] },
+  { key: "workplace", label: "薪酬与职场", members: ["workplace"] },
+  { key: "career", label: "人事与组织", members: ["career"] },
+  { key: "industry", label: "经营与资本", members: ["industry", "opinion", "paper"] },
+  { key: "ai-products", label: "业务与竞争", members: ["ai-products", "ecommerce", "local-life", "ai-models", "tip"] },
+  { key: "policy", label: "政策与监管", members: ["policy"] },
 ] as const;
 
 /**
@@ -355,9 +357,11 @@ export const FEED_WELCOME = {
   status: "精选内容尚未发布",
   statusDetail: "第一批资讯需要完成采集与筛选后才会出现。下面是本站的关注方向。",
   directions: [
-    { category: "industry", title: "大厂动态", description: "战略、财报、投资并购与竞争格局" },
-    { category: "career", title: "职场与组织", description: "组织调整、裁员招聘、薪酬绩效与职业发展" },
-    { category: "ai-products", title: "业务与产品", description: "产品竞争、电商、本地生活与 AI 业务变化" },
-    { category: "opinion", title: "行业观察", description: "行业趋势、深度分析与影响业务的政策" },
+    { category: "jobs", title: "裁员与招聘", description: "岗位增减、编制变化与招聘机会" },
+    { category: "workplace", title: "薪酬与职场", description: "薪酬绩效、工作制度与员工权益" },
+    { category: "career", title: "人事与组织", description: "高管任免、部门拆并与汇报关系" },
+    { category: "industry", title: "经营与资本", description: "整体财报、融资并购与集团战略" },
+    { category: "ai-products", title: "业务与竞争", description: "产品、用户增长、商业化与市场竞争" },
+    { category: "policy", title: "政策与监管", description: "行业法规、正式监管与劳动政策" },
   ],
 };

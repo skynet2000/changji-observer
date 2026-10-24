@@ -62,12 +62,12 @@ test("category corrections revise every standard report atomically without selec
     const c = saved!.content;
     assert.equal(c.leadItemId, articleId);
     if (r.kind === "daily") {
-      assert.deepEqual(c.sections, [{ label: "产品与AI应用", items: [entry] }]);
+      assert.deepEqual(c.sections, [{ label: "业务与竞争", items: [entry] }]);
       assert.equal(c.metrics.modelsReleased, 0);
       assert.deepEqual(c.highlights, [articleId]);
       assert.equal(c.lead.title, "冻结头条");
     } else {
-      assert.deepEqual(c.themes, [{ heading: "产品与AI应用", summary: null, storyRefs: [entry] }]);
+      assert.deepEqual(c.themes, [{ heading: "业务与竞争", summary: null, storyRefs: [entry] }]);
       assert.deepEqual(c.storyOrder, [articleId]);
       assert.equal(c.overview, "保留总述");
     }
@@ -76,6 +76,31 @@ test("category corrections revise every standard report atomically without selec
   assert.equal((await sql`SELECT count(*)::int AS n FROM pgboss.job WHERE name=${QUEUES.digest}`)[0]!.n, digestCount);
   await overrideFields(articleId, { fields: {}, clear: ["category", "tags"], version: 1, reason: "验证撤销纠错" }, "test-category");
   const [restored] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
-  assert.equal(restored!.content.sections[0].label, "模型发布/更新");
+  assert.equal(restored!.content.sections[0].label, "业务与竞争");
   assert.equal(restored!.content.metrics.modelsReleased, 1);
+});
+
+// The old combined people column must split without altering frozen selections or copy.
+test("six-column migration moves a frozen people entry into pay while preserving its editorial decision", async () => {
+  const sourceId = `people-${tag()}`;
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode) VALUES(${sourceId},'People fixture','rss','T1','editorial')`;
+  const { articleId } = await upsertMaterial({sourceId,url:`https://example.com/${sourceId}`,title:'内部考勤调整',bodyText:'公司调整返岗考勤制度。',bodyStatus:'ok',via:'fetch',publishedAt:new Date()});
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,score,selected)
+    VALUES(${articleId},1,'rule','pass','career','内部考勤调整','原有摘要',73,true)`;
+  await publishArticle(articleId,{releasedAt:new Date()});
+  const entry={itemId:articleId,title:'出刊标题',summary:'出刊摘要',sourceId};
+  const key='2097-02-02';
+  const content={leadItemId:articleId,lead:{title:'原头条'},sections:[{label:'组织与人才',items:[entry]}],metrics:{totalEvents:1}};
+  await sql`INSERT INTO reports(kind,key,window_start,window_end,content,generated_at,origin)
+    VALUES('daily',${key},now(),now(),${sql.json(content)},now(),'imported')`;
+  const [before]=await sql`SELECT selected,score,visible_after,selected_ready_at,url,published_at,timeline_at,fact_id,story_id FROM publications WHERE article_id=${articleId}`;
+  const receipts=(await sql`SELECT count(*)::int AS n FROM receipts`)[0]!.n;
+  await overrideFields(articleId,{fields:{category:'workplace'},version:0,reason:'主线为内部考勤待遇，非人员任免或岗位裁撤'},'test-six-categories');
+  const [after]=await sql`SELECT selected,score,visible_after,selected_ready_at,url,published_at,timeline_at,fact_id,story_id FROM publications WHERE article_id=${articleId}`;
+  assert.deepEqual(after,before);
+  const [saved]=await sql`SELECT content,revision FROM reports WHERE kind='daily' AND key=${key}`;
+  assert.deepEqual(saved!.content.sections,[{label:'薪酬与职场',items:[entry]}]);
+  assert.equal(saved!.content.lead.title,'原头条');
+  assert.equal(saved!.revision,2);
+  assert.equal((await sql`SELECT count(*)::int AS n FROM receipts`)[0]!.n,receipts,'classification-only migration never buys rescoring');
 });
