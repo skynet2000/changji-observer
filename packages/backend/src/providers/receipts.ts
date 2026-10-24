@@ -7,6 +7,8 @@
 //    caller. ops.recover releases it once after 30 minutes (operations/recover.ts), so a lost answer
 //    costs at most one repeat; after that it waits for the admin.
 import { sql, type Db } from "../db.ts";
+import { setTimeout } from "node:timers/promises";
+import { MODEL_REQUESTS_PER_MINUTE } from "@aihot/site/models";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
 import { beijingDate } from "@aihot/contracts/time";
@@ -97,27 +99,41 @@ interface ReceiptRow {
   updated_at: Date;
 }
 
-async function checkBudget(tx: Db, service: string, model?: string | null): Promise<void> {
+async function checkBudget(tx: Db, service: string, model?: string | null): Promise<number> {
+  const pace = MODEL_REQUESTS_PER_MINUTE[service];
   const [budget] = await tx<{ per_minute: number; per_hour: number; per_day: number }[]>`
     SELECT per_minute, per_hour, per_day FROM budgets WHERE service = ${service}`;
-  if (!budget) return; // default rows come with the migrations; a service an operator removed is unlimited
-  if (budget.per_minute <= 0 || budget.per_hour <= 0 || budget.per_day <= 0) {
+  if (!budget && !pace) return 0;
+  if (budget && (budget.per_minute <= 0 || budget.per_hour <= 0 || budget.per_day <= 0)) {
     throw new BudgetExceededError(service, "stopped", 3600);
   }
-  // The dated model allowance expires in Beijing time; collection-service limits and manual stops remain.
-  if (model && process.env.LLM_BUDGET_UNLIMITED_DATE === beijingDate(new Date())) return;
+  // A monetary/request allowance never bypasses a provider's physical request pace.
+  const unlimited = model && process.env.LLM_BUDGET_UNLIMITED_DATE === beijingDate(new Date());
+  if (unlimited && !pace) return 0;
+  // Read the clock after acquiring the service lock, not at the start of a waiting transaction.
+  const [clock] = await tx<{ at: Date }[]>`SELECT clock_timestamp() AS at`;
+  const at = clock!.at;
   // Every request sent counts, retries of the same logical request included.
-  const [counts] = await tx<{ minute: number; hour: number; day: number }[]>`
+  const [counts] = await tx<{ minute: number; hour: number; day: number; oldest: Date | null; latest: Date | null }[]>`
     SELECT
-      count(*) FILTER (WHERE started_at > now() - interval '1 minute') AS minute,
-      count(*) FILTER (WHERE started_at > now() - interval '1 hour') AS hour,
-      count(*) AS day
+      count(*) FILTER (WHERE started_at > ${at} - interval '1 minute') AS minute,
+      count(*) FILTER (WHERE started_at > ${at} - interval '1 hour') AS hour,
+      count(*) AS day,
+      min(started_at) FILTER (WHERE started_at > ${at} - interval '1 minute') AS oldest,
+      max(started_at) AS latest
     FROM receipt_attempts
-    WHERE service = ${service} AND origin = 'live' AND started_at > now() - interval '1 day'`;
+    WHERE service = ${service} AND origin = 'live' AND started_at > ${at} - interval '1 day'`;
   const c = counts!;
-  if (c.minute >= budget.per_minute) throw new BudgetExceededError(service, "minute", 60);
-  if (c.hour >= budget.per_hour) throw new BudgetExceededError(service, "hour", 600);
-  if (c.day >= budget.per_day) throw new BudgetExceededError(service, "day", 3600);
+  if (budget && !unlimited) {
+    if (!pace && c.minute >= budget.per_minute) throw new BudgetExceededError(service, "minute", 60);
+    if (c.hour >= budget.per_hour) throw new BudgetExceededError(service, "hour", 600);
+    if (c.day >= budget.per_day) throw new BudgetExceededError(service, "day", 3600);
+  }
+  if (!pace) return 0;
+  const perMinute = Math.min(pace, budget && !unlimited ? budget.per_minute : pace);
+  return Math.max(0,
+    c.latest ? c.latest.getTime() - at.getTime() + Math.ceil(60_000 / perMinute) : 0,
+    c.minute >= perMinute && c.oldest ? c.oldest.getTime() - at.getTime() + 60_001 : 0);
 }
 
 async function checkCostBudget(tx: Db, req: ReceiptRequest): Promise<void> {
@@ -145,7 +161,7 @@ async function checkCostBudget(tx: Db, req: ReceiptRequest): Promise<void> {
 export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallOutcome>): Promise<ReceiptResult> {
   const logicalKey = logicalKeyFor(req);
 
-  const claimed = await sql.begin(async (tx) => {
+  const claim = () => sql.begin(async (tx) => {
     // Serialise budget checks per service so concurrent workers cannot overshoot.
     await tx`SELECT pg_advisory_xact_lock(hashtext(${"budget:" + req.service}))`;
     const [existing] = await tx<ReceiptRow[]>`
@@ -162,14 +178,16 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
       }
       if (existing.status === "unknown") return { kind: "unknown" as const, row: existing };
       // failed: the provider did not take the request, or its answer was unusable; a new attempt is allowed.
-      await checkBudget(tx, req.service, req.model);
+      const waitMs = await checkBudget(tx, req.service, req.model);
+      if (waitMs > 0) return { kind: "wait" as const, waitMs };
       await checkCostBudget(tx, req);
       const [r] = await tx<{ attempts: number }[]>`
         UPDATE receipts SET status = 'pending', attempts = attempts + 1, error = NULL, updated_at = now() WHERE id = ${existing.id} RETURNING attempts`;
       const attemptId = await startAttempt(tx, existing.id, r!.attempts, req);
       return { kind: "call" as const, id: existing.id, attemptId };
     }
-    await checkBudget(tx, req.service, req.model);
+    const waitMs = await checkBudget(tx, req.service, req.model);
+    if (waitMs > 0) return { kind: "wait" as const, waitMs };
     await checkCostBudget(tx, req);
     const [row] = await tx<{ id: number }[]>`
       INSERT INTO receipts (logical_key, service, model, purpose, subject, status, request, attempts)
@@ -179,6 +197,14 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
     const attemptId = await startAttempt(tx, row!.id, 1, req);
     return { kind: "call" as const, id: row!.id, attemptId };
   });
+
+  let claimed = await claim();
+  while (claimed.kind === "wait") {
+    // No placeholder, attempt, reservation, connection or lock is held while queued. Every
+    // process rechecks under the same database lock; local pacing is never a provider failure.
+    await setTimeout(claimed.waitMs, undefined, { signal: shutdownSignal.signal });
+    claimed = await claim();
+  }
 
   if (claimed.kind === "reuse") return { receiptId: claimed.row.id, response: claimed.row.response, reused: true };
   if (claimed.kind === "busy") throw new ReceiptBusyError(`Receipt ${claimed.row.id} is in flight`);
@@ -233,9 +259,9 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
 
 async function startAttempt(tx: Db, receiptId: number, attempt: number, req: ReceiptRequest): Promise<number> {
   const [row] = await tx<{ id: number }[]>`
-    INSERT INTO receipt_attempts (receipt_id, attempt, service, model, status, cost, currency, cost_basis)
+    INSERT INTO receipt_attempts (receipt_id, attempt, service, model, status, cost, currency, cost_basis, started_at)
     VALUES (${receiptId}, ${attempt}, ${req.service}, ${req.model ?? null}, 'pending',
-      ${req.costBudget?.maxAmount ?? null}, ${req.costBudget?.currency ?? null}, ${req.costBudget ? "estimated" : null})
+      ${req.costBudget?.maxAmount ?? null}, ${req.costBudget?.currency ?? null}, ${req.costBudget ? "estimated" : null}, clock_timestamp())
     RETURNING id`;
   return row!.id;
 }

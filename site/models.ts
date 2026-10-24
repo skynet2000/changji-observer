@@ -73,6 +73,9 @@ export const PRESETS: Record<string, ModelPreset> = {
  */
 export const DEFAULTS: Record<string, string> = { score: "deepseek-flash-think" };
 
+// 同一 service 的普通、推理、重试及维护请求共用节奏；给平台 50 RPM 留出余量。
+export const MODEL_REQUESTS_PER_MINUTE: Readonly<Record<string, number>> = { intern: 45 };
+
 // 2026-10-21 核验：https://api-docs.deepseek.com/zh-cn/quick_start/pricing
 // 当前 deepseek-flash 对应官方 V4.1-Flash-1017；官方未公布单独可调用的日期版名称。
 // 按高峰单价计算上界，不依赖空闲时段折扣；金额限制通过环境变量启用。
