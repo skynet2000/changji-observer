@@ -25,14 +25,24 @@ test("successful priority answers use the exact requested version and never pay 
   });
 });
 
+test("an explicitly rate-rejected primary gets one recovery chance before a paid fallback", async () => {
+  await withProviders(hit => hit === 1 ? new Reply(429, { error: "Channel rate limit reached for model" }) : answer, async (p,f) => {
+    const result = await call();
+    assert.equal(result.model,"intern-flash");
+    assert.equal(p.hits(),2); assert.equal(f.hits(),0);
+    const attempts = await sql`SELECT status FROM receipt_attempts WHERE receipt_id=${result.receiptId} ORDER BY attempt`;
+    assert.deepEqual(attempts.map(a=>a.status),['failed','received']);
+  });
+});
+
 test("each task tries priority first after another task's 429; recovery immediately avoids payment", async () => {
   let recover = false;
   await withProviders(() => recover ? answer : new Reply(429, { error: "rate limit" }), async (p, f) => {
     assert.equal((await call()).model, "deepseek-flash");
     assert.equal((await call("intern-flash-think")).model, "deepseek-flash-think");
-    assert.equal(p.hits(), 2); assert.equal(f.hits(), 2);
+    assert.equal(p.hits(), 4); assert.equal(f.hits(), 2);
     recover = true;
-    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 3); assert.equal(f.hits(), 2);
+    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 5); assert.equal(f.hits(), 2);
   });
 });
 

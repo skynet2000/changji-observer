@@ -108,6 +108,23 @@ test("a new source name uses its saved translation, alongside translated article
   } finally { item.source.name = original; await context.close(); }
 });
 
+test("English save actions and essential sign-in copy work without translation lookups", async () => {
+  failing = true;
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/");
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+    const save = page.getByRole('button',{name:'Save story',exact:true});
+    await expect(save).toHaveAttribute('aria-pressed','false');
+    await save.click();
+    await expect(page.getByRole('button',{name:'Remove saved story',exact:true})).toHaveAttribute('aria-pressed','true');
+    await page.locator('[data-reader-entry="header"]').click();
+    await expect(page.getByText('Google and GitHub are separate accounts. Use the same provider on each device.',{exact:true})).toBeVisible();
+    await expect(page.getByRole('main')).toContainText('By continuing, you agree to');
+    await expect(page.getByRole('main')).not.toContainText('继续即表示同意');
+  } finally { failing = false; await context.close(); }
+});
+
 test("English count labels work without saved translations and long source names fit phone cards", async () => {
   const original = item.source.name;
   item.source.name = "21世纪经济报道 · 公司";

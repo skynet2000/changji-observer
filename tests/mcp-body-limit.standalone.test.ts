@@ -7,6 +7,7 @@ import { after, test } from "node:test";
 import Fastify from "fastify";
 import { registerMcp } from "../apps/api/src/routes/mcp.ts";
 import { buildApp } from "../apps/api/src/app.ts";
+import { MCP_TOOL_NAMES } from "@aihot/contracts/mcp";
 
 const LIMIT = 256 * 1024;
 const app = Fastify({ bodyLimit: 10 * 1024 * 1024 });
@@ -16,6 +17,13 @@ const headers = { host: "localhost", "content-type": "application/json", accept:
 const initialize = (name: string) => JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {
   protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name, version: "1.0.0" },
 } });
+
+test("MCP bounds tool input elements before validating nested arguments", async () => {
+  const response = await app.inject({ method: "POST", url: "/api/mcp", headers, payload: {
+    jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: MCP_TOOL_NAMES.latest, arguments: { unexpected: Array(1024).fill({ value: 0 }) } },
+  } });
+  assert.match(response.body, /maximum of 1024 elements/);
+});
 
 test("MCP accepts a JSON body at its byte limit and refuses one byte over before parsing", async () => {
   const empty = initialize("");

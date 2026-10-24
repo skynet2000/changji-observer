@@ -3,6 +3,7 @@
 // site, an environment variable or the admin's model page picks one of the site's named presets
 // (site/models.ts).
 import type { z } from "zod";
+import { setTimeout } from "node:timers/promises";
 import { PRESETS } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
@@ -134,14 +135,21 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
   const fallback = MODELS[spec.fallback];
   if (!fallback || fallback.fallback || fallback.key === spec.key) throw new Error("Invalid model fallback configuration");
   if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
-  try {
+  for (let attempt = 0; ; attempt++) try {
     // Each logical task tries its primary first; another task's refusal must not cause a paid call.
     return await chatJsonOnce(opts);
   } catch (error) {
     // Do not turn local budget stops, in-flight locks, or database errors into extra paid calls.
     if (!(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError)) throw error;
+    // A confirmed 429 has not been processed. Give this task one delayed primary attempt;
+    // never retry an unknown outcome or skip the primary for a different task.
+    if (attempt === 0 && error instanceof ProviderRejectedError && error.status === 429) {
+      await setTimeout(2000);
+      continue;
+    }
     console.warn(JSON.stringify({ event: "model_fallback", primary: spec.key, fallback: fallback.key,
       purpose: opts.purpose, reason: error.constructor.name, status: error instanceof ProviderRejectedError ? error.status : null }));
+    break;
   }
   return chatJsonOnce({ ...opts, model: fallback.key });
 }

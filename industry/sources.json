@@ -23,6 +23,32 @@
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "web-alibaba-news",
+      "name": "阿里巴巴集团 · 官方新闻",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.alibabagroup.com/zh-CN/news-and-resource",
+        "_aihot": { "initialBackfillLimit": 3 },
+        "parseMode": "html",
+        "itemSelector": "a.component-news-list-item",
+        "linkSelector": "a",
+        "titleSelector": ".component-news-info .component-title",
+        "publishedAtSelector": ".date-date",
+        "publishedAtUtcOffset": "+08:00",
+        "allowUrlPrefixes": ["https://www.alibabagroup.com/document-"],
+        "sortByPublishedAt": true
+      },
+      "tier": "T1",
+      "owner_entity_id": "alibaba",
+      "signal_group_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": ["官方", "阿里巴巴", "企业发展"],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
       "enabled": true
     },
     {

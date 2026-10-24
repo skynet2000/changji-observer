@@ -91,3 +91,11 @@ test("upstream 500 is retried once, but ordinary missing URLs and access/rate re
     assert.equal(hits, 1, host + path);
   }
 });
+
+test("a stalled first read leaves time for one recovery inside the original deadline", async () => {
+  mockAgent.get(origin).intercept({ path: "/stalled" }).reply(200, "Too late").delay(6000);
+  mockAgent.get(origin).intercept({ path: "/stalled" }).reply(200, "Recovered");
+  const started = Date.now();
+  assert.equal((await fetchListing(origin + "/stalled", { timeoutMs: 5000 })).text(), "Recovered");
+  assert.ok(Date.now() - started < 5000);
+});

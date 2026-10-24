@@ -119,7 +119,7 @@ export function buildMcpServer(notice: McpNotice | null = null): McpServer {
   // whole session.
   const server = new McpServer(
     { name: SITE.mcpPrefix, version: PUBLIC_INTERFACE_VERSION },
-    { capabilities: { tools: { listChanged: false } }, instructions: instructions() + (notice?.instructions ?? "") },
+    { capabilities: { tools: { listChanged: false } }, maxToolInputElements: 1024, instructions: instructions() + (notice?.instructions ?? "") },
   );
   registerTools(server, notice ? (text, structured) => ok(text + notice.text, { ...structured, notice: notice.notice }) : ok);
   return server;

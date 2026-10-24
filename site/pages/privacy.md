@@ -27,6 +27,14 @@
 
 联系邮箱：skynettiantian@gmail.com。Google/GitHub 登录分别受其服务和隐私规则约束。
 
+### Google sign-in: English summary
+
+Dachang Observer（大厂观察）is a news aggregation website for people working at internet companies. Reading is public and does not require an account. Google sign-in is optional and enables saved and read stories to sync across devices.
+
+We use the stable account identifier, display name and sign-in provider to create your reader account. We do not request access to email, Drive files or repositories, and do not retain provider access or refresh tokens. Account and reading records are stored on our Seoul server. They are not used for model training or news generation, sold, or shared with advertisers.
+
+Reader sessions expire after 30 days. You can sign out or delete your site account on the account page. Deletion removes your cloud reading records and all sessions; backup copies expire through the seven-day rotation. Local copies on offline devices must be cleared on those devices. Deleting this site's account does not delete your Google account or revoke Google's app authorization. For access, correction or deletion requests, contact skynettiantian@gmail.com. The Chinese sections on this page describe the same reader-account handling in full, along with local browser records, feedback and infrastructure.
+
 ## 反馈资料
 
 提交反馈时，反馈文字、选填邮箱、相关页面地址及主动附上的截图会发送至本站服务器，用于处理问题、联系反馈者和核查更正请求。反滥用机制使用网络地址与浏览器类别计算出的不可逆标识，用于限流和封禁；请勿在反馈中附带密码、身份证号或其他不必要的敏感信息。

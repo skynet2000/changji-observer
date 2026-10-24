@@ -32,8 +32,12 @@ export function isPoolEligible(input: {
   title: string | null;
   summary: string | null;
   originalPost?: boolean;
+  scope?: string | null;
+  category?: string | null;
+  editorialSelection?: boolean;
 }): boolean {
-  return input.participationMode === "editorial" && input.relevance === "pass" && !!input.title && (!!input.summary || input.originalPost === true);
+  const focused = input.scope !== "composite" || !!input.category || input.editorialSelection === true;
+  return focused && input.participationMode === "editorial" && input.relevance === "pass" && !!input.title && (!!input.summary || input.originalPost === true);
 }
 
 /**

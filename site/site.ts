@@ -22,6 +22,8 @@ export const EDITION_WHEN = {
 };
 
 export const SITE = {
+  // Public ownership marker for the operator's Google Search Console account, not a login secret.
+  googleSiteVerification: "yQ1Un6Ws5qt8wnM0-47uJDDpA8ri--EkT3grzXElG8g",
   /** 站名：导航、页面标题、分享图、RSS、MCP、后台都用它。 */
   name: "大厂观察",
   /**
@@ -342,7 +344,7 @@ function spokenTime(time: string): string {
 export const FEED_EDITORIAL = {
   imprint: "DACHANG OBSERVER", kicker: "互联网 · 公司 · 人",
   featuredTitle: "看见大厂的下一步。", allTitle: "行业变化，持续发生。",
-  featuredLead: "追踪企业发展，关注职场处境。把分散的消息，读成有脉络的变化。",
+  featuredLead: "面向互联网中大厂职场人的资讯聚合站，关注企业发展与员工处境。阅读无需登录，登录可同步收藏与已读。",
   allLead: "从业务竞争到组织变动，沿着时间读懂事情的来龙去脉。",
 };
 

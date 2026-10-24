@@ -76,8 +76,8 @@ export function StarButton({ item, size, className = "size-[26px]" }: { item: St
     <button
       type="button"
       aria-pressed={on}
-      aria-label={translate(on ? "取消收藏" : "收藏")}
-      title={translate(on ? "取消收藏" : "收藏")}
+      aria-label={translate(on ? "取消收藏" : "添加收藏")}
+      title={translate(on ? "取消收藏" : "添加收藏")}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

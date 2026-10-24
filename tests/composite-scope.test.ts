@@ -14,6 +14,22 @@ import { stopBoss } from "@aihot/backend/jobs/queue";
 
 after(async () => { await stopBoss(); await closeDb(); });
 
+test("unfocused roundups stay out of the pool; an audited focus and human selection remain publishable", async () => {
+  const id = `roundup-pool-${tag()}`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${id},'Roundup editor','rss','T1','editorial')`;
+  await sql`INSERT INTO articles (id,source_id,identity_key,url,title,discovered_at,timeline_at,grouping_status)
+    VALUES (${id},${id},${id},${`https://example.org/${id}`},'Kimi发布、家电优惠与汽车安全早报',now(),now(),'complete')`;
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,title_zh,summary_zh,selected,output)
+    VALUES (${id},1,'rule','pass','Kimi发布、家电优惠与汽车安全早报','多个互不相关的新闻，含互联网与消费硬件。',false,'{"scope":"composite"}')`;
+  await publishArticle(id);
+  const state = async () => (await sql`SELECT eligible,selected FROM publications WHERE article_id=${id}`)[0]!;
+  assert.equal((await state()).eligible,false,'one relevant mention cannot admit an entire unfocused roundup');
+  await overrideFields(id,{fields:{category:'ecommerce'},version:0,reason:'人工复核为同一电商竞争主线'},'roundup-test');
+  assert.equal((await state()).eligible,true,'a focused multi-report analysis is allowed');
+  await overrideFields(id,{fields:{selected:true},clear:['category'],version:1,reason:'保留人工明确入选决定'},'roundup-test');
+  assert.equal((await state()).selected,true,'the admission repair preserves explicit human selection');
+});
+
 test("latest scope stays correlated to an outer x membership and candidate counts", async () => {
   const source = `scope-${tag()}`;
   await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${source}, 'Scope fixture', 'rss', 'T1', 'editorial')`;

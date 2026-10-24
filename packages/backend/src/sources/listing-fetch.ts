@@ -29,7 +29,10 @@ export async function fetchListing(input: string, opts: GuardedFetchOptions = {}
   for (let attempt = 0; ; attempt++) {
     const canRetry = () => repeatable && attempt === 0 && deadline - Date.now() > RETRY_DELAY_MS;
     try {
-      const res = await guardedFetch(input, { ...opts, timeoutMs: Math.max(1, deadline - Date.now()) });
+      const remaining = deadline - Date.now();
+      // A stalled first attempt used to consume the entire deadline, making timeout recovery impossible.
+      const attemptMs = canRetry() ? Math.floor((remaining - RETRY_DELAY_MS) * 0.7) : remaining;
+      const res = await guardedFetch(input, { ...opts, timeoutMs: Math.max(1, attemptMs) });
       if (!canRetry() || !transientResponse(input, res)) return res;
     } catch (error) {
       if (!canRetry() || !transientTransport(error)) throw error;
