@@ -8,7 +8,8 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { upsertMaterial } from "@aihot/backend/content/materials";
-import { analyzeArticle, buildMaterial, loadAnalyzeInput, normalizeStructure, StructureSchema, tierThreshold, UNDERSTAND_FLOOR } from "@aihot/backend/editorial/analyze";
+import { analyzeArticle, buildMaterial, loadAnalyzeInput, normalizeAnalysis, normalizeStructure, StructureSchema, tierThreshold, UNDERSTAND_FLOOR } from "@aihot/backend/editorial/analyze";
+import { publishArticle } from "@aihot/backend/publication/publish";
 import { queueProcessing } from "@aihot/backend/jobs/content";
 import { QUEUES, stopBoss } from "@aihot/backend/jobs/queue";
 import { compactAnswerFirstSummary, enforceIdentity, MAX_BODY_CHARS, parseTranslateOutput } from "@aihot/backend/editorial/writing";
@@ -43,7 +44,7 @@ const provider = await stub((_hit, req) => {
   const marker = MARKERS.find((m) => user.includes(m)) ?? "";
   requests.push({ step, marker, user });
   const answer = (content: unknown) => ({ id: `stub-${requests.length}`, model: "stub", choices: [{ message: { content: typeof content === "string" ? content : JSON.stringify(content) } }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } });
-  if (step === "prefilter") return answer({ label: marker === "OFFTOPIC" || marker === "BARE" ? "BLOCK" : marker === "VAGUE" ? "UNKNOWN" : "PASS", reason: "测试" });
+  if (step === "prefilter") return answer({ label: marker === "OFFTOPIC" || marker === "BARE" ? "BLOCK" : marker === "VAGUE" && !user.includes("relevance-confirmed") ? "UNKNOWN" : "PASS", reason: "测试" });
   if (step === "score") return answer({ attentionScore: scoreAnswers[marker]!.shift() });
   // Copy with a word a site keeps from readers (added to the pack's list below), and its mended form: whole (WORDY),
   // refused by the provider, with a number changed, or with as many such words as before.
@@ -182,19 +183,36 @@ test("a near-selected item is written like a selected one; below the floor it is
   assert.deepEqual((await row(lowId)).tags, ["模型发布", "推理", "Anthropic"], "structure tags");
 });
 
-test("the prefilter's BLOCK stops everything; UNKNOWN with material goes on like PASS", async () => {
+test("only a confirmed relevance PASS can proceed; UNKNOWN waits even with text", async () => {
   const off = await analyzeArticle(await article("OFFTOPIC"));
   assert.deepEqual([off!.output!.relevance, off!.output!.selected], ["block", false]);
   assert.deepEqual(calls("OFFTOPIC"), ["prefilter"]);
-  // An UNKNOWN with material is judged and written like a PASS, up to 精选 (T1 + T1 + 2 ≥ 2 × T1).
+  // Text existing does not resolve uncertainty about its relevance.
   const vagueId = await article("VAGUE");
   const vague = await analyzeArticle(vagueId);
-  assert.deepEqual([vague!.output!.relevance, vague!.output!.selected, vague!.output!.titleZh], ["pass", true, "理解标题 VAGUE"]);
+  assert.deepEqual([vague!.output!.relevance, vague!.output!.selected, vague!.output!.score], ["unknown", false, null]);
+  assert.deepEqual(calls("VAGUE"), ["prefilter"], "no downstream calls while relevance is uncertain");
   assert.equal((await row(vagueId)).output.prefilter.label, "UNKNOWN", "the prefilter's own answer stays on record");
+  await publishArticle(vagueId);
+  const [publication] = await sql`SELECT eligible,selected FROM publications WHERE article_id=${vagueId}`;
+  assert.deepEqual([publication!.eligible, publication!.selected], [false, false]);
+  await sql`UPDATE articles SET body_text=${`VAGUE: employer hiring freeze, relevance-confirmed (${T})`}, revision=revision+1 WHERE id=${vagueId}`;
+  const resolved = await analyzeArticle(vagueId);
+  assert.deepEqual([resolved!.output!.relevance, resolved!.output!.selected], ["pass", true], "new evidence can resolve the hold");
   // Nothing but a title and no page to fetch: the BLOCK counts as UNKNOWN and waits for material.
   const bare = await analyzeArticle(await article("BARE", { bodyText: null, excerpt: null, bodyStatus: "none" }));
   assert.deepEqual([bare!.output!.relevance, bare!.output!.selected, bare!.output!.score], ["unknown", false, null]);
   assert.deepEqual(calls("BARE"), ["prefilter"]);
+});
+
+test("a cached high score and polished copy cannot turn UNKNOWN into PASS", () => {
+  const result = normalizeAnalysis({
+    prefilter: { label: "UNKNOWN", reason: "材料不足", model: "stub", receiptId: 0, reused: true },
+    scores: { values: [T1 + 2, T1 + 2], threshold: T1, model: "stub", refused: false, receiptIds: [], reused: true },
+    writing: { kind: "understand", titleZh: "既有标题", summaryZh: "既有摘要", reasonZh: "既有理由", model: "stub", receiptIds: [], reused: true },
+    structure: null,
+  });
+  assert.deepEqual([result.relevance, result.selected], ["unknown", false]);
 });
 
 test("a feed summary alone: the article page is fetched first, then the whole article is judged", async () => {

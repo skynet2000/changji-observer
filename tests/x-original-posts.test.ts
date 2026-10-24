@@ -17,7 +17,7 @@ const requests: string[] = [];
 const provider = await stub((_hit, req) => {
   const step = analysisStep(req.body);
   requests.push(step);
-  const content = step === "prefilter" ? { label: "UNKNOWN", reason: "No standalone text evidence" }
+  const content = step === "prefilter" ? { label: req.body.includes("uncertain-original") ? "UNKNOWN" : "PASS", reason: "Fixture relevance judgement" }
     : step === "score" ? { attentionScore: req.body.includes("high-score") ? SELECTING_SCORE : 12 }
     : step === "structure" ? { category: "ai-products", tags: [], subjects: [], scope: "single", fact: null }
     : step === "understand" ? { itemType: "product_update", authorRole: "principal", tags: [], editorialJudgment: "产品更新", titleZh: "实际正文标题", summaryZh: "这是实际正文的中文摘要。" }
@@ -40,6 +40,17 @@ async function post(name: string, text: string) {
   return { id: material.articleId, url };
 }
 const released = () => ({ releasedAt: new Date(Date.now() - 60_000) });
+
+test("original media is held when its industry relevance is unknown", async () => {
+  const { id } = await post("uncertain-original", "");
+  const start = requests.length;
+  const analysis = await analyzeArticle(id);
+  assert.deepEqual([analysis!.output!.relevance, analysis!.output!.selected], ["unknown", false]);
+  assert.deepEqual(requests.slice(start), ["prefilter"], "no scoring or invented copy");
+  await publishArticle(id, released());
+  const [p] = await sql`SELECT eligible FROM publications WHERE article_id=${id}`;
+  assert.equal(p!.eligible, false);
+});
 
 test("empty and link-only posts preserve originals without calling either writer, even above the selection threshold", async () => {
   for (const [name, text] of [

@@ -1,8 +1,7 @@
 // analyzeArticle: the judging and writing steps, each with its own prompt from the industry pack
 // (industry/prompts/):
-//   1. prefilter: does the material belong to this industry at all (wide recall). Only BLOCK stops an
-//      item; a BLOCK given while material is missing counts as UNKNOWN. Without material or a
-//      displayable original post, UNKNOWN waits for a new material revision before later steps;
+//   1. prefilter: does the material belong to this industry at all. Only PASS proceeds;
+//      UNKNOWN waits for material or review, and a BLOCK without material counts as UNKNOWN;
 //   2. score: two independent scores against the source tier's threshold (industry/selection.ts) decide 精选;
 //   3. structure: category, tags, subjects and the current news fact, beside scoring;
 //   4. writing, once the structure is in: the Chinese title, summary and reason by the content
@@ -251,7 +250,7 @@ async function runPrefilter(a: AnalyzeInputArticle, opts: StepOpts): Promise<Ana
     maxTokens: 512,
     attemptTag: opts.attemptTag,
   });
-  // A BLOCK without material to back it counts as UNKNOWN (which goes on).
+  // A BLOCK without material to back it counts as UNKNOWN and waits.
   const label = res.data.label === "BLOCK" && missingEvidence(a) ? "UNKNOWN" : res.data.label;
   return { label, reason: res.data.reason, model: res.model, receiptId: res.receiptId, reused: res.reused };
 }
@@ -459,8 +458,8 @@ async function runSummarize(a: AnalyzeInputArticle, opts: StepOpts): Promise<Non
 export async function runAnalysis(a: AnalyzeInputArticle, opts: StepOpts = {}): Promise<AnalysisRun> {
   checkAnalysisRunning();
   const prefilter = await runSelectionPrefilter(a, opts);
-  // Missing article text waits for a later revision; displayable original posts keep their judgement.
-  if (prefilter.label === "BLOCK") return { prefilter, scores: null, writing: null, structure: null };
+  // Relevance must be established before any scoring or writing, including original posts.
+  if (prefilter.label !== "PASS") return { prefilter, scores: null, writing: null, structure: null };
   const original = originalPostCopy(a.xPost, a.url);
   if (missingEvidence(a) && !original) return { prefilter, scores: null, writing: null, structure: null };
   // The structure step needs nothing from the scores: it runs beside them.
@@ -488,7 +487,7 @@ export function normalizeAnalysis(run: AnalysisRun) {
   const titleZh = collapseWhitespace(run.writing?.titleZh ?? "");
   const summaryZh = (run.writing?.summaryZh ?? "").trim();
   // Original posts can consist entirely of media. Model-written copy still needs a title and summary.
-  const relevance = label === "BLOCK" ? "block" : !run.writing || !titleZh || (!summaryZh && run.writing.kind !== "verbatim") ? "unknown" : "pass";
+  const relevance = label === "BLOCK" ? "block" : label !== "PASS" || !run.writing || !titleZh || (!summaryZh && run.writing.kind !== "verbatim") ? "unknown" : "pass";
   // Selected when the two scores add up to twice the tier threshold; the mean, floored, is the score
   // shown (it never decides a half point on its own).
   const values = run.scores && !run.scores.refused ? run.scores.values : null;
