@@ -1,6 +1,6 @@
 # 模型优先通道与回退（2026-10-23）
 
-用户授权优先使用书生端砚 `https://discovery-api.intern-ai.org.cn/v1` 的 `deepseek-v4.1-flash-1017`，不可用时自动回退原付费 DeepSeek。采集仍每小时执行；RSS/网页下载本身通常不调用模型。
+用户授权优先使用书生端砚 `https://discovery-api.intern-ai.org.cn/v1` 的 `deepseek-v4.1-flash-1017`，不可用时自动回退原付费 DeepSeek。2026-10-25起按用户要求，每个启用自动信源每120分钟采集一次；RSS/网页下载本身通常不调用模型。
 
 - 普通任务选择 `intern-flash`，评分选择 `intern-flash-think`，保留原推理参数。
 - 覆盖预筛、双次评分、摘要、内容理解、措辞、结构抽取、事件归组及复核、综述、周月报和中英文翻译；后台模型设置可覆盖环境选择。上线时必须核对 `modelSources()`，尤其评分的既有后台设置。

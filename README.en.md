@@ -99,7 +99,7 @@ LatePost, Shenwang, Yuanchuan and Internet Guaitao use public Wechat2RSS bridges
 - **Availability:** the latest Seoul check of Alizila returned 403. Other endpoints may time out, require login, rate-limit or change structure. Failures are recorded and backed off, rather than treating login pages or empty results as successful collection.
 - **Access and rights:** paywalled full text may be unavailable. Publish summaries and original links by default; displaying or syndicating full text requires the appropriate source permission.
 
-Polling uses a **60-minute baseline** per enabled automatic source; failure backoff can extend it. Hourly polling does not guarantee hourly new articles. Initial imports and old articles retain original publication dates; unknown dates are held from public release rather than replaced with collection timestamps.
+Polling uses a **120-minute baseline** per enabled automatic source; failure backoff can extend it. Polling every two hours does not guarantee new articles on each check. Initial imports and old articles retain original publication dates; unknown dates are held from public release rather than replaced with collection timestamps.
 
 ## Models and costs
 

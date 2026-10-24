@@ -9,9 +9,9 @@
  */
 export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
 
-/** 大厂观察所有启用信源每小时采集，失败时仍保留退避。 */
+/** 大厂观察所有启用自动信源每两小时采集，失败时仍保留退避。 */
 export function collectionIntervalMinutes(): number {
-  return 60;
+  return 120;
 }
 
 /** “每天 08:00”“每周一 10:00”“每月 1 日 10:30”：写进句子里的出刊时间。 */
@@ -156,7 +156,7 @@ export const ABOUT = {
   sourcesFallback: "十几",
   /** 信源河动画下面的四个环节。 */
   steps: {
-    collect: "官方博客、媒体和个人的订阅源都在看；更新越勤的源看得越勤，最快 15 分钟看一次。",
+    collect: "每两小时检查一次启用的自动信源；抓取失败时适当延后，发现新内容后继续处理。",
     store: "抓到的都存下来，同一件事的报道归到一起，热点榜就是从这里算出来的。",
     select: `模型先看是不是这个行业的事、有没有实际信息，再写中文标题、摘要和${ITEM_COPY.reasonLabel}；营销稿和重复转发进不来。`,
     publish: `${EDITION_WHEN.daily} 出日报，${EDITION_WHEN.weekly} 出周报，${EDITION_WHEN.monthly} 出月报。`,

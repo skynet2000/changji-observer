@@ -9,6 +9,7 @@ export const englishUi: Record<string, string> = {
   "产品、用户增长、商业化与市场竞争": "Products, growth, monetization and competition", "行业法规、正式监管与劳动政策": "Industry rules, enforcement and labor policy",
   "大厂动态": "Company developments", "组织人事": "Organization & people", "业务竞争": "Business competition", "政策监管": "Policy & regulation", "职场与组织": "Work & people", "业务与产品": "Business & products", "行业观察": "Industry",
   "Agent 接入": "Agent access", "关于": "About", "更新日志": "Changelog", "反馈": "Feedback", "返回": "Back",
+  "每两小时检查一次启用的自动信源；抓取失败时适当延后，发现新内容后继续处理。": "Enabled automatic sources are checked every two hours. Failed fetches are delayed; new content continues through processing.",
   "主导航": "Main navigation", "底部导航": "Bottom navigation", "外观": "Appearance", "不限": "All categories",
   "深色": "Dark", "浅色": "Light", "跟随系统": "System",
   "AI 评分": "AI score",
