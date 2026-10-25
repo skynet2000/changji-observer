@@ -82,7 +82,7 @@ Public news outputs share `publication/` for visibility, withdrawals, selection 
 ### Processing pipeline
 
 1. **Collect and trace:** fetch enabled sources, preserve original URLs and publication dates, deduplicate URLs and extract article text as needed. RSS/page downloads normally do not call a language model.
-2. **Filter and select:** check relevance, then independently score candidates twice using published prompts. Source-tier thresholds, evidence and duplicate checks determine selection; manual decisions take precedence.
+2. **Filter and select:** check relevance first. During construction, relevance screening stays active while automatic scoring is paused. The retained selection mechanism scores candidates twice, then applies source-tier thresholds, evidence and duplicate checks; manual decisions take precedence.
 3. **Write and structure:** generate Chinese titles, summaries and applicable recommendation reasons; extract category, tags, entities and current facts. Technical terms or company names alone are not evidence of employee relevance.
 4. **Group events:** distinguish identical facts, follow-up developments and unrelated stories. Candidate retrieval uses optional embeddings, or text similarity when embeddings are not configured, followed by model review where needed. Grouping still requires ongoing spot checks.
 5. **Rank and publish editions:** event heat uses independent sources and time decay, not page views or Weibo search data. Daily editions use rules; weekly/monthly editions compile dailies, with models assisting only overviews and section introductions.
