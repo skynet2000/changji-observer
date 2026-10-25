@@ -30,3 +30,14 @@ for (const [tab, names] of [
     for (const name of names) assert.ok(panel.includes(name), `${tab} panel omits ${name}`);
   });
 }
+
+test('paused latest-news examples query the live all feed while historical selection sync stays explicit', async () => {
+  const { EDITORIAL } = await import('@aihot/site');
+  if (EDITORIAL.selectionEnabled) return;
+  const response = await fetch(`${web.origin}/agent?tab=api`);
+  assert.equal(response.status, 200);
+  const $ = cheerio.load(await response.text()), panel = $('#agent-panel');
+  assert.ok(panel.text().includes('/api/v1/items?mode=all&window=24h&limit=20'), 'copying the latest-news recipe must not read paused selections');
+  assert.ok(panel.text().includes('同步历史精选'));
+  assert.ok($('main').text().includes('API 和 MCP 显式选择 mode=all'));
+});

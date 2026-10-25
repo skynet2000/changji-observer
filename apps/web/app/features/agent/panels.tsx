@@ -167,7 +167,7 @@ export function RssPanel(props: AgentPanelProps) {
 
 const RECIPES = [
   { key: "latest", label: "盯最新资讯" },
-  { key: "sync", label: "同步全部精选" },
+  { key: "sync", label: EDITORIAL.selectionEnabled ? "同步全部精选" : "同步历史精选" },
 ];
 
 export function ApiPanel(props: AgentPanelProps) {
@@ -180,7 +180,7 @@ export function ApiPanel(props: AgentPanelProps) {
   if (ACCESS.ratePerMinute) pace += `同一个 IP 每分钟超过约 ${ACCESS.ratePerMinute} 次会收到 429，请按 Retry-After 等待，不要并发重试。`;
   const [recipe, setRecipe] = useState<string>("latest");
   const recipes = AGENT_PARTS.flatMap((a) => a.recipes ?? []);
-  const items = `${base}/api/v1/items?mode=selected&window=24h&limit=20`;
+  const items = `${base}/api/v1/items?mode=${EDITORIAL.selectionEnabled ? "selected" : "all"}&window=24h&limit=20`;
   return (
     <>
       <PanelHead label={`REST API · ${V}`} title={translate("匿名 GET，拿来就能用")}><Text>
