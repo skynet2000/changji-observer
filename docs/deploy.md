@@ -343,3 +343,5 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 ### 2026-10-25 匿名运营统计
 
 新增`traffic`持久卷仅存30天匿名页面请求聚合；不保存地址、Cookie、用户标识或查询词，web不访问业务数据库。现有服务器每日备份新增`traffic.tar.gz`及校验和。恢复站点时除数据库和附件外，将此归档恢复到web的`/traffic`卷并保持私有权限；旧备份没有该归档时，统计从恢复后重新开始，不能补造历史访问。成本与运营邮件沿用原09:00任务及去重状态，改用北京时间昨日自然日窗口。
+
+同机共享HTTPS入口：生产Caddy已挂载独立站点配置`/data/sites/*.caddy`，仓库保留顶层import。常规应用发布仅更新web/api/worker，保留共享Caddy进程；其Caddyfile可能仍挂载旧release路径，修改入口前以docker inspect实际挂载为准，不能只修改current符号链接下的文件。
