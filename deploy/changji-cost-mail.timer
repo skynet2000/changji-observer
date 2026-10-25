@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily model expense email at 09:00 Beijing time
+Description=Daily website operating email at 09:00 Beijing time
 
 [Timer]
 OnCalendar=*-*-* 09:00:00 Asia/Shanghai

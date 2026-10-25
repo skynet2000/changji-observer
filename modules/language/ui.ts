@@ -1,5 +1,7 @@
 // Reviewed interface labels. Longer public interface copy is filled by the worker's saved translations.
 export const englishUi: Record<string, string> = {
+  "页面有未提交的输入，确定刷新吗？": "You have unsaved input. Refresh anyway?",
+  "网站已更新": "A new version is available", "刷新查看": "Refresh", "稍后": "Later",
   "大厂观察": "大厂观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
   "热点榜": "Trending", "互联网日报": "Daily brief", "互联网周报": "Weekly brief", "互联网月报": "Monthly brief",
   "日报": "Daily", "周报": "Weekly", "月报": "Monthly", "主题": "Topics", "收藏": "Saved", "我的": "Me",

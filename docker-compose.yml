@@ -78,6 +78,9 @@ services:
       AIHOT_RELEASE: ${AIHOT_RELEASE:-}
       WEB_HOST: 0.0.0.0
       WEB_PORT: "3000"
+      ACCESS_STATS_DIR: /traffic
+    volumes:
+      - traffic:/traffic
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
@@ -103,3 +106,4 @@ volumes:
   db: {}
   data: {}
   caddy: {}
+  traffic: {}

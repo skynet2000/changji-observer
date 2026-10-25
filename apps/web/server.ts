@@ -11,6 +11,7 @@ import type { ServerBuild } from "react-router";
 import { isApiOwned, resolveRedirect } from "@aihot/contracts/http-policy";
 import { BROWSER_MAX_SECONDS } from "./app/lib/api.server.ts";
 import { proxyToApi } from "./app/lib/api-proxy.server.ts";
+import { AccessStats } from "./app/lib/access-stats.server.ts";
 import { logError } from "./app/lib/errors.server.ts";
 
 const PORT = Number(process.env.WEB_PORT || 3000);
@@ -76,7 +77,12 @@ async function serveStatic(pathname: string, res: import("node:http").ServerResp
 }
 
 // One bad request must never take the process down: answer it and keep serving.
+const accessStats = process.env.ACCESS_STATS_DIR ? new AccessStats(process.env.ACCESS_STATS_DIR) : null;
 const server = createServer((req, res) => {
+  if (accessStats) res.once("finish", () => {
+    void accessStats.record({ method: req.method, url: req.url, headers: req.headers, status: res.statusCode, type: String(res.getHeader("Content-Type") ?? "") })
+      .catch(() => console.error(JSON.stringify({ level: "error", msg: "anonymous access totals could not be saved" })));
+  });
   handle(req, res).catch((error: unknown) => {
     const bad = error instanceof BadRequest || error instanceof URIError;
     if (!bad) logError(error, { msg: "web request failed", method: req.method, path: (req.url ?? "").split("?")[0]!.slice(0, 200) });
@@ -171,6 +177,6 @@ process.on("unhandledRejection", (reason) => {
 server.keepAliveTimeout = 65_000;
 server.listen(PORT, HOST, () => console.log(JSON.stringify({ level: "info", msg: "web started", port: (server.address() as import("node:net").AddressInfo).port, pid: process.pid })));
 
-const shutdown = () => server.close(() => process.exit(0));
+const shutdown = () => server.close(async () => { await accessStats?.flush(); process.exit(0); });
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);

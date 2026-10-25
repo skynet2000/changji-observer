@@ -1,5 +1,5 @@
 [Unit]
-Description=Dachang Observer rolling 24h model expense email
+Description=Dachang Observer previous Beijing day operating report
 After=docker.service network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=3600

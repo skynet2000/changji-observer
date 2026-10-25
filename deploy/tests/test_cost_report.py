@@ -10,7 +10,7 @@ from unittest.mock import patch, MagicMock
 spec = importlib.util.spec_from_file_location('cost_report', Path(__file__).parents[1] / 'cost-report.py')
 reporter = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reporter)
-SAMPLE = {'start':'2026-10-24 09:00','end':'2026-10-25 09:00','paid_cny':'0.123456','paid_calls':3,
+SAMPLE = {'start':'2026-10-24 00:00','end':'2026-10-25 00:00','paid_cny':'0.123456','paid_calls':3,
           'free_success':20,'free_failed':1,'unknown_outcomes':0,'unpriced_paid':0,
           'purposes':[{'purpose':'score_article','calls':3,'cny':0.123456}]}
 
@@ -41,11 +41,34 @@ class CostReportTests(unittest.TestCase):
         body = msg.get_content()
         self.assertIn('0.1235 元', body)
         self.assertIn('精选评分', body)
-        self.assertIn('2026-10-24 09:00', body)
+        self.assertIn('2026-10-24 00:00', body)
         self.assertIn('最终以供应商账单为准', body)
         self.assertEqual(msg['To'],'owner@example.com')
         self.assertIn('大厂观察', msg['Subject'])
         self.assertIn('大厂观察', msg['From'])
+
+    def test_operating_mail_distinguishes_yesterday_from_rolling_costs_and_partial_coverage(self):
+        report = {**SAMPLE, 'traffic': {'day':'2026-10-24','available':True,'views':12,'bots':4,'errors':1,'notFound':2,
+                  'since':'2026-10-24T12:00:00+08:00','complete':False,'topPages':[('/all',8),('/',4)]},
+                  'operations':{'collected':10,'blocked':3,'published':5,'selected':2,'failing_sources':1,'backlog':0}}
+        msg = reporter.message(report,'sender@example.com','owner@example.com','2026-10-25')
+        body = msg.get_content()
+        self.assertIn('网站运营日报', msg['Subject'])
+        self.assertIn('2026-10-24 00:00–24:00', body)
+        self.assertIn('页面访问请求：12 次',body)
+        self.assertIn('部分时段',body)
+        self.assertIn('/all：8 次',body)
+        self.assertIn('采集入库：10 篇',body)
+        self.assertIn('缺失不代表零访问',reporter.message(SAMPLE,'s@e.com','r@e.com','2026-10-25').get_content())
+
+    def test_traffic_day_uses_beijing_midnight_and_missing_history_is_not_zero(self):
+        payload = {'views':3,'bots':1,'errors':0,'notFound':0,'pages':{'/all':3},'since':'2026-10-24T16:00:00Z'}
+        with patch.object(reporter.subprocess,'check_output',return_value=json.dumps(payload)):
+            self.assertFalse(reporter.traffic_report('2026-10-25')['available'])
+            r = reporter.traffic_report('2026-10-26')
+            self.assertEqual(r['day'],'2026-10-25');self.assertTrue(r['complete'])
+        with patch.object(reporter.subprocess,'check_output',side_effect=OSError()):
+            self.assertFalse(reporter.traffic_report('2026-10-26')['available'])
 
     def test_never_send_before_first_day(self):
         with patch.dict(os.environ,{'COST_EMAIL_START_DATE':'2999-01-01'}):

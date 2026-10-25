@@ -67,16 +67,16 @@ Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, mont
 
 ### Configuration versus runtime status
 
-The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-25: 95 configurations, 73 enabled by default**:
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-25: 97 configurations, 75 enabled by default**:
 
 | Adapter | Enabled | Meaning |
 | --- | ---: | --- |
-| RSS | 42 | Native feeds and explicitly identified third-party RSS bridges |
-| Web lists | 23 | Company newsrooms, media sections and official public Weibo pages |
+| RSS | 43 | Native feeds and explicitly identified third-party RSS bridges |
+| Web lists | 24 | Company newsrooms, media sections and official public Weibo pages |
 | JSON lists | 6 | Public Jike activity and media JSON data |
 | External ingestion | 2 | Receives upstream script submissions; does not poll by itself |
 
-That is **71 polling endpoints and 2 ingestion endpoints**, not 73 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
+That is **73 polling endpoints and 2 ingestion endpoints**, not 75 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
 ### Main configured sources
 
@@ -178,3 +178,5 @@ The website and jobs run on a cloud server, independently of the owner's compute
 ## Attribution and license
 
 Thanks to [AIHOT](https://github.com/KKKKhazix/AIHOT) for the underlying framework and to public publishers and RSS maintainers. Original copyright notices are retained under the [MIT license](LICENSE). AIHOT's name and logo are not used as this site's brand. Fonts and third-party assets follow [NOTICE](NOTICE). News copyrights remain with their publishers; the code license does not grant rights to republish full articles.
+
+Additional independent access (2026-10-25): Economic Observer’s technology page is read directly, and LateTalk uses its publisher-operated podcast RSS (show notes only, no audio transcription). These preserve other content channels during a bridge outage; they are not automatic mirrors of the same WeChat feed. Shared WeChat bridge dependence remains.

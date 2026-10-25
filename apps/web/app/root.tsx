@@ -9,6 +9,7 @@ import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
+import { VersionNotice } from "./components/shell/VersionNotice";
 import { Header } from "./components/shell/Header";
 import { Sidebar } from "./components/shell/Sidebar";
 import { TabBar } from "./components/shell/TabBar";
@@ -128,6 +129,7 @@ export default function App() {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
   return (
     <>
+      <VersionNotice release={meta.release} />
       <SiteShell changelogVersion={meta.changelogVersion}>
         <Outlet />
       </SiteShell>
