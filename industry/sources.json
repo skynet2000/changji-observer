@@ -113,7 +113,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-huxiu",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -153,7 +153,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-huxiu",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -261,7 +261,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-leiphone",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -433,7 +433,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-tmtpost",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -1182,10 +1182,11 @@
     },
     {
       "id": "rss-tmtpost",
-      "name": "钛媒体 · RSS",
+      "signal_group_id": "media-tmtpost",
+      "name": "钛媒体 · 公开RSS桥接",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.tmtpost.com/feed",
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/3d5672d87be7aba570671c8cb2fdbda36a5dfd9e.xml",
         "fetchPublicContent": true,
         "sortByPublishedAt": true,
         "publishedAfter": "2026-10-07T16:00:00Z",
@@ -1298,6 +1299,7 @@
     },
     {
       "id": "rss-leiphone",
+      "signal_group_id": "media-leiphone",
       "name": "雷峰网 · RSS",
       "kind": "rss",
       "config": {
@@ -1665,6 +1667,7 @@
     },
     {
       "id": "social-jike-panluan",
+      "signal_group_id": "author-panluan",
       "name": "潘乱（乱翻书）· 即刻公开动态",
       "kind": "json_list",
       "config": {
@@ -6235,7 +6238,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-latepost",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -6261,7 +6264,7 @@
       },
       "tier": "T2",
       "owner_entity_id": null,
-      "signal_group_id": null,
+      "signal_group_id": "media-tencent-news",
       "participation_mode": "editorial",
       "interval_minutes": 60,
       "tags": [
@@ -6325,6 +6328,541 @@
       "site_fulltext": false,
       "syndicate_fulltext": false,
       "enabled": true
+    },
+    {
+      "id": "rss-tencent-tech",
+      "name": "腾讯科技 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-tencent-news",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/a81bdfcbb9eefe870d285e81510ffa1af26e4520.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-netease-tech",
+      "name": "网易科技 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-netease-news",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/028fbc21062e744c7b606880ebca01e22cb4b7b7.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-caijing-magazine",
+      "name": "财经杂志 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-caijing",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/746c29d98c0bec3969f2613b04c4755fd4786f53.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-lishi-business",
+      "name": "砺石商业评论 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-lishi",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/5cdd765d3973322da7992e0c919a99246fbcd0fc.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-prism",
+      "name": "棱镜 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-tencent-news",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/ebf208faff5c5ad865ab5e5a30548633f3b51da7.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-narrowcast",
+      "name": "窄播 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-narrowcast",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/61bdf2799e5208df45c8bbbd96ba81dd088d2483.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-luanfanshu",
+      "name": "乱翻书 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "author-panluan",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/43e3aa5cabe4ae49ec50410ecefc859d4501aedf.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-caoz",
+      "name": "caoz的梦呓 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "author-caoz",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/8e2047ef236238b91abf91562b79ef4a1e7ba39d.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-newrank",
+      "name": "新榜 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-newrank",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/16647c855b3c08c6406fb029f3cd9bb826e70d0c.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-cac-china",
+      "name": "网信中国 · 官方公众号",
+      "kind": "rss",
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "signal_group_id": "official-cac",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/c41dc7a4e9417519b0158564ad71474f6f8bd296.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-aliresearch",
+      "name": "阿里研究院 · 官方公众号",
+      "kind": "rss",
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "signal_group_id": null,
+      "owner_entity_id": "alibaba",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/e2f1190c120f7f3d74b630bfcfe9e58296bd535c.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-tencent-institute",
+      "name": "腾讯研究院 · 官方公众号",
+      "kind": "rss",
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "signal_group_id": null,
+      "owner_entity_id": "tencent",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/6152301e0978bffb0a8284cab339262b9764dcfb.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-dingtalk-news",
+      "name": "钉钉 · 官方公众号",
+      "kind": "rss",
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "signal_group_id": null,
+      "owner_entity_id": "alibaba",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/3291b88d0dc81c3c094752f756256c715d038a7b.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-feishu-news",
+      "name": "飞书 · 官方公众号",
+      "kind": "rss",
+      "tier": "T1_5",
+      "participation_mode": "editorial",
+      "signal_group_id": null,
+      "owner_entity_id": "bytedance",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/acae39126a4fe47d9c99714708d606f5c3ab0169.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-gamegrape",
+      "name": "游戏葡萄 · 商业与职场",
+      "kind": "rss",
+      "tier": "T2",
+      "participation_mode": "editorial",
+      "signal_group_id": "media-gamegrape",
+      "owner_entity_id": null,
+      "interval_minutes": 120,
+      "tags": [
+        "企业发展",
+        "职场",
+        "公开RSS桥接"
+      ],
+      "enabled": true,
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "config": {
+        "feedUrl": "https://wechat2rss.bestblogs.dev/feed/6aadbb03d02c59093f48afa5723fa2c44d1a81dc.xml",
+        "_aihot": {
+          "initialBackfillLimit": 2
+        },
+        "ingestNoiseFilter": {
+          "requireAnyMatches": [
+            "阿里", "淘宝", "天猫", "淘天", "腾讯", "微信", "字节", "抖音",
+            "小红书", "美团", "京东", "拼多多", "百度", "快手", "网易", "携程",
+            "蚂蚁", "钉钉", "飞书", "B站", "哔哩哔哩", "知乎", "滴滴", "米哈游",
+            "莉莉丝", "叠纸", "裁员", "招聘", "薪酬", "年终奖", "绩效", "加班",
+            "全员信", "互联网", "大厂", "数据合规", "个人信息", "算法监管", "平台经济", "程序员",
+            "打工人", "职场", "校招", "社招", "HC", "薪资", "降薪", "福利",
+            "DeepSeek", "OpenAI", "Anthropic", "MiniMax", "月之暗面", "Kimi", "智谱", "BOSS直聘",
+            "Boss Zhipin", "看准", "脉脉", "支付宝", "千问", "豆包"
+          ]
+        }
+      }
     }
   ]
 }

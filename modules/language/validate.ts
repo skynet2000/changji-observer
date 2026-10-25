@@ -1,7 +1,7 @@
 // Compare values rather than spelling: 500万元 = 5 million yuan; 10月 = October.
 const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const words: Record<string, number> = { zero: 0, one: 1, once: 1, two: 2, twice: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
-const powers: Record<string, number> = { 万: 4, 亿: 8, 万亿: 12, hundred: 2, megapixel: 6, megapixels: 6, thousand: 3, million: 6, billion: 9, trillion: 12 };
+const powers: Record<string, number> = { 成: 1, 万: 4, 亿: 8, 万亿: 12, hundred: 2, megapixel: 6, megapixels: 6, thousand: 3, million: 6, billion: 9, trillion: 12 };
 function numbers(text: string, english = false): string[] {
   if (english) {
     text = text.replace(/(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/gi, (_, h, m, period) => `${Number(h) % 12 + (period.toLowerCase() === "p" ? 12 : 0)}:${m}`);
@@ -13,7 +13,7 @@ function numbers(text: string, english = false): string[] {
   text = text.replace(/(\d+)\s+(?:million|billion)-dollar(?:-level)?\s+(?:offers|deals|contracts|jobs|positions)\b/gi, "$1 offers");
   text = text.replace(/(\d+(?:\.\d+)?)[-‐‑](hundred|thousand|million|billion|trillion|megapixels?)\b/gi, "$1 $2");
   const out: string[] = [];
-  const pattern = /\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(万亿|亿|万|hundred|thousand|million|billion|trillion|megapixels?))?/gi;
+  const pattern = /\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(万亿|亿|万|成(?![交本员立功果为就长年人])|(?:hundred|thousand|million|billion|trillion|megapixels?)\b))?/gi;
   for (const match of text.matchAll(pattern)) {
     const digits = match[0].match(/^\d+(?:,\d{3})*(?:\.\d+)?/)![0].replaceAll(",", "");
     const [integer, fraction = ""] = digits.split(".");

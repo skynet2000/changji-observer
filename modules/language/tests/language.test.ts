@@ -143,3 +143,17 @@ test("observed approximate amounts, shared range units and half minutes pass wit
     ["8点1氪，487万元", "8 AM briefing, 4.87 million yuan"],
   ]) assert.equal(validTranslations([source!], [english!]), false);
 });
+
+
+test("observed share and billionaire translations preserve counts without confusing Chinese words or English people with units", () => {
+  for (const [source, english] of [
+    ["中国人4成上网时间给了字节跳动，份额41.8%", "Chinese people spend 40% of their online time on ByteDance, a 41.8% share"],
+    ["3.5成用户", "35% of users"],
+    ["针对约250名亿万富翁征收5%财富税", "A 5% wealth tax targeting about 250 billionaires"],
+    ["股票以14成交", "Shares traded at 14"],
+  ]) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
+  for (const [source, english] of [
+    ["4成用户", "4% of users"], ["4成用户", "50% of users"],
+    ["250人", "2,500 people"], ["2500亿美元", "250 billionaires"],
+  ]) assert.equal(validTranslations([source!], [english!]), false, `${source} -> ${english}`);
+});

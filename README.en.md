@@ -67,36 +67,40 @@ Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, mont
 
 ### Configuration versus runtime status
 
-The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-24: 79 configurations, 58 enabled by default**:
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-25: 95 configurations, 73 enabled by default**:
 
 | Adapter | Enabled | Meaning |
 | --- | ---: | --- |
-| RSS | 28 | Native feeds and explicitly identified third-party RSS bridges |
-| Web lists | 22 | Company newsrooms, media sections and official public Weibo pages |
+| RSS | 42 | Native feeds and explicitly identified third-party RSS bridges |
+| Web lists | 23 | Company newsrooms, media sections and official public Weibo pages |
 | JSON lists | 6 | Public Jike activity and media JSON data |
 | External ingestion | 2 | Receives upstream script submissions; does not poll by itself |
 
-That is **56 polling endpoints and 2 ingestion endpoints**, not 58 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
+That is **71 polling endpoints and 2 ingestion endpoints**, not 73 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
 ### Main configured sources
 
 | Group | Sources |
 | --- | --- |
-| Chinese business and industry media | 36Kr, Huxiu, Jiemian, 21st Century Business Herald, Yicai, National Business Daily, TMTPost, Leiphone, PingWest, TechNode, LatePost, Shenwang, Yuanchuan Research and Internet Guaitao |
+| Chinese business and industry media | 36Kr, Huxiu, Jiemian, 21st Century Business Herald, Yicai, National Business Daily, TMTPost, Leiphone, PingWest, TechNode, LatePost, Shenwang, Yuanchuan Research, Internet Guaitao, Tencent Tech, NetEase Tech, Caijing Magazine, Lishi Business Review, Prism, Narrowcast, Newrank and Game Grape |
 | Chinese technology and platform news | IT Home, ifanr, cnBeta, MyDrivers, GeekPark, DoNews, Sanyan Tech, Bianews, QbitAI, iFeng Tech, The Paper and Sina Tech |
-| Company publications | Alibaba Alizila, Tencent, Meituan, JD, OpenAI, Anthropic, Google, Microsoft and Meta newsrooms/blogs |
+| Company publications | Alibaba Group Chinese newsroom, Tencent, Meituan, JD, OpenAI, Anthropic, Google, Microsoft and Meta newsrooms/blogs |
 | International media | TechCrunch, The Information, CNBC, Bloomberg, The Guardian, BBC, Rest of World, South China Morning Post, Business Insider and Semafor |
+| Company and regulator WeChat accounts | CAC China, AliResearch, Tencent Research Institute, DingTalk and Feishu through public RSS bridges |
+| Industry author WeChat accounts | Pan Luan’s Luanfanshu and caoz; opinion pieces still require relevance and evidence review |
 | Public Jike accounts | Internet Fangjian Bagua, Pan Luan, Lanxi and Weixi; preserve author attribution and evidence limits |
 | Official Weibo | Alibaba, Tencent, JD and Meituan; verified company accounts only, no individual Weibo bloggers |
 | External ingestion | HubSpot SEC filings and Eastmoney's Jiemian republications; ongoing updates depend on upstream push scripts |
 
-LatePost, Shenwang, Yuanchuan and Internet Guaitao use public Wechat2RSS bridges listed in [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml). **These are not publisher-operated RSS feeds** and may be delayed or unavailable. A configured URL does not grant copyright or republication permission.
+LatePost, Shenwang, Yuanchuan, Internet Guaitao and the 15 new WeChat endpoints use public Wechat2RSS bridges listed in [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml). **These are not publisher-operated RSS feeds** and may be delayed or unavailable. TMTPost’s failing original RSS (403) is replaced with a bridge from the same directory while retaining its source ID. Many endpoints share this bridge provider, so additional coverage does not remove the shared failure risk. Publisher/author endpoints share a `signal_group_id` for heat counting. A configured URL does not grant copyright or republication permission.
+
+New endpoints still pass scope keyword admission and model relevance checks. Initial import is capped at two candidates per new endpoint. The readable LatePost Dialogue bridge has no posts after 2025 and is not enabled or counted as a new active source.
 
 ### Social scope and limitations
 
 - **X:** internet-company official accounts and industry commentators through free public entry points only. Coverage remains incomplete; framework support for paid SocialData is not evidence that this deployment subscribes to it.
 - **Weibo and Xiaohongshu:** verified company official accounts only, no personal bloggers. Stable direct access to Xiaohongshu official content remains unfinished and is not counted as an enabled source above.
-- **Availability:** the latest Seoul check of Alizila returned 403. Other endpoints may time out, require login, rate-limit or change structure. Failures are recorded and backed off, rather than treating login pages or empty results as successful collection.
+- **Availability:** Alizila returned 403 and was paused in favour of Alibaba Group’s publicly readable Chinese newsroom, retaining its history. Other endpoints may time out, require login, rate-limit or change structure. Failures are recorded and backed off, rather than treating login pages or empty results as successful collection.
 - **Access and rights:** paywalled full text may be unavailable. Publish summaries and original links by default; displaying or syndicating full text requires the appropriate source permission.
 
 Polling uses a **120-minute baseline** per enabled automatic source; failure backoff can extend it. Polling every two hours does not guarantee new articles on each check. Initial imports and old articles retain original publication dates; unknown dates are held from public release rather than replaced with collection timestamps.
