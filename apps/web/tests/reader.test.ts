@@ -7,13 +7,17 @@ import { startWebServer, type WebServer } from "./web-server.ts";
 
 let web: WebServer, browser: Browser;
 let enabled = true, version = 0, displayName = "测试读者";
+let sessionFailure = false;
 let state: { starred: Record<string, unknown>[]; read: string[] } = { starred: [], read: [] };
 const api = createServer(async (req, res) => {
   const url = new URL(req.url!, "http://fixture"), signedIn = req.headers.cookie?.includes("reader-fixture=yes");
   res.setHeader("content-type", "application/json");
   if (url.pathname === "/api/site/meta") return res.end('{"changelogVersion":"fixture"}');
   if (url.pathname === "/api/site/items/availability") return res.end("{}");
-  if (url.pathname === "/api/reader/session") return res.end(JSON.stringify({ enabled, providers: enabled ? ["google", "github"] : [], user: signedIn ? { id: "fixture", name: displayName, provider: "github" } : null, csrf: "test-csrf", state, version }));
+  if (url.pathname === "/api/reader/session") {
+    if (sessionFailure) { res.statusCode = 503; return res.end('{}'); }
+    return res.end(JSON.stringify({ enabled, providers: enabled ? ["google", "github"] : [], user: signedIn ? { id: "fixture", name: displayName, provider: "github" } : null, csrf: "test-csrf", state, version }));
+  }
   if (url.pathname === "/api/reader/login/github") {
     res.writeHead(303, { "set-cookie": "reader-fixture=yes; Path=/; HttpOnly; SameSite=Lax", location: "/account" }); return res.end();
   }
@@ -149,4 +153,83 @@ test("desktop sidebar exposes content and tools without a hidden More menu; link
     await expect(page).toHaveURL(/\/starred$/);
     await expect(nav.getByRole("link", { name: "我的", exact: true })).toHaveAttribute("aria-current", "page");
   } finally { await context.close(); }
+});
+
+test('preferences keep account copy neutral and controls inside narrow cards in both languages', async () => {
+  enabled = true;
+  for (const width of [320, 390, 961, 1280]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    await context.addCookies([{ name: 'reader-fixture', value: 'yes', url: web.origin }]);
+    const page = await context.newPage();
+    try {
+      await page.goto(web.origin + '/more');
+      await expect(page.locator('[data-reader-entry="header"]')).toContainText(displayName);
+      await expect(page.locator('#main').getByText('登录并同步', { exact: true })).toHaveCount(0);
+      for (const language of ['zh', 'en']) {
+        if (language === 'en') await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
+        const select = page.locator('#main select'), row = select.locator('xpath=ancestor::li');
+        const bounds = await select.boundingBox(), card = await row.boundingBox();
+        assert.ok(bounds && card && bounds.x >= card.x && bounds.x + bounds.width <= card.x + card.width - 8, 'font control is not clipped by its card');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        if (width >= 961) {
+          const cards = page.locator('#main section > ul'), first = await cards.nth(0).boundingBox(), second = await cards.nth(1).boundingBox();
+          assert.ok(first && second && Math.abs(first.y - second.y) < 2, 'desktop sections start on the same row');
+        }
+      }
+    } finally { await context.close(); }
+  }
+});
+
+test('an initial session failure offers retry instead of claiming sign-in is disabled', async () => {
+  sessionFailure = true; enabled = true;
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await page.goto(web.origin + '/account');
+    await expect(page.getByText('暂时无法读取登录状态，请重试。', { exact: true })).toBeVisible();
+    await expect(page.getByText('读者登录尚未开放。收藏、已读仍保存在当前浏览器。', { exact: true })).toHaveCount(0);
+    sessionFailure = false;
+    await page.getByRole('button', { name: '重新连接', exact: true }).click();
+    await expect(page.getByRole('link', { name: '使用 GitHub 登录', exact: true })).toBeVisible();
+    await expect(page.getByText('暂时无法连接同步服务，本机记录会保留。', { exact: true })).toHaveCount(0);
+  } finally { sessionFailure = false; await context.close(); }
+});
+
+test('signed-in sync failures show a warning and clear after reconnecting', async () => {
+  enabled = true;
+  const context = await browser.newContext(), page = await context.newPage();
+  await context.addCookies([{ name: 'reader-fixture', value: 'yes', url: web.origin }]);
+  try {
+    await page.goto(web.origin + '/account');
+    await expect(page.getByRole('heading', { name: '我的阅读记录', exact: true })).toBeVisible();
+    sessionFailure = true;
+    await page.getByRole('button', { name: '立即同步', exact: true }).click();
+    const warning = page.getByRole('status').filter({ hasText: '暂时无法连接同步服务，本机记录会保留。' });
+    await expect(warning).toBeVisible();
+    await expect(warning).toHaveClass(/text-hot/);
+    sessionFailure = false;
+    await page.getByRole('button', { name: '立即同步', exact: true }).click();
+    await expect(warning).toHaveCount(0);
+    await expect(page.getByRole('status').filter({ hasText: '收藏与已读已同步' })).toBeVisible();
+  } finally { sessionFailure = false; await context.close(); }
+});
+
+test('long reader names remain readable inside account cards on phone and desktop', async () => {
+  enabled = true; displayName = 'Reader'.repeat(12);
+  try {
+    for (const width of [320, 1280]) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } }), page = await context.newPage();
+      await context.addCookies([{ name: 'reader-fixture', value: 'yes', url: web.origin }]);
+      try {
+        await page.goto(web.origin + '/account');
+        const name = page.getByText(displayName + ' · GitHub', { exact: true });
+        await expect(name).toBeVisible();
+        const bounded = await name.evaluate(el => {
+          const range = document.createRange(); range.selectNodeContents(el);
+          const box = el.getBoundingClientRect();
+          return [...range.getClientRects()].every(r => r.left >= box.left - 1 && r.right <= box.right + 1);
+        });
+        assert.ok(bounded, 'long names wrap instead of being clipped by the card');
+      } finally { await context.close(); }
+    }
+  } finally { displayName = '测试读者'; }
 });

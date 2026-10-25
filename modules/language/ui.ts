@@ -2,7 +2,11 @@
 export const englishUi: Record<string, string> = {
   "页面有未提交的输入，确定刷新吗？": "You have unsaved input. Refresh anyway?",
   "网站已更新": "A new version is available", "刷新查看": "Refresh", "稍后": "Later",
-  "大厂观察": "大厂观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "News", "更多": "More",
+  "大厂观察": "大厂观察", "精选": "Selected", "全部": "All", "全部动态": "All news", "内容": "Content", "更多": "More",
+  "阅读与偏好": "Reading & preferences", "收藏与已读": "Saved & read", "字体": "Font", "默认字体": "Site default", "浏览器默认字体": "Browser default",
+  "暂时无法读取登录状态，请重试。": "Unable to load sign-in status. Please retry.", "重新连接": "Reconnect", "历史精选": "Past selections", "浏览资讯": "Browse news",
+  "建设期自动精选已暂停，当前以资讯和日报为主。下方展示保留的精选机制与历史结果。": "Automatic selection is paused during construction. News and daily briefs remain available; the selection process and results below are retained for reference.",
+  "自动精选已暂停。启用信源按站点采集计划更新，刊物按各自出刊计划发布。": "Automatic selection is paused. Enabled sources follow the collection schedule; editions follow their publication schedules.",
   "热点榜": "Trending", "互联网日报": "Daily brief", "互联网周报": "Weekly brief", "互联网月报": "Monthly brief",
   "日报": "Daily", "周报": "Weekly", "月报": "Monthly", "主题": "Topics", "收藏": "Saved", "我的": "Me",
   "裁员与招聘": "Jobs & hiring", "薪酬与职场": "Pay & workplace", "人事与组织": "People & organization", "经营与资本": "Finance & capital", "业务与竞争": "Business & competition", "政策与监管": "Policy & regulation",

@@ -40,23 +40,26 @@ export default function Account() {
           <div className="mb-7 text-center">
             {reader.user && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-accent-soft text-[22px] font-semibold text-accent" aria-hidden="true">{Array.from(reader.user.name)[0]}</div>}
             <h1 data-page-title="" className="text-[27px] font-bold tracking-[-0.03em] text-ink"><Text>{reader.user ? "我的阅读记录" : `登录${SITE.name}`}</Text></h1>
-            <p className="mt-2 text-[14px] leading-relaxed text-ink-3">{reader.user ? `${reader.user.name} · ${reader.user.provider === "google" ? "Google" : "GitHub"}` : <Text>收藏好内容，换台设备接着读。</Text>}</p>
+            <p className="mt-2 break-words text-[14px] leading-relaxed text-ink-3">{reader.user ? `${reader.user.name} · ${reader.user.provider === "google" ? "Google" : "GitHub"}` : <Text>收藏好内容，换台设备接着读。</Text>}</p>
           </div>
           {query.has("error") && <p role="alert" className="mb-4 rounded-control bg-hot-soft p-3 text-[13px] text-hot"><Text>登录未完成或授权已过期，请重新尝试。</Text></p>}
-          {reader.loading ? <p role="status" className="py-6 text-center text-[14px] text-ink-3"><Text>正在读取账号状态…</Text></p> : unavailable ? <p className="text-[14px] leading-relaxed text-ink-3"><Text>读者登录尚未开放。收藏、已读仍保存在当前浏览器。</Text></p> : !reader.user ? <>
+          {reader.loading ? <p role="status" className="py-6 text-center text-[14px] text-ink-3"><Text>正在读取账号状态…</Text></p> : unavailable ? <div className="text-[14px] leading-relaxed text-ink-3">
+            <p><Text>{reader.failed ? "暂时无法读取登录状态，请重试。" : "读者登录尚未开放。收藏、已读仍保存在当前浏览器。"}</Text></p>
+            {reader.failed && <button disabled={busy} className={`${button} mt-4 w-full`} onClick={() => act(syncReader)}><Text>重新连接</Text></button>}
+          </div> : !reader.user ? <>
             <div className="space-y-3">{reader.providers.map(p => <a href={`/api/reader/login/${p}`} key={p}
               className={`flex min-h-12 items-center justify-center gap-3 rounded-control border text-[14px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${p === "google" ? "border-line-strong bg-surface text-ink hover:bg-bg-sunk" : "border-ink bg-ink text-bg hover:opacity-90"}`}>
               {p === "google" ? <GoogleMark /> : <IconGithub size={20} />}<Text>{p === "google" ? "使用 Google 登录" : "使用 GitHub 登录"}</Text></a>)}</div>
             <p className="mt-4 text-center text-[12px] text-ink-4"><Text>无需设置密码 · 首次登录自动创建账号</Text></p>
             <div className="mt-7 flex items-start gap-3 border-t border-line-soft pt-5"><IconBookmark size={18} className="mt-0.5 shrink-0 text-accent" /><p className="text-[12px] leading-relaxed text-ink-3"><Text>跨设备同步收藏与已读。日常阅读无需登录，本机旧记录由你选择是否导入。</Text></p></div>
           </> : <>
-            <p role="status" className="mb-5 rounded-control bg-accent-soft px-3 py-2.5 text-[13px] leading-relaxed text-accent"><Text>{reader.message}</Text></p>
+            <p role="status" className={`mb-5 rounded-control px-3 py-2.5 text-[13px] leading-relaxed ${reader.failed ? "bg-hot-soft text-hot" : "bg-accent-soft text-accent"}`}><Text>{reader.message}</Text></p>
             <Link to="/starred" className="flex min-h-12 items-center justify-center gap-2 rounded-control bg-accent text-[14px] font-semibold text-accent-contrast hover:opacity-90"><Text>查看我的收藏</Text><IconArrowRight size={16} /></Link>
             <div className="mt-3 grid grid-cols-2 gap-3"><button disabled={busy} className={button} onClick={() => act(syncReader)}><Text>立即同步</Text></button><button disabled={busy} className={button} onClick={() => act(() => endReader())}><Text>退出登录</Text></button></div>
             <div className="mt-6 border-t border-line-soft pt-5"><h2 className="text-[13px] font-semibold"><Text>导入本机记录</Text></h2><p className="mb-3 mt-1 text-[12px] leading-relaxed text-ink-4"><Text>将此浏览器原有的收藏与已读合并到当前账号。</Text></p><button disabled={busy} className={`${button} w-full`} onClick={() => act(importGuestReading)}><Text>导入本机原有收藏与已读</Text></button></div>
           </>}
           {error && <p role="alert" className="mt-4 rounded-control bg-hot-soft p-3 text-[13px] text-hot"><Text>{error}</Text></p>}
-          {!reader.user && reader.message && <p role="status" className="mt-4 text-[12px] leading-relaxed text-ink-3"><Text>{reader.message}</Text></p>}
+          {!reader.user && reader.message && !unavailable && <p role="status" className="mt-4 text-[12px] leading-relaxed text-ink-3"><Text>{reader.message}</Text></p>}
         </div>
         <div className="border-t border-line-soft bg-bg-sunk/50 px-6 py-4 text-center text-[11px] leading-relaxed text-ink-4 sm:px-8">
           <Text>{reader.user ? "离线时先保存在本机，联网后自动同步。" : <><Text>继续即表示同意</Text><Link to="/terms" className="mx-1 text-ink-3 underline underline-offset-2"><Text>使用规则</Text></Link><Text>和</Text><Link to="/privacy" className="ml-1 text-ink-3 underline underline-offset-2"><Text>隐私说明</Text></Link></>}</Text>

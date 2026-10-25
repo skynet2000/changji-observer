@@ -6,7 +6,7 @@ interface Session {
   enabled: boolean; providers: string[]; user: { id: string; name: string; provider: string } | null;
   csrf?: string; state?: ReadingState; version?: number;
 }
-const initial: Session & { message: string; loading: boolean } = { enabled: false, providers: [], user: null, message: "", loading: true };
+const initial: Session & { message: string; loading: boolean; failed: boolean } = { enabled: false, providers: [], user: null, message: "", loading: true, failed: false };
 let status = initial;
 const listeners = new Set<() => void>();
 const publish = (patch: Partial<typeof status>) => { status = { ...status, ...patch }; for (const fn of listeners) fn(); };
@@ -42,7 +42,7 @@ async function synchronize(): Promise<boolean> {
     const response = await fetch("/api/reader/session", { cache: "no-store", signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw Error("暂时无法连接同步服务，本机记录会保留。");
     const remote = await response.json() as Session;
-    publish({ ...remote, loading: false });
+    publish({ ...remote, loading: false, failed: false, message: "" });
     if (!remote.user) { restoreGuest(); return true; }
     const previous = owner();
     if (previous?.id !== remote.user.id) {
@@ -74,7 +74,7 @@ async function synchronize(): Promise<boolean> {
     if (sameReading(next, cloud.state!)) writeRaw(pendingKey(remote.user.id), null);
     return sameReading(next, cloud.state!);
   } catch (error) {
-    publish({ loading: false, message: error instanceof Error ? error.message : "同步暂不可用，本机记录会保留。" });
+    publish({ loading: false, failed: true, message: error instanceof Error ? error.message : "同步暂不可用，本机记录会保留。" });
     return false;
   }
 }

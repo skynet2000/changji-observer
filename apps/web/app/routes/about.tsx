@@ -3,7 +3,7 @@ import { Fragment, useCallback, useMemo, useRef, useState, type ReactNode } from
 import { IntentLink } from "../components/ui/IntentLink";
 import { Link, useLoaderData } from "react-router";
 import type { SiteContact, SiteStats } from "@aihot/contracts/site";
-import { ABOUT, POLICY, REPORTS, SITE, subjectAfter } from "@aihot/site";
+import { ABOUT, EDITORIAL, POLICY, REPORTS, SITE, subjectAfter } from "@aihot/site";
 import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { organizationLd, pageMeta } from "../lib/seo";
@@ -183,7 +183,7 @@ function Latest({ item, className = "" }: { item: SiteStats["latest"][number] | 
   if (!item) return null;
   return (
     <IntentLink viewTransition to={`/items/${item.id}`} className={`group block ${className}`}>
-      <span className="text-[11px] font-semibold tracking-[0.2em] text-accent"><Text>最近精选</Text></span>
+      <span className="text-[11px] font-semibold tracking-[0.2em] text-accent"><Text>{EDITORIAL.selectionEnabled ? "最近精选" : "历史精选"}</Text></span>
       <span key={item.id} className="animate-fade-up mt-1.5 block">
         <span className="line-clamp-2 text-[13.5px] font-semibold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text content>{item.title}</Text></span>
         <span className="mt-1 block truncate text-[12px] text-ink-4"><Text>{item.source}</Text></span>
@@ -212,6 +212,7 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-14 lg:pt-3">
       <PhoneBar back={{ to: "/more", label: "我的" }} title={translate(`关于 ${SITE.name}`)} />
+      {!EDITORIAL.selectionEnabled && <p className="mb-6 rounded-control border border-line bg-surface px-4 py-3 text-[14px] leading-relaxed text-ink-3"><Text>建设期自动精选已暂停，当前以资讯和日报为主。下方展示保留的精选机制与历史结果。</Text></p>}
       <header className="grid items-end gap-8 pt-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:pt-0">
         <div>
           <Kicker><Text>{ABOUT.kicker}</Text></Kicker>
@@ -231,7 +232,7 @@ export default function AboutPage() {
         </div>
         <div className="flex flex-wrap gap-3 lg:pb-2">
           <IntentLink to="/" className={buttonClass("primary", "lg")}><Text>
-            看今天的精选 </Text><IconArrowRight size={15} />
+            {EDITORIAL.selectionEnabled ? "看今天的精选" : "浏览资讯"} </Text><IconArrowRight size={15} />
           </IntentLink>
           <IntentLink to="/daily" className={buttonClass("secondary", "lg")}><Text>
             读最新日报
