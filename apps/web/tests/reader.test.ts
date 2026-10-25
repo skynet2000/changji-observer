@@ -157,7 +157,7 @@ test("desktop sidebar exposes content and tools without a hidden More menu; link
 
 test('preferences keep account copy neutral and controls inside narrow cards in both languages', async () => {
   enabled = true;
-  for (const width of [320, 390, 961, 1280]) {
+  for (const width of [320, 390, 961, 1280, 1920, 2560]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     await context.addCookies([{ name: 'reader-fixture', value: 'yes', url: web.origin }]);
     const page = await context.newPage();
@@ -174,6 +174,9 @@ test('preferences keep account copy neutral and controls inside narrow cards in 
         if (width >= 961) {
           const cards = page.locator('#main section > ul'), first = await cards.nth(0).boundingBox(), second = await cards.nth(1).boundingBox();
           assert.ok(first && second && Math.abs(first.y - second.y) < 2, 'desktop sections start on the same row');
+          const third = await cards.nth(2).boundingBox();
+          assert.ok(third && Math.abs(third.x - second.x) < 2 && third.y > second.y + second.height, 'help sits below tools rather than creating a sparse third column');
+          assert.ok(second.x + second.width - first.x <= 960, 'preferences remain compact on wide monitors');
         }
       }
     } finally { await context.close(); }

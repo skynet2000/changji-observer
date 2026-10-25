@@ -44,7 +44,7 @@ const tools = (): Row[] => [
 function Group({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {
   return (
     <section className={className}>
-      {title && <h2 className="px-4 pb-2 pt-6 text-[13px] font-semibold text-ink-3"><Text>{title}</Text></h2>}
+      {title && <h2 className="px-4 pb-2 pt-6 text-[13px] font-semibold text-ink-3 lg:px-1 lg:pt-0"><Text>{title}</Text></h2>}
       <ul className="card divide-y divide-line-soft overflow-hidden">{children}</ul>
     </section>
   );
@@ -54,7 +54,7 @@ function RowLink({ row, dot = false }: { row: Row; dot?: boolean }) {
   const translate = useText();
   return (
     <li>
-      <Link viewTransition to={row.to} className="flex min-h-[52px] items-center gap-3 px-4 text-[16px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
+      <Link viewTransition to={row.to} className="flex min-h-[52px] items-center gap-3 px-4 text-[16px] font-medium text-ink transition-colors active:bg-bg-sunk lg:min-h-[60px] lg:px-5 lg:text-[15px] lg:hover:bg-bg-sunk">
         <span className="shrink-0 text-ink-3"><Text>{row.icon}</Text></span>
         <span className="flex min-w-0 flex-1 items-center gap-2">
           <Text>{row.label}</Text>
@@ -77,21 +77,24 @@ export default function MorePage() {
   const [here, setHere] = useState(false);
   useEffect(() => setHere(true), []);
   return (
-    <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
+    <div className="mx-auto max-w-[var(--page-max-reading)] pb-8 lg:max-w-[920px] lg:pt-5">
       <PhoneBar title={translate("我的")} large />
-      <h1 className="hidden pb-4 pt-1 text-[22px] font-bold text-ink lg:block"><Text>我的</Text></h1>
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-4 2xl:grid-cols-3">
-        <Group title="阅读与偏好" className="lg:row-span-2 2xl:row-span-1">
+      <div className="hidden border-b border-line-soft pb-6 lg:mb-7 lg:block">
+        <h1 className="text-[28px] font-bold tracking-[-0.025em] text-ink"><Text>我的</Text></h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-ink-3"><Text>管理收藏、外观与阅读偏好。</Text></p>
+      </div>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)] lg:items-start lg:gap-x-6">
+        <Group title="阅读与偏好">
           <RowLink row={{ to: "/account", label: "读者账号", icon: <IconUser size={20} />, detail: translate("收藏与已读") }} />
           <RowLink row={{ to: "/starred", label: "收藏", icon: <IconBookmark size={20} />, detail: here && starred.length > 0 ? <span className="num"><Text>{starred.length}</Text></span> : undefined }} />
-          <li className="flex min-h-[56px] items-center gap-3 px-4 text-[16px] font-medium text-ink">
+          <li className="flex min-h-[56px] items-center gap-3 px-4 text-[16px] font-medium text-ink lg:min-h-[60px] lg:px-5 lg:text-[15px]">
             <span className="text-ink-3">
               <IconMoon size={20} />
             </span>
             <span className="flex-1"><Text>外观</Text></span>
             <ThemeSwitch className="w-[126px]" />
           </li>
-          <li className="flex min-h-[56px] items-center gap-3 px-4 text-[16px] font-medium text-ink">
+          <li className="flex min-h-[56px] items-center gap-3 px-4 text-[16px] font-medium text-ink lg:min-h-[60px] lg:px-5 lg:text-[15px]">
             <span className="w-5 text-center text-ink-3" aria-hidden="true">Aa</span>
             <span className="flex-1"><Text>字体</Text></span>
             <Select className="min-w-0 max-w-[65%]" aria-label={translate("字体")} value={font ?? "system"} onChange={(e) => setFontPreference(e.target.value === "browser" ? "browser" : null)}>
@@ -100,18 +103,20 @@ export default function MorePage() {
             </Select>
           </li>
         </Group>
-        <Group title={translate("工具与入口")}>
-          {tools().map((r) => (
-            <RowLink key={r.to} row={r} />
-          ))}
-        </Group>
-        <Group title={translate("帮助与反馈")}>
-          {inNav("/about") && <RowLink row={{ to: "/about", label: `关于 ${SITE.name}`, icon: <IconHeart size={20} /> }} />}
-          {inNav("/changelog") && <RowLink row={{ to: "/changelog", label: "更新日志", icon: <IconSparkles size={20} /> }} dot={changelogDot} />}
-          <RowLink row={{ to: "/feedback", label: "意见反馈", icon: <IconMessage size={20} /> }} />
-        </Group>
+        <div className="lg:space-y-6">
+          <Group title="工具与入口">
+            {tools().map((r) => (
+              <RowLink key={r.to} row={r} />
+            ))}
+          </Group>
+          <Group title="帮助与反馈">
+            {inNav("/about") && <RowLink row={{ to: "/about", label: `关于 ${SITE.name}`, icon: <IconHeart size={20} /> }} />}
+            {inNav("/changelog") && <RowLink row={{ to: "/changelog", label: "更新日志", icon: <IconSparkles size={20} /> }} dot={changelogDot} />}
+            <RowLink row={{ to: "/feedback", label: "意见反馈", icon: <IconMessage size={20} /> }} />
+          </Group>
+        </div>
       </div>
-      <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] leading-[2] text-ink-4">
+      <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] leading-[2] text-ink-4 lg:mt-7 lg:justify-start lg:border-t lg:border-line-soft lg:pt-4">
         <Link viewTransition to="/terms" className="hover:text-ink-2"><Text>{POLICY.terms.name}</Text></Link>
         <Link viewTransition to="/privacy" className="hover:text-ink-2"><Text>隐私说明</Text></Link>
         <a href={EDITORIAL.selectionEnabled ? "/feed.xml" : "/feed/all.xml"} className="hover:text-ink-2">RSS</a>
