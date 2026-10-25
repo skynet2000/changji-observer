@@ -219,6 +219,7 @@ const FieldsSchema = z
     summary: z.string().max(2000),
     reason: z.string().max(1000),
     category: z.enum(CATEGORY_KEYS as unknown as [string, ...string[]]),
+    relevance: z.enum(["pass", "block", "unknown"]),
     tags: z.array(z.string().max(60)).max(20),
     score: z.number().min(0).max(100).nullable(),
     selected: z.boolean(),

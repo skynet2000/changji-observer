@@ -157,3 +157,21 @@ test("bad admin input is a client error and never starts processing", async () =
   const [state] = await sql`SELECT processing_state FROM articles WHERE id = ${id}`;
   assert.equal(state!.processing_state, "analyzed");
 });
+
+test("audited relevance correction can admit an owner's rejected report without rewriting model history and can be cleared", async () => {
+  const id = await article();
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,title_zh,summary_zh,selected)
+    VALUES (${id},1,'rule','block','员工住房福利','公司公布员工住房项目。',false)`;
+  await publishArticle(id);
+  assert.equal((await sql`SELECT eligible FROM publications WHERE article_id=${id}`)[0]!.eligible,false);
+  await overrideFields(id,{fields:{relevance:'pass',category:'workplace',selected:false},version:0,reason:'站主确认此员工待遇报道应收录'},'test-owner-relevance');
+  await publishArticle(id);
+  assert.equal((await sql`SELECT eligible FROM publications WHERE article_id=${id}`)[0]!.eligible,true);
+  assert.equal((await sql`SELECT relevance FROM analyses WHERE article_id=${id}`)[0]!.relevance,'block');
+  assert.equal((await sql`SELECT count(*)::int AS n FROM audit_log WHERE actor='test-owner-relevance' AND subject=${`content:${id}`}`)[0]!.n,1);
+  await overrideFields(id,{fields:{},clear:['relevance'],version:1,reason:'移除人工相关性纠正'},'test-owner-relevance');
+  assert.equal((await sql`SELECT eligible FROM publications WHERE article_id=${id}`)[0]!.eligible,false);
+  await setVisibility(id,{visibility:'withdrawn',version:2,reason:'撤回'},'test-owner-relevance');
+  await overrideFields(id,{fields:{relevance:'pass'},version:3,reason:'相关性纠正不能恢复撤回稿'},'test-owner-relevance');
+  assert.equal((await sql`SELECT visibility FROM publications WHERE article_id=${id}`)[0]!.visibility,'withdrawn');
+});
