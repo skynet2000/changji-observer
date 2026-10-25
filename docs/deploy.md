@@ -345,3 +345,7 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 新增`traffic`持久卷仅存30天匿名页面请求聚合；不保存地址、Cookie、用户标识或查询词，web不访问业务数据库。现有服务器每日备份新增`traffic.tar.gz`及校验和。恢复站点时除数据库和附件外，将此归档恢复到web的`/traffic`卷并保持私有权限；旧备份没有该归档时，统计从恢复后重新开始，不能补造历史访问。成本与运营邮件沿用原09:00任务及去重状态，改用北京时间昨日自然日窗口。
 
 同机共享HTTPS入口：生产Caddy已挂载独立站点配置`/data/sites/*.caddy`，仓库保留顶层import。常规应用发布仅更新web/api/worker，保留共享Caddy进程；其Caddyfile可能仍挂载旧release路径，修改入口前以docker inspect实际挂载为准，不能只修改current符号链接下的文件。
+
+### 2026-10-25：增加估算UV
+
+运营统计增加按北京时间自然日的估算UV，口径见`docs/cost-email.md`。发布前由站主确认隐私说明增补。旧PV聚合不清空、UV不回填；首次启用或恢复备份后覆盖不全时，邮件单独标注UV起点。升级后原`traffic`卷中的`uv-current.state`用于正常重启去重，权限600，每日首次统计时换密钥与去重集合，不进入现有只打包`*.json`的每日备份；恢复备份不会伪装当日去重连续。无数据库迁移、无统计Cookie、无模型调用，也不变更共享HTTPS入口或09:00邮件定时器。

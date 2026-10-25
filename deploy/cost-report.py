@@ -84,7 +84,12 @@ def message(report, sender, recipient, day):
                  f"统计启用时间：{traffic['since']}；{'完整自然日' if traffic['complete'] else '仅覆盖启用后的部分时段'}。", '热门页面：']
         rows.extend(f"- {page}：{count} 次" for page, count in traffic['topPages'])
         if not traffic['topPages']: rows.append('- 本统计时段暂无成功页面请求。')
-        rows += ['未统计UV、IP、设备指纹、Cookie、登录身份或搜索词；不包含浏览器完全从缓存读取的页面。']
+        if traffic.get('uvAvailable'):
+            rows += [f"估算独立访客（UV）：{traffic['uniqueVisitors']}；{'完整自然日' if traffic['uvComplete'] else '仅覆盖部分时段'}，覆盖起点：{traffic['uvSince']}。"]
+        else:
+            rows.append('UV未启用、无对应历史记录或读取失败；缺失不代表零访客。')
+        rows += ['UV按每日随机密钥计算的连接地址与浏览器标识去重；不是准确人数，共享网络可能合并，切换网络或浏览器可能重复。',
+                 '不保存原始IP/浏览器标识，不设置统计Cookie，不关联登录账号；完全从缓存读取且未请求服务器的页面可能漏计。']
     else:
         rows.append('访问统计未启用、无历史记录或读取失败；缺失不代表零访问。')
     ops = report.get('operations')
@@ -123,7 +128,7 @@ def traffic_report(day):
     result = {'day': yesterday, 'available': False}
     try:
         # Read only the private aggregate volume; never query cookies, addresses or raw access logs.
-        script = "const f=require('fs');const dir=process.env.ACCESS_STATS_DIR;if(!dir)process.exit(2);const since=JSON.parse(f.readFileSync(dir+'/started.json')).since;let d;try{d=JSON.parse(f.readFileSync(dir+'/'+process.argv[1]+'.json'));}catch(e){if(e.code!=='ENOENT')throw e;d={views:0,bots:0,errors:0,notFound:0,pages:{}};}console.log(JSON.stringify({...d,since}));"
+        script = "const f=require('fs');const dir=process.env.ACCESS_STATS_DIR;if(!dir)process.exit(2);const since=JSON.parse(f.readFileSync(dir+'/started.json')).since;let uvSince;try{uvSince=JSON.parse(f.readFileSync(dir+'/uv-started.json')).since;}catch(e){if(e.code!=='ENOENT')throw e;}let d;try{d=JSON.parse(f.readFileSync(dir+'/'+process.argv[1]+'.json'));}catch(e){if(e.code!=='ENOENT')throw e;d={views:0,bots:0,errors:0,notFound:0,pages:{},uniqueVisitors:0};}console.log(JSON.stringify({...d,uvSince:d.uvSince??uvSince,since}));"
         raw = subprocess.check_output(['docker','compose','exec','-T','web','node','-e',script,yesterday], cwd=ROOT/'current', text=True, stderr=subprocess.DEVNULL, timeout=20)
         data = json.loads(raw)
         since = datetime.fromisoformat(data['since'].replace('Z','+00:00'))
@@ -133,8 +138,19 @@ def traffic_report(day):
         if any(not isinstance(n,int) or isinstance(n,bool) or n<0 for n in counts.values()): return result
         pages = data['pages']
         if not isinstance(pages,dict) or any(not isinstance(k,str) or not isinstance(v,int) or v<0 for k,v in pages.items()): return result
-        return {**result, **counts, 'available': True, 'since': since.astimezone(ZoneInfo('Asia/Shanghai')).isoformat(),
-                'complete': since<=start, 'topPages': sorted(pages.items(), key=lambda p: (-p[1],p[0]))[:5]}
+        result = {**result, **counts, 'available': True, 'since': since.astimezone(ZoneInfo('Asia/Shanghai')).isoformat(),
+                  'complete': since<=start, 'topPages': sorted(pages.items(), key=lambda p: (-p[1],p[0]))[:5], 'uvAvailable': False}
+        unique = data.get('uniqueVisitors')
+        if isinstance(unique,int) and not isinstance(unique,bool) and 0<=unique<=counts['views'] and data.get('uvSince'):
+            try:
+                uv_since = datetime.fromisoformat(data['uvSince'].replace('Z','+00:00'))
+            except (ValueError, TypeError, AttributeError):
+                return result
+            if uv_since.utcoffset() is None: return result
+            if uv_since < start + timedelta(days=1):
+                result.update(uniqueVisitors=unique, uvAvailable=True, uvComplete=uv_since<=start,
+                              uvSince=max(start,uv_since).astimezone(ZoneInfo('Asia/Shanghai')).isoformat())
+        return result
     except (subprocess.SubprocessError, OSError, ValueError, KeyError, TypeError):
         return result
 

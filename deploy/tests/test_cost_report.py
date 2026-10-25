@@ -75,6 +75,26 @@ class CostReportTests(unittest.TestCase):
             self.run_send()
         self.client.send_message.assert_not_called()
 
+    def test_uv_coverage_is_independent_of_pv_and_missing_uv_is_not_zero(self):
+        payload = {'views':30,'bots':1,'errors':0,'notFound':0,'pages':{'/all':30},'since':'2026-10-23T16:00:00Z'}
+        def read(extra):
+            with patch.object(reporter.subprocess,'check_output',return_value=json.dumps({**payload,**extra})):
+                return reporter.traffic_report('2026-10-26')
+        missing = read({})
+        self.assertTrue(missing['complete']);self.assertFalse(missing['uvAvailable'])
+        self.assertIn('缺失不代表零访客',reporter.message({**SAMPLE,'traffic':missing},'s@e.com','r@e.com','2026-10-26').get_content())
+        self.assertFalse(read({'uniqueVisitors':0,'uvSince':'2026-10-25T16:00:00Z'})['uvAvailable'])
+        partial = read({'uniqueVisitors':4,'uvSince':'2026-10-25T12:00:00Z'})
+        self.assertTrue(partial['complete']);self.assertTrue(partial['uvAvailable']);self.assertFalse(partial['uvComplete'])
+        body = reporter.message({**SAMPLE,'traffic':partial},'s@e.com','r@e.com','2026-10-26').get_content()
+        self.assertIn('独立访客（UV）：4',body);self.assertIn('仅覆盖部分时段',body)
+        full = read({'uniqueVisitors':0,'uvSince':'2026-10-24T16:00:00Z'})
+        self.assertTrue(full['uvAvailable']);self.assertTrue(full['uvComplete']);self.assertEqual(full['uniqueVisitors'],0)
+        self.assertFalse(read({'uniqueVisitors':31,'uvSince':'2026-10-24T16:00:00Z'})['uvAvailable'])
+        self.assertFalse(read({'uniqueVisitors':True,'uvSince':'2026-10-24T16:00:00Z'})['uvAvailable'])
+        invalid = read({'uniqueVisitors':2,'uvSince':'invalid'})
+        self.assertTrue(invalid['available']);self.assertFalse(invalid['uvAvailable'])
+
     def test_success_is_deduplicated(self):
         self.run_send()
         self.run_send()

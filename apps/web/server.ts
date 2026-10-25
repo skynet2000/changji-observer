@@ -22,6 +22,10 @@ const HOST = process.env.WEB_HOST || "127.0.0.1";
  * limits (sign-in attempts, feedback).
  */
 const TRUST_PROXY = process.env.TRUST_PROXY === "true";
+function clientAddress(req: import("node:http").IncomingMessage) {
+  const forwarded = String(req.headers["x-forwarded-for"] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+  return TRUST_PROXY && forwarded.length ? forwarded[forwarded.length - 1]! : (req.socket.remoteAddress ?? "");
+}
 const CLIENT_DIR = path.resolve(import.meta.dirname, "build/client");
 
 const TYPES: Record<string, string> = {
@@ -80,7 +84,7 @@ async function serveStatic(pathname: string, res: import("node:http").ServerResp
 const accessStats = process.env.ACCESS_STATS_DIR ? new AccessStats(process.env.ACCESS_STATS_DIR) : null;
 const server = createServer((req, res) => {
   if (accessStats) res.once("finish", () => {
-    void accessStats.record({ method: req.method, url: req.url, headers: req.headers, status: res.statusCode, type: String(res.getHeader("Content-Type") ?? "") })
+    void accessStats.record({ method: req.method, url: req.url, headers: req.headers, status: res.statusCode, type: String(res.getHeader("Content-Type") ?? ""), clientAddress: clientAddress(req) })
       .catch(() => console.error(JSON.stringify({ level: "error", msg: "anonymous access totals could not be saved" })));
   });
   handle(req, res).catch((error: unknown) => {
@@ -160,8 +164,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   if (isApiOwned(pathname)) {
     // The visitor's address, decided here: the one the trusted proxy saw (the last X-Forwarded-For
     // entry), or this connection's own. Both headers carry only that.
-    const forwarded = String(req.headers["x-forwarded-for"] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
-    const client = TRUST_PROXY && forwarded.length ? forwarded[forwarded.length - 1]! : (req.socket.remoteAddress ?? "");
+    const client = clientAddress(req);
     return proxyToApi(req, res, { "x-forwarded-for": client, "x-real-ip": client });
   }
 
