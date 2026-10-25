@@ -20,7 +20,7 @@ import { isPhone, type Screen } from "../components/shell/screens";
 import { openSearch } from "../features/search/SearchOverlay";
 import { addRecentSearch } from "../lib/local-state";
 
-export const handle: Screen = { tab: "all", name: "全部" };
+export const handle: Screen = { tab: "all", name: "资讯" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -107,7 +107,7 @@ export default function AllPage() {
       {/* Phones: the feed bar, or for a search the query (tap to change it) and back to 全部. */}
       {f.q ? (
         <PhoneBar
-          back={{ to: "/all", label: "全部" }}
+          back={{ to: "/all", label: "资讯" }}
           center={
             <button type="button" onClick={(event) => openSearch(f.q ?? "", event.currentTarget)} className="flex h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-bg-sunk px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line-soft dark:bg-bg-muted/60">
               <IconSearch size={16} className="shrink-0 text-ink-4" />

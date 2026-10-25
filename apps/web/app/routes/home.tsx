@@ -15,7 +15,7 @@ import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
 import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
 
-export const handle: Screen = { tab: EDITORIAL.selectionEnabled ? "featured" : "all", name: EDITORIAL.selectionEnabled ? "精选" : "全部" };
+export const handle: Screen = { tab: EDITORIAL.selectionEnabled ? "featured" : "all", name: EDITORIAL.selectionEnabled ? "精选" : "资讯" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 

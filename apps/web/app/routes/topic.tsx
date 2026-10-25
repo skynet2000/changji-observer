@@ -95,9 +95,9 @@ export default function TopicRoute() {
   const last = first + items.length - 1;
   return (
     <div className="pb-6">
-      <PhoneBar back={inNav("/topics") ? { to: "/topics", label: "全部主题" } : { to: "/", label: EDITORIAL.selectionEnabled ? "精选" : "全部" }} title={translate(topic.name)} />
+      <PhoneBar back={inNav("/topics") ? { to: "/topics", label: "全部主题" } : { to: "/", label: EDITORIAL.selectionEnabled ? "精选" : "资讯" }} title={translate(topic.name)} />
       <Link to={inNav("/topics") ? "/topics" : "/"} className="hidden items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:inline-flex">
-        <IconArrowLeft size={14} /> <Text>{inNav("/topics") ? "返回全部主题" : EDITORIAL.selectionEnabled ? "返回精选" : "回到全部"}</Text>
+        <IconArrowLeft size={14} /> <Text>{inNav("/topics") ? "返回全部主题" : EDITORIAL.selectionEnabled ? "返回精选" : "回到资讯"}</Text>
       </Link>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-5 pt-3 lg:pt-1">
         <div className="min-w-0 max-w-[760px]">

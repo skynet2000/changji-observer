@@ -241,10 +241,10 @@ export default function StoryPage() {
 
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-10">
-      <PhoneBar back={inNav("/hot") ? { to: "/hot", label: "热点" } : { to: "/", label: EDITORIAL.selectionEnabled ? "精选" : "全部" }} title={translate(story.title)} />
+      <PhoneBar back={inNav("/hot") ? { to: "/hot", label: "热点" } : { to: "/", label: EDITORIAL.selectionEnabled ? "精选" : "资讯" }} title={translate(story.title)} />
       <nav aria-label={translate("位置")} className="hidden items-center gap-2.5 pb-5 pt-4 text-[12px] text-ink-4 lg:flex">
         <Link to={inNav("/hot") ? "/hot" : "/"} className="inline-flex items-center gap-1.5 transition-colors hover:text-ink">
-          <IconArrowLeft size={15} /> <Text>{inNav("/hot") ? "热点榜" : EDITORIAL.selectionEnabled ? "精选" : "全部"}</Text>
+          <IconArrowLeft size={15} /> <Text>{inNav("/hot") ? "热点榜" : EDITORIAL.selectionEnabled ? "精选" : "资讯"}</Text>
         </Link>
         <span className="h-3 w-px bg-line-strong" aria-hidden="true" />
         <span><Text>事件详情</Text></span>

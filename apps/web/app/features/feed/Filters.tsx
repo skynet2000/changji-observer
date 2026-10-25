@@ -53,7 +53,7 @@ export function CategoryTabs({ base, category, className = "" }: { base: string;
     return () => window.removeEventListener("resize", revealActive);
   }, [category, translate]);
   return <nav ref={rail} aria-label={translate("栏目")} className={`category-tabs ${className}`}>
-    {filterOptions(base, params, "全部").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
+    {filterOptions(base, params, "综合").map(option => <IntentLink key={option.key} to={option.to} preventScrollReset
       aria-current={option.key === filterKey(category) ? "page" : undefined}><Text>{option.label}</Text></IntentLink>)}
   </nav>;
 }

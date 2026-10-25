@@ -36,7 +36,7 @@ export default function SearchBusy() {
   const button = "inline-flex h-9 items-center rounded-full px-4 text-[13.5px]";
   return (
     <>
-    <PhoneBar back={{ to: base, label: base === "/all" || !EDITORIAL.selectionEnabled ? "全部" : "精选" }} />
+    <PhoneBar back={{ to: base, label: base === "/all" || !EDITORIAL.selectionEnabled ? "资讯" : "精选" }} />
     <div className="mx-auto max-w-sm py-24 text-center" aria-live="polite">
       <RingMark className="mx-auto mb-5 size-10 text-accent" spinning />
       <h1 className="text-[20px] font-bold text-ink"><Text>搜索有点忙</Text></h1>

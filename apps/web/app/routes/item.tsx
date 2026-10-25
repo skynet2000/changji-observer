@@ -237,7 +237,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
   const shownAt = preview.publishedAt ?? preview.timelineAt;
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      <PhoneBar back={{ to: EDITORIAL.selectionEnabled && preview.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && preview.selected ? "精选" : "全部" }} title={translate(isX ? preview.x!.authorName : preview.title)} />
+      <PhoneBar back={{ to: EDITORIAL.selectionEnabled && preview.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && preview.selected ? "精选" : "资讯" }} title={translate(isX ? preview.x!.authorName : preview.title)} />
       <article className="pb-6 pt-3" aria-busy="true">
         <div className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3">
           <span className="font-semibold text-ink-2"><Text>{isX ? preview.x!.authorName : preview.source.name}</Text></span>
@@ -290,7 +290,7 @@ function ItemGone() {
   const gone = isRouteErrorResponse(error) && error.status === 404;
   return (
     <div className="mx-auto max-w-sm pb-8">
-      <PhoneBar back={{ to: EDITORIAL.selectionEnabled ? "/" : "/all", label: EDITORIAL.selectionEnabled ? "精选" : "全部" }} />
+      <PhoneBar back={{ to: EDITORIAL.selectionEnabled ? "/" : "/all", label: EDITORIAL.selectionEnabled ? "精选" : "资讯" }} />
       <div className="py-24 text-center">
         <div className="text-[20px] font-bold text-ink"><Text>{gone ? "这里没有内容" : "暂时无法加载"}</Text></div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3"><Text>{gone ? "这篇内容不存在，或已不再公开。" : "服务暂时繁忙，请稍后再试。"}</Text></p>
@@ -474,7 +474,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
       {/* Phones: back to where the reader came from, the title once it has scrolled away, more actions. */}
       <PhoneBar
-        back={{ to: EDITORIAL.selectionEnabled && item.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && item.selected ? "精选" : "全部" }}
+        back={{ to: EDITORIAL.selectionEnabled && item.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && item.selected ? "精选" : "资讯" }}
         title={translate(isX ? item.x!.authorName : item.title)}
         actions={
           <BarButton label="更多操作" onClick={() => setActionsOpen(true)}>

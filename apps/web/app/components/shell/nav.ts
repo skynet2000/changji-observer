@@ -1,7 +1,7 @@
 // Site navigation in one place: the desktop sidebar's sections and the phone tab bar's tabs, the engine's
 // and the site's modules'.
 import type { ReactNode } from "react";
-import { EDITORIAL, NAV, subjectAfter, withSubject } from "@aihot/site";
+import { EDITORIAL, NAV, withSubject } from "@aihot/site";
 import { webModules } from "../../site-modules";
 import {
   IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconList, IconMessage, IconPlug, IconUser,
@@ -22,7 +22,7 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
     title: "内容",
     items: [
       { to: "/", label: "精选", icon: IconBolt, end: true },
-      { to: "/all", label: subjectAfter("全部", "动态"), icon: IconList },
+      { to: "/all", label: "资讯", icon: IconList },
       { to: "/hot", label: "热点榜", icon: IconFlame },
       { to: "/daily", label: withSubject("日报"), icon: IconDoc },
       { to: "/topics", label: "主题", icon: IconGrid },
@@ -62,7 +62,7 @@ export function feedScopeHref(to: string, params: URLSearchParams): string {
 export function sidebar(): Array<{ title: string; items: NavItem[] }> {
   const [content, ...rest] = SECTIONS;
   const more = rest.pop()!;
-  const sections = [content!, ...rest].map((s) => ({ ...s, items: s.items.filter((i) => inNav(i.to)).map(i => !EDITORIAL.selectionEnabled && i.to === "/all" ? { ...i, label: "全部" } : !EDITORIAL.selectionEnabled && i.to === "/hot" ? { ...i, label: "热点" } : !EDITORIAL.selectionEnabled && i.to === "/daily" ? { ...i, label: "日报" } : i) }));
+  const sections = [content!, ...rest].map((s) => ({ ...s, items: s.items.filter((i) => inNav(i.to)).map(i => !EDITORIAL.selectionEnabled && i.to === "/hot" ? { ...i, label: "热点" } : !EDITORIAL.selectionEnabled && i.to === "/daily" ? { ...i, label: "日报" } : i) }));
   for (const m of webModules()) {
     if (!m.sidebar) continue;
     const section = sections.find((s) => s.title === m.sidebar!.section);
@@ -105,7 +105,7 @@ export interface Tab {
 
 const ENGINE_TABS: Tab[] = [
   { key: "featured", to: "/", label: "精选", icon: IconBolt },
-  { key: "all", to: "/all", label: "全部", icon: IconList },
+  { key: "all", to: "/all", label: "资讯", icon: IconList },
   { key: "hot", to: "/hot", label: "热点", icon: IconFlame },
   { key: "daily", to: "/daily", label: "日报", icon: IconDoc },
   { key: "me", to: "/more", label: "我的", icon: IconUser, changelog: true },

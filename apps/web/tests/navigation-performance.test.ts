@@ -104,11 +104,15 @@ test('default home shows All with four navigation destinations and no selection 
     const context=await chrome.newContext({viewport:{width,height:900}}),page=await context.newPage();
     try{const before=hits.length;await page.goto(origin+'/');await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible();
       const nav=page.getByRole('navigation',{name:width<961?'底部导航':'主导航',exact:true});
-      assert.deepEqual(await nav.getByRole('link').allTextContents(),['全部','热点','日报','我的']);
-      await expect(nav.getByRole('link',{name:'全部',exact:true})).toHaveAttribute('aria-current','page');
+      assert.deepEqual(await nav.getByRole('link').allTextContents(),['资讯','热点','日报','我的']);
+      await expect(nav.getByRole('link',{name:'资讯',exact:true})).toHaveAttribute('aria-current','page');
       assert.equal(hits.slice(before).some(p=>p.startsWith('/api/site/timeline')),false);
       await expect(page.getByText('AI 评分',{exact:true})).toHaveCount(0);
       await expect(page.getByText('精选',{exact:true})).toHaveCount(0);
+      await expect(page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'综合',exact:true})).toHaveAttribute('aria-current','page');
+      await page.getByRole('button',{name:'Switch to English',exact:true}).click();
+      await expect(page.getByRole('navigation',{name:width<961?'Bottom navigation':'Main navigation',exact:true}).getByRole('link',{name:'News',exact:true})).toHaveAttribute('aria-current','page');
+      await expect(page.getByRole('navigation',{name:'Category',exact:true}).getByRole('link',{name:'All topics',exact:true})).toHaveAttribute('aria-current','page');
     }finally{await context.close();}
   }
 });
@@ -373,7 +377,7 @@ test('event reports recover from invalid responses, timeouts and stale refreshes
 
 
 test('reader navigation has four categories on desktop and phone; old model links select business',async()=>{
-  const labels=['全部','裁员与招聘','职场与组织','经营与竞争','政策与监管'];
+  const labels=['综合','裁员与招聘','职场与组织','经营与竞争','政策与监管'];
   for(const width of [390,1280]){
     const context=await chrome.newContext({viewport:{width,height:900}});
     const page=await context.newPage();
@@ -409,8 +413,8 @@ test('phone navigation marks All independently, all categories are visible and r
     try{
       await page.goto(origin+'/all?category=career&q=岗位');
       const bottom=page.getByRole('navigation',{name:'底部导航',exact:true});
-      assert.deepEqual(await bottom.getByRole('link').allTextContents(),['全部','热点','日报','我的']);
-      const all=bottom.getByRole('link',{name:'全部',exact:true});
+      assert.deepEqual(await bottom.getByRole('link').allTextContents(),['资讯','热点','日报','我的']);
+      const all=bottom.getByRole('link',{name:'资讯',exact:true});
       await expect(all).toHaveAttribute('aria-current','page');
       await expect(bottom.getByRole('link',{name:'精选',exact:true})).toHaveCount(0);
       await all.click();
@@ -444,7 +448,7 @@ test('phone categories, tags and query can each be cleared independently without
     await expect(page).toHaveURL(url=>!url.searchParams.has('q')&&!url.searchParams.has('tab')&&url.searchParams.get('category')==='jobs'&&url.searchParams.get('tag')==='组织调整');
     await page.getByRole('link',{name:'取消标签：组织调整',exact:true}).click();
     await expect(page).toHaveURL(url=>url.searchParams.get('category')==='jobs'&&!url.searchParams.has('tag'));
-    await categories.getByRole('link',{name:'全部',exact:true}).click();
+    await categories.getByRole('link',{name:'综合',exact:true}).click();
     await expect(page).toHaveURL(origin+'/all');
     await expect(page.getByRole('button',{name:/^筛选/})).toHaveCount(0);
   }finally{await context.close();}

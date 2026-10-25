@@ -139,7 +139,7 @@ test("desktop sidebar exposes content and tools without a hidden More menu; link
     await page.goto(web.origin + "/more");
     const nav = page.getByRole("navigation", { name: "主导航", exact: true });
     await expect(nav).toBeVisible();
-    for (const label of ["全部", "热点", "日报", "我的"])
+    for (const label of ["资讯", "热点", "日报", "我的"])
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     await expect(nav.getByRole("link", { name: /关于|更新日志/ })).toHaveCount(0);
     await expect(page.locator('[data-site-header]').getByRole("navigation")).toHaveCount(0);
