@@ -172,13 +172,14 @@ test('preferences keep account copy neutral and controls inside narrow cards in 
         assert.ok(bounds && card && bounds.x >= card.x && bounds.x + bounds.width <= card.x + card.width + 0.5, 'font control stays inside its settings column');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         if (width >= 961) {
-          const desk = await page.locator('[data-reading-desk]').boundingBox();
-          assert.ok(desk && desk.width <= 960, 'reading controls stay in one compact panel on wide monitors');
-          const shortcuts = page.locator('[data-reading-shortcuts] > a');
-          const account = await shortcuts.nth(0).boundingBox(), saved = await shortcuts.nth(1).boundingBox();
-          assert.ok(account && saved && Math.abs(account.y - saved.y) < 2 && Math.abs(account.height - saved.height) < 2, 'account and saved stories have equal visual weight and aligned edges');
-          const preference = await page.locator('#desktop-preferences').boundingBox();
-          assert.ok(preference && preference.y > account.y + account.height, 'preferences form a separate section below the primary reading actions');
+          const groups = page.locator('.personal-settings-list > section');
+          assert.equal(await groups.count(), 3);
+          const boxes = await Promise.all([0, 1, 2].map(i => groups.nth(i).boundingBox()));
+          assert.ok(boxes.every(b => b && b.width <= 640), 'settings remain in a narrow reading column on wide monitors');
+          for (let i = 1; i < boxes.length; i++) {
+            const previous = boxes[i - 1]!, current = boxes[i]!;
+            assert.ok(Math.abs(current.x - previous.x) < 2 && current.y >= previous.y + previous.height, 'settings groups stack vertically with aligned edges');
+          }
         }
       }
     } finally { await context.close(); }
