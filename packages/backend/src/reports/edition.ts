@@ -368,7 +368,7 @@ export async function dailyEdition(date: string, start: Date, end: Date, backfil
   entries.sort((a, b) => b.importance - a.importance || a.entry.itemId.localeCompare(b.entry.itemId));
   return {
     entries,
-    stats: { judgedReports: judged, selectedReports: selected.filter(r => r.selected).length, candidateReports: selected.length, facts: raw.length, repeatsSuppressed: raw.length - kept.length, fillIns: kept.filter((f) => !f.selected).length, events: entries.length },
+    stats: { judgedReports: judged, selectedReports: selected.filter(r => r.selected).length, candidateReports: selected.length, facts: raw.length, repeatsSuppressed: raw.length - kept.length, fillIns: EDITORIAL.selectionEnabled ? kept.filter((f) => !f.selected).length : 0, events: entries.length },
   };
 }
 

@@ -204,6 +204,7 @@ test('daily reports use admitted unscored reports during the pause without chang
     await composeDaily('2020-03-02');
     const [before] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-03-02'`;
     assert.equal(before!.content.generator.basis,'all-admitted');
+    assert.equal(before!.content.generator.fillIns,0,'ordinary admitted reports are not selection rescue fill-ins');
     const ids=[...before!.content.sections.flatMap((s:any)=>s.items),...before!.content.flashes].map((r:any)=>r.itemId);
     assert.ok(ids.includes(id));
     EDITORIAL.selectionEnabled = true;
