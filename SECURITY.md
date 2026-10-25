@@ -2,7 +2,7 @@
 
 ## 私密报告
 
-大厂观察由本仓库维护。疑似权限绕过、凭据泄露、注入或数据泄露，请使用[本仓库的私密漏洞报告](https://github.com/skynet2000/changji-observer/security/advisories/new)，或联系已公开的维护邮箱 [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com)。不要把本项目漏洞发到上游仓库。
+大厂观察由本仓库维护。疑似权限绕过、凭据泄露、注入或数据泄露，请使用[本仓库的私密漏洞报告](https://github.com/skynet2000/dachang-observer/security/advisories/new)，或联系已公开的维护邮箱 [skynettiantian@gmail.com](mailto:skynettiantian@gmail.com)。不要把本项目漏洞发到上游仓库。
 
 提供受影响版本、最小复现步骤、影响范围和已脱敏的证据。**不要在公开Issue、讨论或PR里贴真实API Key、SSH私钥、管理员密码、OAuth Secret、Cookie、SMTP授权码、数据库或读者数据。** 暂不承诺固定响应时间或奖励。
 
@@ -27,4 +27,4 @@ CI使用固定版本和SHA256校验的Gitleaks检查历史；`.gitleaksignore`�
 
 如误提交真实凭据，先在供应商处撤销并替换，再处理Git历史、缓存、Actions日志与附件。删除当前文件不能清除历史；隐藏仓库或添加`.gitignore`也不能撤销已暴露的凭据。不要把新凭据再次贴到公开渠道。
 
-普通使用故障、界面问题和功能建议走[本仓库Issues](https://github.com/skynet2000/changji-observer/issues/new/choose)。当前只维护最新版本，没有另行承诺长期支持分支。
+普通使用故障、界面问题和功能建议走[本仓库Issues](https://github.com/skynet2000/dachang-observer/issues/new/choose)。当前只维护最新版本，没有另行承诺长期支持分支。

@@ -29,8 +29,8 @@ docker compose version
 ## 第二步：先启动一个不花模型费用的空站
 
 ```bash
-git clone https://github.com/skynet2000/changji-observer.git
-cd changji-observer
+git clone https://github.com/skynet2000/dachang-observer.git
+cd dachang-observer
 node scripts/init-env.ts
 ```
 

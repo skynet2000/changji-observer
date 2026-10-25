@@ -8,7 +8,7 @@
 
 [访问网站](https://innews.site/) · [上手教程](docs/quick-start.md) · [English](README.en.md) · [系统架构](docs/architecture.md) · [信源接入](docs/sources.md) · [维护指南](docs/maintenance.md)
 
-本仓库是 [skynet2000/changji-observer](https://github.com/skynet2000/changji-observer)，基于 [KKKKhazix/AIHOT](https://github.com/KKKKhazix/AIHOT) 定制。站点品牌、读者定位、信源、精选标准、登录、双语和界面由本项目维护；保留上游 MIT 许可与署名。npm 包、部分环境变量和数据库中的 `aihot` 是沿用的内部标识。
+感谢上游开源项目 [AIHOT](https://github.com/KKKKhazix/AIHOT) 为大厂观察提供基础框架。
 
 ## 内容定位与阅读功能
 
@@ -164,8 +164,8 @@ flowchart TB
 需要 Node.js ≥ 24.11 与 Docker Compose。已有线上实例不要用空配置覆盖生产环境。
 
 ```bash
-git clone https://github.com/skynet2000/changji-observer.git
-cd changji-observer
+git clone https://github.com/skynet2000/dachang-observer.git
+cd dachang-observer
 node scripts/init-env.ts
 ```
 
@@ -219,4 +219,4 @@ node scripts/smoke.ts --base http://localhost:3000
 
 ## 致谢与许可
 
-感谢 [AIHOT](https://github.com/KKKKhazix/AIHOT) 提供基础框架，以及公开信源、RSS 工具与维护者。保留原作者著作权声明，代码使用 [MIT 许可证](LICENSE)；AIHOT 的名称和 Logo 不作为本站品牌使用。字体及其他第三方素材分别遵守 [NOTICE](NOTICE) 中的许可。新闻原文版权归各来源所有，代码许可不授予转载新闻全文的权利。
+保留原作者著作权声明，代码使用 [MIT 许可证](LICENSE)；AIHOT 的名称和 Logo 不作为本站品牌使用。字体及其他第三方素材分别遵守 [NOTICE](NOTICE) 中的许可。新闻原文版权归各来源所有，代码许可不授予转载新闻全文的权利。

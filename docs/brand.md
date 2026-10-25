@@ -8,7 +8,7 @@
 
 以下是持续使用的技术标识，不是遗漏的对外站名：
 
-- `innews.site` 和 GitHub 仓库地址 `skynet2000/changji-observer`。
+- `innews.site` 和 GitHub 仓库地址 `skynet2000/dachang-observer`。
 - 已有项目目录、服务器路径、数据库、systemd 服务名与 SSH 私钥文件名。
 - OAuth Client ID、密钥、回调地址，以及 cookie/localStorage 的既有读者存储键。
 - 上游 `@aihot/*` 包名、MCP 工具前缀、环境变量和 MIT 署名。

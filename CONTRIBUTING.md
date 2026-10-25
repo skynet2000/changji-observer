@@ -1,6 +1,6 @@
 # 参与大厂观察
 
-本仓库维护面向互联网中大厂职场人的大厂观察网站，基于AIHOT定制并保留其MIT许可。请把本项目的反馈提交到[本仓库Issues](https://github.com/skynet2000/changji-observer/issues/new/choose)，安全问题按[安全说明](SECURITY.md)私密报告。
+本仓库维护面向互联网中大厂职场人的大厂观察网站，基于AIHOT定制并保留其MIT许可。请把本项目的反馈提交到[本仓库Issues](https://github.com/skynet2000/dachang-observer/issues/new/choose)，安全问题按[安全说明](SECURITY.md)私密报告。
 
 ## 欢迎的贡献
 

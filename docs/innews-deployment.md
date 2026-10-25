@@ -1,12 +1,14 @@
 # innews.site 上线准备
 
+> 历史部署记录：当前公开仓库为 [skynet2000/dachang-observer](https://github.com/skynet2000/dachang-observer)。旧采购、采集及功能状态保留为阶段记录，当前操作以[上手教程](quick-start.md)和[维护说明](maintenance.md)为准。
+
 更新：2026-10-20。域名为 `innews.site`，个人主体运营，联系邮箱为 `skynettiantian@gmail.com`。不办理备案，电脑关机后仍须每小时自动更新并保留完整网站功能。用户已选择腾讯云境外Linux 2核4GB、199元/年并授权购买和部署，优先首尔；实际账号资格和最终结算待核验。没有授权额外年限、自动续费或附加产品。报价见 [境外方案](innews-offshore-deployment.md)。
 
 此前接受过杭州 ECS 99 元/年预算，但该方案已停用，不代表境外报价或购买授权；第一阶段会公开分享，初期访问量不确定，不能按“只给少量同事使用”规划或承诺容量。定位为公开公测候选，目标环境验收后再开放。
 
 ## 服务器运行什么
 
-代码先保存在新建的GitHub私有仓库 [skynet2000/changji-observer](https://github.com/skynet2000/changji-observer)，再部署到腾讯云。`.env`、`.data/`、`outputs/`、数据库和原始标注结果不提交；保留上游MIT许可。生产服务器从该仓库取得本站定制代码，不能用上游默认站替代。GitHub私有仓库访问凭据单独管理，不写进镜像或仓库。
+代码先保存在新建的GitHub私有仓库 [skynet2000/dachang-observer](https://github.com/skynet2000/dachang-observer)，再部署到腾讯云。`.env`、`.data/`、`outputs/`、数据库和原始标注结果不提交；保留上游MIT许可。生产服务器从该仓库取得本站定制代码，不能用上游默认站替代。GitHub私有仓库访问凭据单独管理，不写进镜像或仓库。
 
 初期一台普通 Linux 云服务器运行网页、后端 API、采集/评分/日报任务和 PostgreSQL 数据库。DeepSeek 在其服务端运行，本站后端用已有 API Key 发起请求，不下载模型权重，也不需要 GPU。读者打开网页读取已生成结果，不触发模型调用。服务器账单、DeepSeek API 账单、域名续费和异地备份存储费用分别计算。
 

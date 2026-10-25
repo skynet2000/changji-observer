@@ -8,7 +8,7 @@
 
 [Website](https://innews.site/) · [简体中文](README.md) · [Architecture](docs/architecture.md) · [Source configuration](docs/sources.md) · [Maintenance](docs/maintenance.md)
 
-This is [skynet2000/changji-observer](https://github.com/skynet2000/changji-observer), customized from [KKKKhazix/AIHOT](https://github.com/KKKKhazix/AIHOT). This project maintains its own brand, editorial scope, sources, selection rules, reader accounts, bilingual reading and UI. The upstream MIT license and attribution are retained. Internal npm package names, some environment variables and database identifiers still use `aihot`.
+Thanks to the upstream open-source project [AIHOT](https://github.com/KKKKhazix/AIHOT) for providing the foundation for Dachang Observer.
 
 ## Editorial scope and reading features
 
@@ -153,8 +153,8 @@ Free availability depends on platform quotas, RPM/TPM and channel capacity. Paid
 Install Node.js ≥ 24.11 and Docker Compose. Never replace an existing production environment with empty settings.
 
 ```bash
-git clone https://github.com/skynet2000/changji-observer.git
-cd changji-observer
+git clone https://github.com/skynet2000/dachang-observer.git
+cd dachang-observer
 node scripts/init-env.ts
 ```
 
@@ -208,4 +208,4 @@ The website and jobs run on a cloud server, independently of the owner's compute
 
 ## Attribution and license
 
-Thanks to [AIHOT](https://github.com/KKKKhazix/AIHOT) for the underlying framework and to public publishers and RSS maintainers. Original copyright notices are retained under the [MIT license](LICENSE). AIHOT's name and logo are not used as this site's brand. Fonts and third-party assets follow [NOTICE](NOTICE). News copyrights remain with their publishers; the code license does not grant rights to republish full articles.
+Original copyright notices are retained under the [MIT license](LICENSE). AIHOT's name and logo are not used as this site's brand. Fonts and third-party assets follow [NOTICE](NOTICE). News copyrights remain with their publishers; the code license does not grant rights to republish full articles.

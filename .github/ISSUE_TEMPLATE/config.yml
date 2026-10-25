@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: 从零运行与排错
-    url: https://github.com/skynet2000/changji-observer/blob/main/docs/quick-start.md
+    url: https://github.com/skynet2000/dachang-observer/blob/main/docs/quick-start.md
     about: 本机启动、模型配置、采集与常见问题。
   - name: 私密报告安全漏洞
-    url: https://github.com/skynet2000/changji-observer/security/advisories/new
+    url: https://github.com/skynet2000/dachang-observer/security/advisories/new
     about: 不要在公开Issue中提交真实密钥、密码、私钥或读者资料。
