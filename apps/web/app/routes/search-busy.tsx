@@ -49,7 +49,7 @@ export default function SearchBusy() {
             <Link to={retry} className={`${button} bg-accent font-medium text-accent-contrast hover:bg-accent-ink`}><Text>重试这次搜索</Text></Link>
           ))}
         <Link to="/all" className={`${button} ${hasSearch ? "border border-line-strong bg-surface text-ink-2 hover:border-ink-4" : "bg-accent font-medium text-accent-contrast hover:bg-accent-ink"}`}><Text>浏览全部动态</Text></Link>
-        <Link to="/" className={`${button} border border-line-strong bg-surface text-ink-2 hover:border-ink-4`}><Text>{EDITORIAL.selectionEnabled ? "回到精选" : "回到全部"}</Text></Link>
+        {EDITORIAL.selectionEnabled && <Link to="/" className={`${button} border border-line-strong bg-surface text-ink-2 hover:border-ink-4`}><Text>回到精选</Text></Link>}
       </div>
     </div>
     </>

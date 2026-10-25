@@ -158,10 +158,10 @@ export function ErrorBoundary() {
           {!notFound && <Link reloadDocument to={pathname + search + hash} className={buttonClass("primary")}><Text>
             重新加载
           </Text></Link>}
-          <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}><Text>
-            {EDITORIAL.selectionEnabled ? "回到精选" : "回到全部"}
-          </Text></Link>
-          <Link reloadDocument to="/all" className={buttonClass("secondary")}><Text>
+          {EDITORIAL.selectionEnabled && <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}><Text>
+            回到精选
+          </Text></Link>}
+          <Link reloadDocument to="/all" className={buttonClass(notFound && !EDITORIAL.selectionEnabled ? "primary" : "secondary")}><Text>
             浏览全部动态
           </Text></Link>
         </div>

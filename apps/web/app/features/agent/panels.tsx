@@ -7,7 +7,7 @@ import { Link } from "react-router";
 import { PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
 import { MCP_TOOL_NAMES as T, MCP_TOOLS } from "@aihot/contracts/mcp";
 import { feedCategoryLabel, PUBLIC_API_CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
-import { ACCESS, AGENT, EDITION_WHEN, POLICY, REPORTS, SITE, subjectAfter, withSubject } from "@aihot/site";
+import { ACCESS, AGENT, EDITORIAL, EDITION_WHEN, POLICY, REPORTS, SITE, subjectAfter, withSubject } from "@aihot/site";
 import { CodeBlock, CopyButton } from "./CodeBlock";
 import { PillTabs } from "../../components/ui/Tabs";
 import type { AgentPanelProps } from "../../modules";
@@ -108,9 +108,9 @@ export function McpPanel(props: AgentPanelProps) {
 }
 
 const FEEDS = [
-  { name: "精选摘要", badge: "推荐", path: "/feed.xml", desc: "最新 50 条精选，带标题、摘要、站内阅读和原文链接。" },
+  { name: "精选摘要", badge: EDITORIAL.selectionEnabled ? "推荐" : "历史", path: "/feed.xml", desc: "最新 50 条精选，带标题、摘要、站内阅读和原文链接。" },
   { name: "精选全文", path: "/feed/full.xml", desc: "同样的 50 条；允许转载的来源直接附全文，其余仍是摘要。" },
-  { name: "全部动态", path: "/feed/all.xml", desc: "最近 7 天的公开动态，按原文发布时间倒序。" },
+  { name: "全部动态", badge: EDITORIAL.selectionEnabled ? undefined : "推荐", path: "/feed/all.xml", desc: "最近 7 天的公开动态，按原文发布时间倒序。" },
   { name: withSubject("日报"), path: "/feed/daily.xml", desc: `${EDITION_WHEN.daily}（北京时间）一期：头条导语加整期目录，保留最近 30 期。` },
   { name: withSubject("周报"), path: "/feed/weekly.xml", desc: `${EDITION_WHEN.weekly}（北京时间）一期：总述加按栏目分好的${REPORTS.entry.noun}，保留最近 12 期。` },
   { name: withSubject("月报"), path: "/feed/monthly.xml", desc: `${EDITION_WHEN.monthly}（北京时间）一期：总述加按栏目分好的${REPORTS.entry.noun}，保留最近 12 期。` },

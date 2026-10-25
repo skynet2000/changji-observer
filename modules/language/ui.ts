@@ -15,6 +15,7 @@ export const englishUi: Record<string, string> = {
   "主导航": "Main navigation", "底部导航": "Bottom navigation", "外观": "Appearance", "不限": "All categories",
   "深色": "Dark", "浅色": "Light", "跟随系统": "System",
   "AI 评分": "AI score",
+  "浏览全部动态 →": "Browse all news →", "历史": "History",
   "经营与竞争": "Business & competition", "回到全部": "Back to All",
   "自动精选暂时暂停。订阅持续更新请使用全部动态 RSS；原精选接口保留历史结果。": "Automatic selection is paused. Subscribe to the All feed for updates; selected endpoints retain historical results.",
   "本期保留出刊时的内容快照；之后新增的内容请查看全部动态。": "This issue preserves its publication snapshot. See All for newer stories.",

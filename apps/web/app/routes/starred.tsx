@@ -2,7 +2,7 @@ import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { ItemAvailability } from "@aihot/contracts/site";
-import { SITE } from "@aihot/site";
+import { EDITORIAL, SITE } from "@aihot/site";
 import { Presence } from "../components/ui/Presence";
 import { edgeTtl } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
@@ -141,7 +141,7 @@ export default function StarredPage() {
           <IconBookmark size={20} className="text-ink-4" />
           <p className="mt-3 text-[13px] text-ink-3"><Text>还没有收藏内容。点开任意一条内容，在详情页点击收藏即可添加。</Text></p>
           <Link to="/" className="mt-4 text-[12.5px] font-medium text-accent hover:text-accent-ink"><Text>
-            去看精选 →
+            {EDITORIAL.selectionEnabled ? "去看精选 →" : "浏览全部动态 →"}
           </Text></Link>
         </div>
       ) : (
