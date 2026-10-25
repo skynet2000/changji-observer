@@ -21,20 +21,24 @@ after(async()=>{await browser?.close();await web?.stop();});
 test('healthy old tabs offer a responsive update choice; failures never reload and edits require confirmation',async()=>{
   const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
   try{
-    release='old-release';healthOk=true;await page.clock.install();await page.goto(web.origin+'/all?tag=version-check#reading');
+    const healthProbe=()=>page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');
+    const advanceProbe=async()=>{const response=healthProbe();await page.clock.fastForward(301000);const result=await response;await result.finished();return result;};
+    release='old-release';healthOk=true;await page.clock.install();
+    // Let hydration and the initial HTTP probe finish before jumping the simulated clock.
+    const initial=healthProbe();await page.goto(web.origin+'/all?tag=version-check#reading');await(await initial).finished();
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
-    release='new-release';healthOk=false;await page.clock.fastForward(301000);
+    release='new-release';healthOk=false;assert.equal((await advanceProbe()).status(),503);
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
-    healthOk=true;await page.clock.fastForward(301000);
+    healthOk=true;assert.equal((await advanceProbe()).status(),200);
     await expect(page.getByText('网站已更新',{exact:true})).toBeVisible();
     const box=await page.getByRole('status').filter({hasText:'网站已更新'}).boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=390);
     await page.evaluate(()=>{const t=document.createElement('textarea');t.setAttribute('aria-label','未保存输入');document.body.append(t);});
     await page.getByRole('textbox',{name:'未保存输入'}).fill('未提交');
     page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'刷新查看',exact:true}).click();
     await expect(page.getByRole('textbox',{name:'未保存输入'})).toHaveValue('未提交');
-    await page.getByRole('button',{name:'稍后',exact:true}).click();await page.clock.fastForward(301000);
+    await page.getByRole('button',{name:'稍后',exact:true}).click();await advanceProbe();
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
-    release='third-release';await page.clock.fastForward(301000);await expect(page.getByText('网站已更新',{exact:true})).toBeVisible();
+    release='third-release';await advanceProbe();await expect(page.getByText('网站已更新',{exact:true})).toBeVisible();
     page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'刷新查看',exact:true}).click();
     await page.waitForLoadState('domcontentloaded');assert.ok(page.url().endsWith('/all?tag=version-check#reading'));
   }finally{await context.close();}

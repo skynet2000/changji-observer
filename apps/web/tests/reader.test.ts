@@ -167,16 +167,18 @@ test('preferences keep account copy neutral and controls inside narrow cards in 
       await expect(page.locator('#main').getByText('登录并同步', { exact: true })).toHaveCount(0);
       for (const language of ['zh', 'en']) {
         if (language === 'en') await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
-        const select = page.locator('#main select'), row = select.locator('xpath=ancestor::li');
+        const select = page.getByRole('combobox', { name: language === 'zh' ? '字体' : 'Font', exact: true }), row = select.locator('xpath=ancestor::li');
         const bounds = await select.boundingBox(), card = await row.boundingBox();
-        assert.ok(bounds && card && bounds.x >= card.x && bounds.x + bounds.width <= card.x + card.width - 8, 'font control is not clipped by its card');
+        assert.ok(bounds && card && bounds.x >= card.x && bounds.x + bounds.width <= card.x + card.width + 0.5, 'font control stays inside its settings column');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         if (width >= 961) {
-          const cards = page.locator('#main section > ul'), first = await cards.nth(0).boundingBox(), second = await cards.nth(1).boundingBox();
-          assert.ok(first && second && Math.abs(first.y - second.y) < 2, 'desktop sections start on the same row');
-          const third = await cards.nth(2).boundingBox();
-          assert.ok(third && Math.abs(third.x - second.x) < 2 && third.y > second.y + second.height, 'help sits below tools rather than creating a sparse third column');
-          assert.ok(second.x + second.width - first.x <= 960, 'preferences remain compact on wide monitors');
+          const desk = await page.locator('[data-reading-desk]').boundingBox();
+          assert.ok(desk && desk.width <= 960, 'reading controls stay in one compact panel on wide monitors');
+          const shortcuts = page.locator('[data-reading-shortcuts] > a');
+          const account = await shortcuts.nth(0).boundingBox(), saved = await shortcuts.nth(1).boundingBox();
+          assert.ok(account && saved && Math.abs(account.y - saved.y) < 2 && Math.abs(account.height - saved.height) < 2, 'account and saved stories have equal visual weight and aligned edges');
+          const preference = await page.locator('#desktop-preferences').boundingBox();
+          assert.ok(preference && preference.y > account.y + account.height, 'preferences form a separate section below the primary reading actions');
         }
       }
     } finally { await context.close(); }

@@ -12,7 +12,7 @@ const OPTIONS: Array<{ key: Choice; label: string; icon: ReactNode }> = [
 ];
 
 /** Three-way appearance switch (dark / follow the system / light) with a sliding thumb. */
-export function ThemeSwitch({ className = "" }: { className?: string }) {
+export function ThemeSwitch({ className = "", labels = false }: { className?: string; labels?: boolean }) {
   const translate = useText();
   const pref = useThemePreference();
   const [mounted, setMounted] = useState(false);
@@ -48,10 +48,10 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
           aria-checked={current === o.key}
           title={translate(o.label)}
           onClick={() => choose(o.key)}
-          className={`relative z-10 flex items-center justify-center rounded-full transition-colors duration-150 ${current === o.key ? "text-ink" : "text-ink-4 hover:text-ink-2"}`}
+          className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full transition-colors duration-150 ${current === o.key ? "text-ink" : "text-ink-4 hover:text-ink-2"}`}
         >
           <Text>{o.icon}</Text>
-          <span className="sr-only"><Text>{o.label}</Text></span>
+          <span className={labels ? "text-[12px]" : "sr-only"}><Text>{o.label}</Text></span>
         </button>
       ))}
     </div>
