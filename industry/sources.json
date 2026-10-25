@@ -6966,7 +6966,7 @@
         "linkSelector": ".article_text h5 a",
         "titleSelector": ".article_text h5 a",
         "allowUrlPrefixes": [
-          "https://www.eeo.com.cn/2026/"
+          "https://www.eeo.com.cn/"
         ],
         "publishedAtUtcOffset": "+08:00",
         "detail": {
