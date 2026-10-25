@@ -49,6 +49,7 @@ LABELS = {'prefilter_article':'行业预筛','score_article':'精选评分','und
           'group_article':'报道归组','group_review':'归组复核','group_story':'事件合并',
           'group_story_review':'事件合并复核','group_signal':'热点信号归组','story_digest':'事件综述',
           'language.english':'中英文翻译','translate_body':'全文翻译','translate_quoted':'引用翻译',
+          'maintenance.prefilter.round3':'第三轮准入开发回归','maintenance.score.round3':'第三轮评分开发回归',
           'maintenance.prefilter.boundary':'准入开发回归','maintenance.selection.holdout':'独立验收预筛','maintenance.group.history':'历史归组复核',
           'report_weekly':'周报','report_monthly':'月报','ops.priority_probe':'通道验收'}
 
