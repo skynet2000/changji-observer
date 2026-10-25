@@ -113,8 +113,9 @@ Production attempts the preferred free channel **for each logical model task**, 
 
 | Work | Preferred | Fallback |
 | --- | --- | --- |
-| Relevance, writing, structure, grouping/review, digests, weekly/monthly assistance and translation | Intern / `deepseek-v4.1-flash-1017`, preset `intern-flash` | Official DeepSeek / `deepseek-flash` |
-| Two independent selection scores | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
+| Writing, structure, grouping/review, digests, weekly/monthly assistance and translation | Intern / `deepseek-v4.1-flash-1017`, preset `intern-flash` | Official DeepSeek / `deepseek-flash` |
+| Industry relevance screening (active) | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
+| Selection scoring (paused; configuration retained) | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
 
 Presets live in [`site/models.ts`](site/models.ts). Effective precedence is **admin settings → environment variables → code defaults**. A fresh checkout still defaults to DeepSeek; adding an Intern key alone does not switch every step. Follow [Routing](docs/model-routing.md) and verify each active choice. The paid official name is a provider alias, not a permanent date-pinned version guarantee.
 

@@ -113,8 +113,9 @@ flowchart TB
 
 | 用途 | 优先通道 | 回退通道 |
 | --- | --- | --- |
-| 预筛、写作、结构化、归组及复核、综述、周月报辅助、翻译 | Intern / `deepseek-v4.1-flash-1017`，预设 `intern-flash` | DeepSeek 官方 / `deepseek-flash` |
-| 精选双次评分 | 同版本，低强度推理预设 `intern-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
+| 写作、结构化、归组及复核、综述、周月报辅助、翻译 | Intern / `deepseek-v4.1-flash-1017`，预设 `intern-flash` | DeepSeek 官方 / `deepseek-flash` |
+| 行业预筛（继续运行） | 同版本，低强度推理预设 `intern-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
+| 精选双次评分（当前暂停，配置保留） | 同版本，低强度推理预设 `intern-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
 
 模型预设在 [`site/models.ts`](site/models.ts)，实际选择优先级为**后台设置 → 环境变量 → 代码默认**。仓库新建实例默认仍使用 DeepSeek；只填写 Intern 密钥不会自动把全部步骤切到免费通道，需按 [通道路由说明](docs/model-routing.md) 配置并核对每步选择。官方付费模型是服务商别名，不承诺永久固定到同一日期版本。
 
