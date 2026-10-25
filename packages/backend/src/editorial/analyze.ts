@@ -12,7 +12,7 @@ import { z } from "zod";
 import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { SELECTION } from "@aihot/industry/selection";
-import { ITEM_COPY } from "@aihot/site";
+import { EDITORIAL, ITEM_COPY } from "@aihot/site";
 import { sql } from "../db.ts";
 import { chatJson, ModelOutputError, type ContentPart } from "../providers/llm.ts";
 import { completeReceipt, ProviderRejectedError, ReceiptUnknownError } from "../providers/receipts.ts";
@@ -465,7 +465,7 @@ export async function runAnalysis(a: AnalyzeInputArticle, opts: StepOpts = {}): 
   // The structure step needs nothing from the scores: it runs beside them.
   const structure = runStructure(a, opts).then((value) => ({ value }), (error: unknown) => ({ error }));
   try {
-    const scores = await runSelectionScores(a, opts);
+    const scores = EDITORIAL.selectionEnabled ? await runSelectionScores(a, opts) : null;
     const sum = scores && !scores.refused && scores.values.length === SCORE_CALLS ? scores.values.reduce((total, v) => total + v, 0) : null;
     const near = sum !== null && (sum >= scores!.threshold * SCORE_CALLS || sum > UNDERSTAND_FLOOR * SCORE_CALLS);
     const s = await structure;
@@ -541,12 +541,21 @@ export async function analyzeArticle(articleId: string, opts: StepOpts = {}): Pr
   if (waitsForPage(input)) return { analysisId: null, stale: false, needsBody: true, output: null, receiptIds: [], reused: true };
   const run = await runAnalysis(input, opts);
   const out = normalizeAnalysis(run);
+  // Pausing scores must not erase an earlier judgement when the same material is reprocessed.
+  if (!EDITORIAL.selectionEnabled && out.relevance === "pass") {
+    const [prior] = await sql`SELECT score,selected,reason_zh,output FROM analyses
+      WHERE article_id=${articleId} AND input_revision=${input.revision} AND score IS NOT NULL
+      ORDER BY id DESC LIMIT 1`;
+    if (prior) Object.assign(out, { score: prior.score, selected: prior.selected, reasonZh: prior.reason_zh,
+      scores: prior.output.scores ?? null, scoreModel: prior.output.scoreModel ?? null, threshold: prior.output.threshold ?? null });
+  }
   const receiptIds = [
     run.prefilter.receiptId, ...(run.scores?.receiptIds ?? []), ...(run.writing?.receiptIds ?? []), ...(run.structure ? [run.structure.receiptId] : []),
   ];
   const w = run.writing;
   const detail = {
     prefilter: { label: run.prefilter.label, reason: run.prefilter.reason },
+    ...(!EDITORIAL.selectionEnabled ? { selectionPaused: true } : {}),
     scores: out.scores, scoreModel: out.scoreModel, threshold: out.threshold, ...(out.scoreRefused ? { scoreRefused: true } : {}),
     ...(w ? { writer: w.kind, writerModel: w.model, itemType: w.itemType ?? null, authorRole: w.authorRole ?? null } : {}),
     ...(w?.identityGuard?.outcome === "fallback" ? { identityGuard: w.identityGuard } : {}),

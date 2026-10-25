@@ -10,6 +10,7 @@ import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
 import { ActiveFilters, CategoryTabs, FeedBar, FilterRecovery, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
+import { HotTopics } from "../features/feed/HotTopics";
 import { FeedMasthead } from "../features/feed/FeedMasthead";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
@@ -36,14 +37,15 @@ export async function loader({ request }: Route.LoaderArgs) {
   const tab = url.searchParams.get("tab") === "relevance" ? "relevance" : null;
   // Older deep-paging parameters (deep, anchorAt) still open a normal page.
   const page = Math.min(Math.max(Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1), 50);
+  const upstream = new Headers();
   const data = await loadOr404<PoolResponse>(
     listPath("/api/site/pool", { ...filterParams(readFilters(url.searchParams)), q, tab, page: page > 1 ? page : null }),
     // The busy page keeps the search, so it can be tried again as it was.
-    { signal: request.signal, busyRedirect: `/all/search-busy${url.search}` },
+    { responseHeaders: upstream, signal: request.signal, busyRedirect: q ? `/all/search-busy${url.search}` : undefined },
   );
   // Past the last page of what there is: the last page, with the same search and filters.
   if (data.total > 0 && data.page > data.pageCount) throw redirect(pageHref(url.searchParams, data.pageCount));
-  return cachedPage(60, { data });
+  return cachedPage(60, { data }, upstream);
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -119,6 +121,7 @@ export default function AllPage() {
       <CategoryTabs base="/all" category={f.category} className="mobile-category-tabs lg:hidden" />
 
       {!f.q && !f.tag && <FeedMasthead all />}
+      {!!data.hot?.length && <HotTopics entries={data.hot} />}
 
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">

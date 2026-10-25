@@ -44,7 +44,7 @@ SELECT json_build_object(
     FROM calls WHERE service<>'intern' GROUP BY purpose) p)
 ) FROM calls;
 """
-LABELS = {'prefilter_article':'行业预筛','score_article':'精选评分','understand_article':'内容理解',
+LABELS = {'maintenance.category4':'历史四栏准入与分类复核', 'maintenance.category4.confirm':'疑似无关报道二次复核', 'prefilter_article':'行业预筛','score_article':'精选评分','understand_article':'内容理解',
           'summarize_article':'标题与摘要','structure_article':'结构抽取','mend_wording':'措辞修订',
           'group_article':'报道归组','group_review':'归组复核','group_story':'事件合并',
           'group_story_review':'事件合并复核','group_signal':'热点信号归组','story_digest':'事件综述',

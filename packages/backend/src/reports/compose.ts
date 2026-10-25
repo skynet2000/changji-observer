@@ -4,7 +4,7 @@
 // dailies and a model only writes its overview and introductions, from the brief in the industry pack
 // (industry/prompts/report-period*.md).
 import { z } from "zod";
-import { EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
+import { EDITORIAL, EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
 import { PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { modelFor } from "../editorial/models.ts";
@@ -119,7 +119,7 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
     metrics: dailyMetrics(issue.main),
     windowStart: start.toISOString(),
     windowEnd: end.toISOString(),
-    generator: { version: REPORT_VERSION, ...edition.stats, ...issue.stats, ...(backfilled ? { backfilled: true, basis: "source-publication" } : {}) },
+    generator: { version: REPORT_VERSION, ...(!EDITORIAL.selectionEnabled ? { basis: "all-admitted" } : {}), ...edition.stats, ...issue.stats, ...(backfilled ? { backfilled: true, basis: "source-publication" } : {}) },
   };
   await saveReport("daily", date, start, end, content, reason, null, []);
   return { key: date, entries: issue.main.length };
@@ -248,7 +248,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, factKey: _f, ...e }) => e) })),
     storyOrder: top.map((e) => e.itemId),
     metrics: { totalStories: top.length, selectedCount: selected.length, reportsCovered: issues },
-    generator: { version: REPORT_VERSION, model, written: overview !== null },
+    generator: { version: REPORT_VERSION, ...(!EDITORIAL.selectionEnabled ? { basis: "all-admitted" } : {}), model, written: overview !== null },
   };
   await saveReport(kind, key, start, end, content, reason, model, receiptId === null ? [] : [receiptId]);
   return { key, entries: top.length };

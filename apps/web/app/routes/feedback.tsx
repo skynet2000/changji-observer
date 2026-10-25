@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -173,7 +174,7 @@ export default function FeedbackPage() {
             反馈编号 </Text><span className="mono font-semibold text-ink">#<Text>{state.id}</Text></span><Text>，需要回复时我们会引用这个编号。
           </Text></p>
           <Link to="/" className="mt-8 inline-flex h-10 items-center rounded-full bg-ink px-6 text-[14px] font-medium text-bg transition-opacity hover:opacity-90"><Text>
-            回到精选
+            {EDITORIAL.selectionEnabled ? "回到精选" : "回到全部"}
           </Text></Link>
         </div>
       </ReadingLayout>

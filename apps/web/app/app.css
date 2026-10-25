@@ -590,8 +590,9 @@
 .site-header-note { font-size: 12px; letter-spacing: .12em; color: var(--ink-4); }
 .site-sidebar { position: fixed; top: var(--masthead-h); bottom: 0; left: 0; z-index: 40; display: flex; flex-direction: column; width: var(--sidebar-w); padding: 24px 14px 20px; border-right: 1px solid var(--line); background: linear-gradient(180deg, var(--accent-softer), transparent 260px), var(--sidebar); overflow-y: auto; }
 .sidebar-section + .sidebar-section { margin-top: 26px; }
+.sidebar-section:has(.sidebar-link[href="/more"]) h2 { margin-bottom: 14px; }
 .sidebar-section h2 { margin: 0 12px 8px; font-size: 11px; color: var(--ink-4); letter-spacing: .08em; }
-.sidebar-link { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 10px 12px; border-radius: 8px; font-size: 14px; line-height: 1.5; color: var(--ink-3); transition: background-color 160ms, color 160ms; }
+.sidebar-link { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 12px 14px; border-radius: 12px; font-size: 15px; line-height: 1.5; color: var(--ink-3); transition: background-color 160ms, color 160ms; }
 .sidebar-link > svg { flex-shrink: 0; }
 .sidebar-link:hover { background: var(--bg-sunk); color: var(--ink); }
 .sidebar-link[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 650; box-shadow: inset 3px 0 var(--accent), 0 3px 10px rgb(39 93 242 / .04); }
@@ -665,7 +666,7 @@
   .reader-entry { min-height: 40px; padding-inline: 10px; gap: 3px; }
   .site-main:has([data-feed-page]) { padding-top: 8px; }
   .feed-masthead { display: none; }
-  .mobile-category-tabs { display: flex; flex-wrap: nowrap; gap: 14px; max-width: 100%; margin-bottom: 12px; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .mobile-category-tabs { display: flex; flex-wrap: nowrap; gap: 10px; max-width: 100%; margin-bottom: 12px; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
   .mobile-category-tabs::-webkit-scrollbar { display: none; }
   .mobile-category-tabs a { flex: 0 0 auto; min-width: 44px; min-height: 44px; padding: 8px 2px; border-radius: 0; white-space: nowrap; font-size: 13px; }
   .mobile-category-tabs a[aria-current="page"] { background: transparent; box-shadow: inset 0 -2px var(--accent); }
@@ -702,3 +703,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .feed-masthead { animation: fade-up 350ms var(--ease-out-quart) both; }
 }
+
+/* Four equal destinations keep the mobile bar readable without crowding the feed filters. */
+.reader-tabbar a { min-height: 48px; }
+.reader-tabbar a[aria-current="page"] { box-shadow: inset 0 2px var(--accent); }

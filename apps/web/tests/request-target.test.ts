@@ -11,6 +11,7 @@ const api = createServer((req, res) => {
   upstreamPaths.push(req.url ?? "");
   res.setHeader("Content-Type", "application/json");
   if (req.url === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+  if (req.url?.startsWith("/api/site/pool")) return res.end(JSON.stringify({items:[],filters:{category:null,tag:null,q:null,tab:"time"},total:0,page:1,pageCount:1,todayCount:0,freshness:"2026-10-25T00:00:00Z"}));
   if (req.url?.startsWith("/api/site/timeline")) return res.end(JSON.stringify({
     cards: [], nextCursor: null, dayCounts: {}, hot: [], filters: { category: null, channel: null, tag: null },
   }));

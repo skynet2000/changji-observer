@@ -4,7 +4,7 @@ import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData, useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/agent";
 import { PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
-import { SITE } from "@aihot/site";
+import { EDITORIAL, SITE } from "@aihot/site";
 import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { listPath, pageMeta, siteUrl } from "../lib/seo";
@@ -178,6 +178,7 @@ export default function AgentPage() {
       <header className="lg:pt-5">
         <Kicker><Text>AGENT 接入</Text></Kicker>
         <h1 data-page-title="" className="mt-4 text-[28px] font-semibold leading-[1.3] text-ink sm:text-[32px]"><Text>{`把 ${SITE.name} 接进你的 Agent`}</Text></h1>
+        {!EDITORIAL.selectionEnabled && <p className="mt-3 text-sm text-ink-3"><Text>自动精选暂时暂停。订阅持续更新请使用全部动态 RSS；原精选接口保留历史结果。</Text><a className="ml-2 text-accent" href="/feed/all.xml">RSS</a></p>}
         <p className="mt-3 max-w-[40em] text-[15px] leading-[1.8] text-ink-3"><Text>{`${TRACKS.map((t) => t.short).join("、")} ${WAYS}种方式读的是同一份数据：精选、热点、日报、周报和月报，按你用的工具选一种就行。全部匿名只读，不用注册，也不用 API Key。`}</Text></p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className={`${chip} ${healthy ? "text-ok" : "text-hot"}`}>

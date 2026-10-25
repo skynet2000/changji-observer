@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 // Full-text Chinese translations: made by the worker after an item
 // is selected, for sources whose full text may be shown on the site; a page read never translates.
 // Bodies are translated block by block (paragraphs, headings, list items, captions, table cells) so the
@@ -169,6 +170,7 @@ export function unshield(translated: string, s: Shielded): string | null {
 }
 
 export async function translateArticle(articleId: string): Promise<TranslateResult> {
+  if (!EDITORIAL.selectionEnabled) return { articleId, status: "skipped", reason: "selection paused" };
   const [row] = await sql<{ revision: number; channel: string; language: string | null; body_html: string | null; body_text: string | null; x_post: { text?: string } | null; title: string; selected: boolean; body_mode: string; visibility: string }[]>`
     SELECT a.revision, p.channel, a.language, a.body_html, a.body_text, a.x_post, p.title, p.selected, p.body_mode, p.visibility
     FROM publications p JOIN articles a ON a.id = p.article_id WHERE p.article_id = ${articleId}`;
@@ -258,6 +260,7 @@ function quoteTranslatable(text: string): boolean {
  * DeepSeek (the translate model) translates it. Returns how many were stored.
  */
 export async function translateQuotes(opts: { days?: number; limit?: number; budgetMs?: number } = {}): Promise<number> {
+  if (!EDITORIAL.selectionEnabled) return 0;
   const started = Date.now();
   const rows = await sql<{ tweet_id: string; text: string; text_hash: string | null; own_zh: string | null }[]>`
     SELECT DISTINCT ON (q.tweet_id) q.tweet_id, a.x_post->'quoted'->>'text' AS text, qt.text_hash,
@@ -324,6 +327,7 @@ export async function translateQuotes(opts: { days?: number; limit?: number; bud
  * again whatever its age.
  */
 export async function translatePending(opts: { limit?: number; budgetMs?: number } = {}): Promise<{ done: TranslateResult[]; quotes: number }> {
+  if (!EDITORIAL.selectionEnabled) return { done: [], quotes: 0 };
   const started = Date.now();
   const rows = await sql<{ article_id: string }[]>`
     SELECT p.article_id FROM publications p JOIN articles a ON a.id = p.article_id

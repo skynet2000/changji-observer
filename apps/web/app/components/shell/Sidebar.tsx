@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 import { Link, useLocation, useSearchParams } from "react-router";
 import { Text, useText } from "../../lib/text";
 import { feedScopeHref, sidebar, sidebarIsActive } from "./nav";
@@ -26,7 +27,7 @@ export function Sidebar({ changelogVersion }: { changelogVersion: string | null 
     </nav>
     <div className="sidebar-footer">
       <div className="mb-4 flex items-center justify-between gap-2"><span><Text>外观</Text></span><ThemeSwitch className="w-[110px]" /></div>
-      <div className="flex flex-wrap gap-x-4 gap-y-2"><Link to="/terms"><Text>使用规则</Text></Link><Link to="/privacy"><Text>隐私说明</Text></Link><a href="/feed.xml">RSS</a></div>
+      <div className="flex flex-wrap gap-x-4 gap-y-2"><Link to="/terms"><Text>使用规则</Text></Link><Link to="/privacy"><Text>隐私说明</Text></Link><a href={EDITORIAL.selectionEnabled ? "/feed.xml" : "/feed/all.xml"}>RSS</a></div>
     </div>
   </aside>;
 }

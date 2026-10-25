@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { SITE } from "@aihot/site";
+import { EDITORIAL, SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { Text, useText } from "../../lib/text";
 import { useChangelogSeen } from "../../lib/local-state";
@@ -24,7 +24,7 @@ export function Header() {
   const feed = pathname === "/" || pathname === "/all" && !new URLSearchParams(search).get("q")?.trim();
   return <header className="site-header" data-site-header="">
     <div className="site-header-inner">
-      <Link to="/" className="site-brand" aria-label={translate(`${SITE.name} 首页`)}><Wordmark size={25} /></Link>
+      <Link to={EDITORIAL.selectionEnabled ? "/" : "/all"} className="site-brand" aria-label={translate(`${SITE.name} 首页`)}><Wordmark size={25} /></Link>
       <span className="site-header-note"><Text>互联网 · 公司 · 人</Text></span>
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
         {feed && <BarButton label="搜索" className="lg:hidden" onClick={(event) => openSearch("", event.currentTarget)}><IconSearch size={19} /></BarButton>}

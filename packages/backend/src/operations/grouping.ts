@@ -1,4 +1,5 @@
 // Selected candidates waiting for a news identity: one reader-impact view for alerts and the admin.
+import { EDITORIAL } from "@aihot/site";
 import type { AdminRuns, BeforeJson } from "@aihot/contracts/admin";
 import { sql } from "../db.ts";
 import { AUTO_RELEASE_NOTE } from "./recover.ts";
@@ -7,6 +8,7 @@ export const GROUPING_WARN_AFTER_MS = 10 * 60_000;
 type WaitingNews = Omit<BeforeJson<AdminRuns>["grouping"]["items"][number], "since"> & { since: Date };
 
 export async function waitingSelectedNews(): Promise<WaitingNews[]> {
+  if (!EDITORIAL.selectionEnabled) return [];
   const rows = await sql<Array<Omit<WaitingNews, "recovery"> & { running: boolean; receipt_status: string | null; released: boolean }>>`
     SELECT p.article_id AS "articleId", p.title,
            -- Waiting since it became a candidate, its last revision or an admin's regroup request (requestRegroup's job).

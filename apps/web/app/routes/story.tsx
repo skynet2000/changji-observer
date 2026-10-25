@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { IntentLink } from "../components/ui/IntentLink";
@@ -186,14 +187,14 @@ export default function StoryPage() {
   const translate = useText();
   const { story } = useLoaderData<typeof loader>();
   const entry = useLocation().key;
-  const [filter, setFilter] = useState<Filter>(() => viewCache.peek(entry)?.filter ?? "all");
+  const [filter, setFilter] = useState<Filter>(() => !EDITORIAL.selectionEnabled && viewCache.peek(entry)?.filter === "selected" ? "all" : viewCache.peek(entry)?.filter ?? "all");
   const [order, setOrder] = useState<Order>(() => viewCache.peek(entry)?.order ?? "desc");
   // A document the browser reloaded on back/forward gets the view back after hydration.
   useEffect(() => {
     if (viewCache.peek(entry) || isReload()) return;
     const saved = viewCache.read(entry);
     if (saved) {
-      setFilter(saved.filter);
+      setFilter(!EDITORIAL.selectionEnabled && saved.filter === "selected" ? "all" : saved.filter);
       setOrder(saved.order);
     }
   }, [entry]);
@@ -368,7 +369,7 @@ export default function StoryPage() {
               items={[
                 { key: "all", label: "全部报道", count: counts.all },
                 { key: "official", label: "官方一手", count: counts.official },
-                { key: "selected", label: "精选报道", count: counts.selected },
+                ...(EDITORIAL.selectionEnabled ? [{ key: "selected", label: "精选报道", count: counts.selected }] : []),
               ]}
             />
             {days.length === 0 ? (

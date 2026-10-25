@@ -180,3 +180,16 @@ test("the post a selected X post quotes is translated once and shown with the it
   assert.equal(receipts.length, 1, "translated once");
   assert.equal(receipts[0]!.status, "completed");
 });
+
+
+test("paused selection does not start new full-body or quote translations and can resume", async () => {
+  const { EDITORIAL } = await import("@aihot/site");
+  const { translateQuotes } = await import("@aihot/backend/editorial/translate");
+  const enabled = EDITORIAL.selectionEnabled;
+  EDITORIAL.selectionEnabled = false;
+  try {
+    assert.equal((await translateArticle("pause-fixture")).reason, "selection paused");
+    assert.deepEqual(await translatePending(), {done:[],quotes:0});
+    assert.equal(await translateQuotes(),0);
+  } finally { EDITORIAL.selectionEnabled = enabled; }
+});

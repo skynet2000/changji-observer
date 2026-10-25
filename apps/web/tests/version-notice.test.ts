@@ -11,6 +11,7 @@ const api = createServer((req,res) => {
   if(p==='/api/site/meta')return res.end('{"changelogVersion":null}');
   if(p==='/api/reader/session')return res.end('{"enabled":false,"providers":[],"user":null}');
   if(p==='/api/language/lookup')return res.end('{"translations":{}}');
+  if(p==='/api/site/pool')return res.end('{"filters":{"category":null,"tag":null,"q":null,"tab":"time"},"items":[],"total":0,"page":1,"pageCount":1,"todayCount":0,"freshness":"2026-10-25T00:00:00Z"}');
   if(p==='/api/site/timeline')return res.end('{"filters":{"category":null,"tag":null,"channel":"all"},"cards":[],"nextCursor":null,"hot":null,"dayCounts":{}}');
   res.end('{}');
 });
@@ -20,7 +21,7 @@ after(async()=>{await browser?.close();await web?.stop();});
 test('healthy old tabs offer a responsive update choice; failures never reload and edits require confirmation',async()=>{
   const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
   try{
-    release='old-release';healthOk=true;await page.clock.install();await page.goto(web.origin+'/?tag=version-check#reading');
+    release='old-release';healthOk=true;await page.clock.install();await page.goto(web.origin+'/all?tag=version-check#reading');
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
     release='new-release';healthOk=false;await page.clock.fastForward(301000);
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
@@ -35,6 +36,6 @@ test('healthy old tabs offer a responsive update choice; failures never reload a
     await expect(page.getByText('网站已更新',{exact:true})).toHaveCount(0);
     release='third-release';await page.clock.fastForward(301000);await expect(page.getByText('网站已更新',{exact:true})).toBeVisible();
     page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'刷新查看',exact:true}).click();
-    await page.waitForLoadState('domcontentloaded');assert.ok(page.url().endsWith('/?tag=version-check#reading'));
+    await page.waitForLoadState('domcontentloaded');assert.ok(page.url().endsWith('/all?tag=version-check#reading'));
   }finally{await context.close();}
 });

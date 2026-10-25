@@ -62,12 +62,12 @@ test("category corrections revise every standard report atomically without selec
     const c = saved!.content;
     assert.equal(c.leadItemId, articleId);
     if (r.kind === "daily") {
-      assert.deepEqual(c.sections, [{ label: "业务与竞争", items: [entry] }]);
+      assert.deepEqual(c.sections, [{ label: "经营与竞争", items: [entry] }]);
       assert.equal(c.metrics.modelsReleased, 0);
       assert.deepEqual(c.highlights, [articleId]);
       assert.equal(c.lead.title, "冻结头条");
     } else {
-      assert.deepEqual(c.themes, [{ heading: "业务与竞争", summary: null, storyRefs: [entry] }]);
+      assert.deepEqual(c.themes, [{ heading: "经营与竞争", summary: null, storyRefs: [entry] }]);
       assert.deepEqual(c.storyOrder, [articleId]);
       assert.equal(c.overview, "保留总述");
     }
@@ -76,7 +76,7 @@ test("category corrections revise every standard report atomically without selec
   assert.equal((await sql`SELECT count(*)::int AS n FROM pgboss.job WHERE name=${QUEUES.digest}`)[0]!.n, digestCount);
   await overrideFields(articleId, { fields: {}, clear: ["category", "tags"], version: 1, reason: "验证撤销纠错" }, "test-category");
   const [restored] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
-  assert.equal(restored!.content.sections[0].label, "业务与竞争");
+  assert.equal(restored!.content.sections[0].label, "经营与竞争");
   assert.equal(restored!.content.metrics.modelsReleased, 1);
 });
 
@@ -99,7 +99,7 @@ test("six-column migration moves a frozen people entry into pay while preserving
   const [after]=await sql`SELECT selected,score,visible_after,selected_ready_at,url,published_at,timeline_at,fact_id,story_id FROM publications WHERE article_id=${articleId}`;
   assert.deepEqual(after,before);
   const [saved]=await sql`SELECT content,revision FROM reports WHERE kind='daily' AND key=${key}`;
-  assert.deepEqual(saved!.content.sections,[{label:'薪酬与职场',items:[entry]}]);
+  assert.deepEqual(saved!.content.sections,[{label:'职场与组织',items:[entry]}]);
   assert.equal(saved!.content.lead.title,'原头条');
   assert.equal(saved!.revision,2);
   assert.equal((await sql`SELECT count(*)::int AS n FROM receipts`)[0]!.n,receipts,'classification-only migration never buys rescoring');

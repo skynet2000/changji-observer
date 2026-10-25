@@ -22,7 +22,7 @@ const X_SOURCE = `test-analyze-x-${T}`;
 
 interface Req { step: AnalysisStep; marker: string; user: string }
 const requests: Req[] = [];
-const MARKERS = ["CLEAR", "RESCUE", "LOW", "OFFTOPIC", "BARE", "VAGUE", "THIN", "SENSITIVE", "推文", "WORDY", "REFUSAL", "RENUMBER", "UNMENDED"];
+const MARKERS = ["PAUSED", "CLEAR", "RESCUE", "LOW", "OFFTOPIC", "BARE", "VAGUE", "THIN", "SENSITIVE", "推文", "WORDY", "REFUSAL", "RENUMBER", "UNMENDED"];
 // The scores sit a few points around the pack's T1 threshold and understand floor, so each case means
 // the same after a site recalibrates them: selected when the two add up to 2 × T1, written like a
 // selected item when they add up to more than 2 × FLOOR, translated otherwise.
@@ -269,4 +269,24 @@ test("analysing the same revision again reuses every paid answer", async () => {
   const again = await analyzeArticle(id);
   assert.equal(provider.hits(), hits, "no new requests");
   assert.deepEqual([again!.reused, again!.receiptIds], [true, first!.receiptIds]);
+});
+
+test('pausing selection skips both score calls and deep selected writing, preserving earlier judgements', async () => {
+  const { EDITORIAL } = await import('@aihot/site');
+  const enabled = EDITORIAL.selectionEnabled;
+  EDITORIAL.selectionEnabled = false;
+  try {
+    const id = await article('PAUSED');
+    const result = await analyzeArticle(id);
+    assert.equal(result!.output!.relevance, 'pass');
+    assert.equal(result!.output!.score, null);
+    assert.equal(result!.output!.selected, false);
+    assert.deepEqual(calls('PAUSED').sort(), ['prefilter', 'structure', 'summarize']);
+    assert.equal((await row(id)).output.selectionPaused, true);
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,score,selected,reason_zh,output)
+      VALUES(${id},1,'rule','pass',79,true,'保留原有编辑判断','{"scores":[80,78],"threshold":60,"scoreModel":"historical"}')`;
+    const again = await analyzeArticle(id);
+    assert.deepEqual([again!.output!.score,again!.output!.selected,again!.output!.reasonZh],[79,true,'保留原有编辑判断']);
+    assert.equal(calls('PAUSED').includes('score'), false);
+  } finally { EDITORIAL.selectionEnabled = enabled; }
 });

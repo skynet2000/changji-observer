@@ -5,7 +5,7 @@ import { after, before, test } from "node:test";
 import { chromium, expect, type Browser } from "@playwright/test";
 import type { FeedItemSummary, GroupInfo, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
-const at = "2026-10-21T01:00:00Z";
+const at = new Date().toISOString();
 const item: FeedItemSummary = { id: "language-fixture", title: "双十一开局京东与抖音因采销经理朋友圈互诉", summary: "公司与员工沟通组织调整，涉及十个部门。", reason: "关系员工发展。", source: { name: "第一财经 · 科技" },
   publishedAt: at, timelineAt: at, category: "career", tags: [], score: 80, selected: true, channel: "news", x: null };
 const report: ReportDetail = { kind: "daily", key: "2026-10-21", issueNumber: 1, title: "互联网日报", generatedAt: at,
@@ -25,6 +25,7 @@ const api = createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
   if (path === "/api/site/meta") return res.end('{"changelogVersion":null}');
   if (path === "/api/reader/session") return res.end('{"enabled":true,"providers":["google","github"],"user":null}');
+  if (path === "/api/site/pool") return res.end(JSON.stringify({filters:{channel:"all",category:null,tag:null,q:null,tab:"time"},items:(dense?longItems:[item]).map(item=>({...item,group})),page:1,pageCount:1,total:dense?longItems.length:1,todayCount:1,freshness:at}));
   if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: (dense ? longItems : [item]).map(item => ({ key: item.id, anchorAt: at, item, group })), nextCursor: null, hot: null, dayCounts: { "2026-10-21": dense ? longItems.length : 1 } }));
   if (path === "/api/site/reports/daily/latest-page") return res.end(JSON.stringify({ index: [{ key: report.key, issueNumber: 1, title: report.title }], report }));
   if (path === "/api/language/lookup") {
@@ -78,7 +79,7 @@ test("Chinese/English changes interface, headlines, summaries and daily body; ne
       await expect(page.getByRole("main").locator("footer")).toContainText("大厂观察 Daily · Compiled from public sources, with links to every original report · Daily archive");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "daily layout fits the same viewport");
       if (width >= 961) {
-        await expect(page.getByRole("navigation", { name: "Main navigation", exact: true }).getByRole("link", { name: "Daily brief", exact: true })).toHaveAttribute("aria-current", "page");
+        await expect(page.getByRole("navigation", { name: "Main navigation", exact: true }).getByRole("link", { name: "Daily", exact: true })).toHaveAttribute("aria-current", "page");
         const note = await page.getByRole("note").boundingBox(), archive = await page.locator('.report-shell > aside').boundingBox();
         assert.ok(note && archive && archive.y >= note.y + note.height, "report archive never covers the language notice");
       }

@@ -21,6 +21,9 @@ export const EDITION_WHEN = {
   monthly: `每月 1 日 ${EDITION_TIMES.monthly}`,
 };
 
+/** 建设期暂停自动精选；恢复为 true 后沿用既有评分、门槛和历史标注。 */
+export const EDITORIAL = { selectionEnabled: false as boolean };
+
 export const SITE = {
   // Public ownership marker for the operator's Google Search Console account, not a login secret.
   googleSiteVerification: "yQ1Un6Ws5qt8wnM0-47uJDDpA8ri--EkT3grzXElG8g",
@@ -32,7 +35,7 @@ export const SITE = {
    */
   subject: "互联网",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "大厂观察 — 互联网行业资讯与每日精选",
+  homeTitle: "大厂观察 — 互联网公司与职场动态",
   /** 主题目录页（/topics）的标题。 */
   topicsTitle: "互联网主题：公司、产品与行业变化",
   /** 反馈表单输入框里的示例。 */
@@ -132,7 +135,7 @@ export const ITEM_COPY = {
   /** 模型写的那句理由叫什么：卡片、详情页、Markdown 导出、给 Agent 的回答和群推送都用它。 */
   reasonLabel: "推荐理由",
   /** 读者在网页和分享图上看不看得到 AI 评分。只管显示：公开 API 和 MCP 的数据照样带 score，后台照常显示。 */
-  showScore: true,
+  showScore: EDITORIAL.selectionEnabled,
 };
 
 /** 关于页的一张二维码卡片。 */
@@ -307,10 +310,8 @@ export const FEED_COPY = {
 /** 面向互联网中大厂职场人的阅读栏目；细分类仍用于后台判断和既有订阅。 */
 export const READER_CATEGORIES = [
   { key: "jobs", label: "裁员与招聘", members: ["jobs"] },
-  { key: "workplace", label: "薪酬与职场", members: ["workplace"] },
-  { key: "career", label: "人事与组织", members: ["career"] },
-  { key: "industry", label: "经营与资本", members: ["industry", "opinion", "paper"] },
-  { key: "ai-products", label: "业务与竞争", members: ["ai-products", "ecommerce", "local-life", "ai-models", "tip"] },
+  { key: "workplace", label: "职场与组织", members: ["workplace", "career"] },
+  { key: "industry", label: "经营与竞争", members: ["industry", "ai-products", "opinion", "paper", "ecommerce", "local-life", "ai-models", "tip"] },
   { key: "policy", label: "政策与监管", members: ["policy"] },
 ] as const;
 

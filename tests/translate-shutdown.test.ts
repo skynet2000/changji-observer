@@ -20,6 +20,8 @@ const provider = await stub(async (_hit, req) => {
 
 function runTranslation() {
   const script = `
+    import { EDITORIAL } from "@aihot/site";
+    EDITORIAL.selectionEnabled = true;
     import { translatePending } from '@aihot/backend/editorial/translate';
     import { shutdownSignal } from '@aihot/backend/jobs/queue';
     import { closeDb } from '@aihot/backend/db';

@@ -121,11 +121,11 @@ test('batch ingestion uses original publication dates; old copies do not bump ev
 
 test('reader groups include their detailed categories without mixing workplace and business',async()=>{
   const f=await fixture();
-  for(const category of ['industry','career','tip','ai-products','ecommerce','local-life','ai-models','opinion','policy','paper'])
+  for(const category of ['jobs','workplace','industry','career','tip','ai-products','ecommerce','local-life','ai-models','opinion','policy','paper'])
     await f.add('-category-'+category,null,{category});
   for(const [category,members] of [
-    ['industry',['industry','opinion','paper']], ['career',['career']],
-    ['ai-products',['ai-products','ecommerce','local-life','ai-models','tip']], ['policy',['policy']]
+    ['industry',['industry','opinion','paper','ai-products','ecommerce','local-life','ai-models','tip']], ['career',['career']],
+    ['workplace',['career','workplace']], ['jobs',['jobs']], ['policy',['policy']]
   ] as const){
     const result=await loadPool({...f.query,category});
     assert.deepEqual(new Set(result.items.map(i=>i.category)),new Set(members));

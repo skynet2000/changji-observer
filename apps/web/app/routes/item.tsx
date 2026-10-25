@@ -3,7 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { Await, isRouteErrorResponse, Link, useAsyncError, useLoaderData, useNavigate, useRevalidator, type ClientLoaderFunctionArgs } from "react-router";
 import type { Route } from "./+types/item";
 import type { FeedItemSummary, SiteItemDetail } from "@aihot/contracts/site";
-import { ITEM_COPY, SITE } from "@aihot/site";
+import { EDITORIAL, ITEM_COPY, SITE } from "@aihot/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { articleLd, breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
@@ -68,7 +68,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
       articleLd({ path: `/items/${item.id}`, headline: item.title, description: item.summary, publishedAt: item.publishedAt, image: `/og/items/${item.id}.png`, basedOn: item.links.original }),
       breadcrumbLd([
         { name: SITE.name, path: "/" },
-        { name: item.selected ? "精选" : "全部动态", path: item.selected ? "/" : "/all" },
+        { name: EDITORIAL.selectionEnabled && item.selected ? "精选" : "全部动态", path: EDITORIAL.selectionEnabled && item.selected ? "/" : "/all" },
         { name: item.title, path: `/items/${item.id}` },
       ]),
     ],
@@ -237,7 +237,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
   const shownAt = preview.publishedAt ?? preview.timelineAt;
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      <PhoneBar back={{ to: preview.selected ? "/" : "/all", label: preview.selected ? "精选" : "全部" }} title={translate(isX ? preview.x!.authorName : preview.title)} />
+      <PhoneBar back={{ to: EDITORIAL.selectionEnabled && preview.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && preview.selected ? "精选" : "全部" }} title={translate(isX ? preview.x!.authorName : preview.title)} />
       <article className="pb-6 pt-3" aria-busy="true">
         <div className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3">
           <span className="font-semibold text-ink-2"><Text>{isX ? preview.x!.authorName : preview.source.name}</Text></span>
@@ -245,7 +245,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
           <span>·</span>
           {!preview.publishedAt && <span><Text>收录于</Text></span>}
           <time dateTime={shownAt} className="mono"><Text>{fullDateTime(shownAt)}</Text></time>
-          {preview.selected && <span className="ml-1">{preview.sameEvent ? <SameEventBadge /> : <SelectedBadge />}</span>}
+          {EDITORIAL.selectionEnabled && preview.selected && <span className="ml-1">{preview.sameEvent ? <SameEventBadge /> : <SelectedBadge />}</span>}
           {shownScore(preview.score) !== null && (
             <span className="ml-1">
               <ScoreLabel score={preview.score} />
@@ -259,7 +259,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
             <p className="text-[18px] leading-[1.7] text-ink"><Text content>{preview.summary}</Text></p>
           </section>
         )}
-        {preview.reason && (
+        {EDITORIAL.selectionEnabled && preview.reason && (
           <section className="mt-6 border-t border-line pt-4">
             <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text>{ITEM_COPY.reasonLabel}</Text></div>
             <p className="text-[15px] leading-[1.75] text-ink-2"><Text content>{preview.reason}</Text></p>
@@ -290,7 +290,7 @@ function ItemGone() {
   const gone = isRouteErrorResponse(error) && error.status === 404;
   return (
     <div className="mx-auto max-w-sm pb-8">
-      <PhoneBar back={{ to: "/", label: "精选" }} />
+      <PhoneBar back={{ to: EDITORIAL.selectionEnabled ? "/" : "/all", label: EDITORIAL.selectionEnabled ? "精选" : "全部" }} />
       <div className="py-24 text-center">
         <div className="text-[20px] font-bold text-ink"><Text>{gone ? "这里没有内容" : "暂时无法加载"}</Text></div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3"><Text>{gone ? "这篇内容不存在，或已不再公开。" : "服务暂时繁忙，请稍后再试。"}</Text></p>
@@ -357,7 +357,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
   const back = () => {
     if (window.history.state?.idx > 0) navigate(-1);
-    else navigate(item.selected ? "/" : "/all");
+    else navigate(EDITORIAL.selectionEnabled && item.selected ? "/" : "/all");
   };
   const backButton = (
     <button type="button" onClick={back} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
@@ -408,9 +408,9 @@ function ItemView({ item }: { item: SiteItemDetail }) {
       <Text>{moreMenu}</Text>
     </div>
   );
-  const verdict = (item.selected || shownScore(item.score) !== null) && (
+  const verdict = EDITORIAL.selectionEnabled && (item.selected || shownScore(item.score) !== null) && (
     <div className="flex items-center gap-2">
-      {item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />)}
+      {EDITORIAL.selectionEnabled && item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />)}
       <ScoreLabel score={item.score} />
     </div>
   );
@@ -435,7 +435,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
   const outline = showOutline && <ArticleOutline outline={item.outline} />;
   const notes = (
     <>
-      {item.reason && !summaryOnly ? (
+      {EDITORIAL.selectionEnabled && item.reason && !summaryOnly ? (
         <RailSection title={translate(ITEM_COPY.reasonLabel)}>
           {verdict && <div className="mb-3"><Text>{verdict}</Text></div>}
           <p className="text-[13.5px] leading-[1.8] text-ink-2"><Text content>{item.reason}</Text></p>
@@ -474,7 +474,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
       {/* Phones: back to where the reader came from, the title once it has scrolled away, more actions. */}
       <PhoneBar
-        back={{ to: item.selected ? "/" : "/all", label: item.selected ? "精选" : "全部" }}
+        back={{ to: EDITORIAL.selectionEnabled && item.selected ? "/" : "/all", label: EDITORIAL.selectionEnabled && item.selected ? "精选" : "全部" }}
         title={translate(isX ? item.x!.authorName : item.title)}
         actions={
           <BarButton label="更多操作" onClick={() => setActionsOpen(true)}>
@@ -511,7 +511,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             {!item.publishedAt && <span><Text>收录于</Text></span>}
             <time dateTime={shownAt} className="mono"><Text>{fullDateTime(shownAt)}</Text></time>
             <span suppressHydrationWarning>· <Text>{relativeTime(shownAt)}</Text></span>
-            {item.selected && (
+            {EDITORIAL.selectionEnabled && item.selected && (
               <span className="ml-1 lg:hidden">
                 {item.sameEvent ? <SameEventBadge /> : <SelectedBadge />}
               </span>
@@ -532,14 +532,14 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             </section>
           )}
 
-          {item.reason && !summaryOnly && (
+          {EDITORIAL.selectionEnabled && item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
               <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text>{ITEM_COPY.reasonLabel}</Text></div>
               <p className="text-[15px] leading-[1.75] text-ink-2"><Text content>{item.reason}</Text></p>
             </section>
           )}
 
-          {item.sameEvent && (
+          {EDITORIAL.selectionEnabled && item.sameEvent && (
             <p className="mt-5 text-[13px] leading-relaxed text-ink-4"><Text>
               同一新闻，精选展示
               </Text><Link viewTransition to={`/items/${item.sameEvent.id}`} className="text-ink-3 transition-colors hover:text-accent">

@@ -1,3 +1,5 @@
+import AllPage, { loader as allLoader, meta as allMeta } from "./all";
+import { EDITORIAL } from "@aihot/site";
 import { Text } from "@aihot/web/lib/text";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
@@ -13,12 +15,13 @@ import { FeedWelcome } from "../features/feed/FeedWelcome";
 import { HotTopics } from "../features/feed/HotTopics";
 import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
 
-export const handle: Screen = { tab: "featured", name: "精选" };
+export const handle: Screen = { tab: EDITORIAL.selectionEnabled ? "featured" : "all", name: EDITORIAL.selectionEnabled ? "精选" : "全部" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs): Promise<Awaited<ReturnType<typeof allLoader>> | ReturnType<typeof cachedPage<{data: TimelineResponse; filters: ReturnType<typeof readFilters>}>>> {
   const url = new URL(request.url);
+  if (!EDITORIAL.selectionEnabled) return allLoader({ request } as never);
   // Source channels remain an API capability; reader feeds always include every source.
   if (url.searchParams.has("channel")) {
     url.searchParams.delete("channel");
@@ -33,14 +36,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   return cachedPage(60, { data, filters }, upstream);
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta(args: Route.MetaArgs) {
+  if (!EDITORIAL.selectionEnabled) return allMeta(args as never);
+  const loaderData = args.loaderData as {data: TimelineResponse; filters: ReturnType<typeof readFilters>} | undefined;
   const path = listPath("/", loaderData ? filterParams(loaderData.filters) : {});
   const titles = loaderData?.data.cards.map((c) => c.item.title) ?? [];
   return pageMeta({ path, noindex: hasFeedFilters(loaderData?.filters), jsonLd: path === "/" ? [...siteLd(), itemListLd("/", "精选", titles)] : undefined });
 }
 
 export default function Home() {
-  const { data, filters } = useLoaderData<typeof loader>();
+  if (!EDITORIAL.selectionEnabled) return <AllPage />;
+  const { data, filters } = useLoaderData<{data:TimelineResponse; filters:ReturnType<typeof readFilters>}>();
   const title = filters.tag ? `#${filters.tag}` : "精选";
   return (
     <div className="pb-6">

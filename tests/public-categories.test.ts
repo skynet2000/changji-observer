@@ -94,16 +94,15 @@ test("HTTP, Agent, MCP and discovery agree on the public categories and returned
   }
 });
 
-test("employee-first six categories partition every legacy address exactly once", () => {
+test("employee-first four categories partition every legacy address exactly once", () => {
   assert.deepEqual(READER_CATEGORY_OPTIONS.map(c=>[c.key,c.label]),[
-    ['jobs','裁员与招聘'],['workplace','薪酬与职场'],['career','人事与组织'],
-    ['industry','经营与资本'],['ai-products','业务与竞争'],['policy','政策与监管'],
+    ['jobs','裁员与招聘'],['workplace','职场与组织'],['industry','经营与竞争'],['policy','政策与监管'],
   ]);
   const members=READER_CATEGORY_OPTIONS.flatMap(c=>[...c.members]);
   assert.equal(new Set(members).size,members.length,'no category leaks into two tabs');
   assert.deepEqual([...members].sort(),[...CATEGORY_KEYS].sort());
   for(const key of CATEGORY_KEYS){assert.ok(PUBLIC_API_CATEGORY_KEYS.includes(key));assert.ok(readerCategoryLabel(key));}
-  assert.equal(readerCategory('ecommerce'),'ai-products');
-  assert.equal(readerCategory('career'),'career');
+  assert.equal(readerCategory('ecommerce'),'industry');
+  assert.equal(readerCategory('career'),'workplace');
   assert.notEqual(readerCategory('jobs'),readerCategory('workplace'));
 });

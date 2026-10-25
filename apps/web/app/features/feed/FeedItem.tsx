@@ -7,7 +7,7 @@ import { Link } from "react-router";
 import { IntentLink } from "../../components/ui/IntentLink";
 import type { GroupInfo, FeedItemSummary, TimelineFilters } from "@aihot/contracts/site";
 import { readerCategory, readerCategoryLabel } from "@aihot/contracts/taxonomy";
-import { ITEM_COPY } from "@aihot/site";
+import { EDITORIAL, ITEM_COPY } from "@aihot/site";
 import { SameEventBadge, SelectedBadge } from "../../components/ui/Badge";
 import { ScoreLabel } from "../../components/ui/Score";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
@@ -50,7 +50,7 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
             · <Text>{reportTime}</Text>
           </time>
         )}
-        {item.selected && (
+        {EDITORIAL.selectionEnabled && item.selected && (
           <span className="hidden lg:inline-flex">
             {item.sameEvent ? <SameEventBadge /> : <SelectedBadge />}
           </span>
@@ -103,7 +103,7 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
         </div>
       )}
 
-      {item.sameEvent && (
+      {EDITORIAL.selectionEnabled && item.sameEvent && (
         <p className="relative z-10 mt-2 line-clamp-1 text-[12.5px] text-ink-4"><Text>
           同一新闻，精选展示
           </Text><Link viewTransition to={`/items/${item.sameEvent.id}`} className="text-ink-3 transition-colors hover:text-accent">
@@ -117,7 +117,7 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
         </div>
       )}
 
-      {item.reason && (
+      {EDITORIAL.selectionEnabled && item.reason && (
         <div className="feed-reason mt-3">
           <p className="line-clamp-1 text-[13px] leading-[1.65] text-note lg:line-clamp-none lg:leading-[1.75]"><Text>{`${ITEM_COPY.reasonLabel}：`}</Text><Text content>{item.reason}</Text></p>
         </div>

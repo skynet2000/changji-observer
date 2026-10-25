@@ -1,7 +1,7 @@
 import { Text, useText } from "@aihot/web/lib/text";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRouteLoaderData } from "react-router";
-import { POLICY, SITE } from "@aihot/site";
+import { EDITORIAL, POLICY, SITE } from "@aihot/site";
 import type { loader as rootLoader } from "../root";
 import { useChangelogDot } from "../components/shell/Header";
 import { PhoneBar } from "../components/shell/PhoneBar";
@@ -13,7 +13,7 @@ import { pageMeta } from "../lib/seo";
 import { setFontPreference, useFontPreference, useStarred } from "../lib/local-state";
 import { Select } from "../components/ui/Controls";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
-import { IconBookmark, IconChevronRight, IconGrid, IconHeart, IconMessage, IconMoon, IconPlug, IconSparkles } from "../components/icons";
+import { IconBookmark, IconUser, IconChevronRight, IconGrid, IconHeart, IconMessage, IconMoon, IconPlug, IconSparkles } from "../components/icons";
 
 export const handle: Screen = { tab: "me", name: "我的" };
 
@@ -82,6 +82,7 @@ export default function MorePage() {
       <h1 className="hidden pb-4 pt-1 text-[22px] font-bold text-ink lg:block"><Text>我的</Text></h1>
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-4 2xl:grid-cols-3">
         <Group>
+          <RowLink row={{ to: "/account", label: "读者账号", icon: <IconUser size={20} />, detail: translate("登录并同步") }} />
           <RowLink row={{ to: "/starred", label: "收藏", icon: <IconBookmark size={20} />, detail: here && starred.length > 0 ? <span className="num"><Text>{starred.length}</Text></span> : undefined }} />
           <li className="flex min-h-[56px] items-center gap-3 px-4 text-[16px] font-medium text-ink">
             <span className="text-ink-3">
@@ -113,7 +114,7 @@ export default function MorePage() {
       <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] leading-[2] text-ink-4">
         <Link viewTransition to="/terms" className="hover:text-ink-2"><Text>{POLICY.terms.name}</Text></Link>
         <Link viewTransition to="/privacy" className="hover:text-ink-2"><Text>隐私说明</Text></Link>
-        <a href="/feed.xml" className="hover:text-ink-2">RSS</a>
+        <a href={EDITORIAL.selectionEnabled ? "/feed.xml" : "/feed/all.xml"} className="hover:text-ink-2">RSS</a>
         {SITE.github && <a href={SITE.github} target="_blank" rel="noopener noreferrer" className="hover:text-ink-2"><Text>GitHub 开源</Text></a>}
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2"><Text>{SITE.icp}</Text></a>}
       </div>

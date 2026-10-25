@@ -1,3 +1,4 @@
+import { loadHotStrip } from "./hot.ts";
 // Public pool (/all) with numeric pages, and search in its two orderings.
 import type { PoolResponse, TimelineFilters } from "@aihot/contracts/site";
 import { beijingDate, beijingMidnight } from "@aihot/contracts/time";
@@ -220,5 +221,6 @@ async function queryPool(query: PoolQuery, now: Date): Promise<PoolResponse> {
     total,
     todayCount: Number(meta.today_count),
     freshness: (meta.updated_at ?? now).toISOString(),
+    hot: q || query.category || query.tag ? null : await loadHotStrip(),
   };
 }

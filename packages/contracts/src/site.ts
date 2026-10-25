@@ -112,6 +112,7 @@ export interface TimelineResponse {
 }
 
 export interface PoolResponse {
+  hot?: HotStripEntry[] | null;
   filters: TimelineFilters & { q: string | null; tab: "time" | "relevance" };
   items: Array<FeedItemSummary & { anchorAt?: string; group?: GroupInfo | null }>;
   page: number;

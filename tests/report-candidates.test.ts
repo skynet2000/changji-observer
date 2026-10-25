@@ -189,3 +189,26 @@ test("report entries show source publication time while release still determines
   const rows=await candidates(editionAt("daily","2021-02-02"),editionAt("daily","2021-02-03"));
   assert.equal(rows.find(r=>r.itemId===id)!.publishedAt,original.toISOString());
 });
+
+test('daily reports use admitted unscored reports during the pause without changing saved issues', async () => {
+  const { EDITORIAL } = await import('@aihot/site');
+  const enabled = EDITORIAL.selectionEnabled;
+  EDITORIAL.selectionEnabled = false;
+  try {
+    const at = editionAt('daily', '2020-03-02', -60);
+    const id = await analyzed('pause-admitted', at);
+    await sql`UPDATE analyses SET selected=false,score=NULL WHERE article_id=${id}`;
+    await publishArticle(id, {now:at});
+    const rows = await candidates(editionAt('daily','2020-03-01'),editionAt('daily','2020-03-02'));
+    assert.ok(rows.some(r=>r.itemId===id),'no score is required for the paused daily candidate pool');
+    await composeDaily('2020-03-02');
+    const [before] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-03-02'`;
+    assert.equal(before!.content.generator.basis,'all-admitted');
+    const ids=[...before!.content.sections.flatMap((s:any)=>s.items),...before!.content.flashes].map((r:any)=>r.itemId);
+    assert.ok(ids.includes(id));
+    EDITORIAL.selectionEnabled = true;
+    await composeDaily('2020-03-02');
+    const [after] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-03-02'`;
+    assert.deepEqual(after!.content,before!.content,'normal catch-up does not rewrite published snapshots');
+  } finally { EDITORIAL.selectionEnabled = enabled; }
+});

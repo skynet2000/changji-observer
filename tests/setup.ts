@@ -6,8 +6,11 @@
 import { createHash } from "node:crypto";
 import http from "node:http";
 import { beijingAt } from "@aihot/contracts/time";
-import { EDITION_TIMES } from "@aihot/site";
+import { EDITION_TIMES, EDITORIAL } from "@aihot/site";
 import { DEFAULTS, PRESETS } from "@aihot/site/models";
+
+// Retained selection behaviour is tested enabled; pause-specific cases explicitly turn it off.
+EDITORIAL.selectionEnabled = true;
 
 const database = new URL(process.env.DATABASE_URL ?? "postgres://unset/unset").pathname.slice(1);
 if (!/_(test|ci)$/.test(database)) {

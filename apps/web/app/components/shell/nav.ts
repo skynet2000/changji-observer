@@ -1,7 +1,7 @@
 // Site navigation in one place: the desktop sidebar's sections and the phone tab bar's tabs, the engine's
 // and the site's modules'.
 import type { ReactNode } from "react";
-import { NAV, subjectAfter, withSubject } from "@aihot/site";
+import { EDITORIAL, NAV, subjectAfter, withSubject } from "@aihot/site";
 import { webModules } from "../../site-modules";
 import {
   IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconList, IconMessage, IconPlug, IconUser,
@@ -27,6 +27,7 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
       { to: "/daily", label: withSubject("日报"), icon: IconDoc },
       { to: "/topics", label: "主题", icon: IconGrid },
       { to: "/starred", label: "收藏", icon: IconBookmark },
+      { to: "/more", label: "我的", icon: IconUser },
     ],
   },
   {
@@ -41,7 +42,8 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 /** Whether an engine page is a way in from the navigation (site.ts NAV.hidden); a hidden page still opens. */
-export const inNav = (to: string) => !(NAV.hidden as readonly string[]).includes(to);
+export const inNav = (to: string) => !(NAV.hidden as readonly string[]).includes(to)
+  && (EDITORIAL.selectionEnabled || !["/", "/topics", "/starred", "/agent", "/feedback"].includes(to));
 
 /** Switching feed scope keeps content filters, but never search ranking or pagination. */
 export function feedScopeHref(to: string, params: URLSearchParams): string {
@@ -60,7 +62,7 @@ export function feedScopeHref(to: string, params: URLSearchParams): string {
 export function sidebar(): Array<{ title: string; items: NavItem[] }> {
   const [content, ...rest] = SECTIONS;
   const more = rest.pop()!;
-  const sections = [content!, ...rest].map((s) => ({ ...s, items: s.items.filter((i) => inNav(i.to)) }));
+  const sections = [content!, ...rest].map((s) => ({ ...s, items: s.items.filter((i) => inNav(i.to)).map(i => !EDITORIAL.selectionEnabled && i.to === "/all" ? { ...i, label: "全部" } : !EDITORIAL.selectionEnabled && i.to === "/hot" ? { ...i, label: "热点" } : !EDITORIAL.selectionEnabled && i.to === "/daily" ? { ...i, label: "日报" } : i) }));
   for (const m of webModules()) {
     if (!m.sidebar) continue;
     const section = sections.find((s) => s.title === m.sidebar!.section);
@@ -72,6 +74,8 @@ export function sidebar(): Array<{ title: string; items: NavItem[] }> {
 
 /** A sidebar entry is lit on its pages; 日报 also covers weekly and monthly reports. */
 export function sidebarIsActive(item: NavItem, pathname: string): boolean {
+  if (item.to === "/all" && !EDITORIAL.selectionEnabled && pathname === "/") return true;
+  if (item.to === "/more" && !EDITORIAL.selectionEnabled) return /^\/(more|account|starred|agent|feedback|terms|privacy|topics)(\/|$)/.test(pathname);
   if (item.end) return pathname === item.to;
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);

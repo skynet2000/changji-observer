@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 import { Text, useText } from "@aihot/web/lib/text";
 import type { ReactNode } from "react";
 
@@ -25,6 +26,7 @@ export function Badge({ tone = "neutral", dot = false, children, className = "",
 
 /** The "精选" mark on a report. */
 export function SelectedBadge() {
+  if (!EDITORIAL.selectionEnabled) return null;
   return (
     <Badge tone="selected" dot><Text>
       精选
@@ -35,5 +37,6 @@ export function SelectedBadge() {
 /** A selected report whose fact is shown by another report (the one holding its selected seat). */
 export function SameEventBadge() {
   const translate = useText();
+  if (!EDITORIAL.selectionEnabled) return null;
   return <Badge title={translate("同一新闻已有精选代表")}><Text>同新闻</Text></Badge>;
 }

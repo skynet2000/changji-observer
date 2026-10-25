@@ -4,7 +4,7 @@ import {
   type ShouldRevalidateFunction,
 } from "react-router";
 import type { SiteMeta } from "@aihot/contracts/site";
-import { SITE } from "@aihot/site";
+import { EDITORIAL, SITE } from "@aihot/site";
 import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Route } from "./+types/root";
@@ -29,7 +29,7 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/png", href: "/icon.png?v=observer-20261023" },
   { rel: "apple-touch-icon", href: "/apple-icon.png?v=observer-20261023" },
   { rel: "manifest", href: "/manifest.webmanifest?v=observer-20261023" },
-  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — 精选`, href: "/feed.xml" },
+  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — ${EDITORIAL.selectionEnabled ? "精选" : "全部动态"}`, href: EDITORIAL.selectionEnabled ? "/feed.xml" : "/feed/all.xml" },
 ];
 
 /** The release rendering this document: once a newer one is deployed, a render error reloads the page (entry.client). */
@@ -159,7 +159,7 @@ export function ErrorBoundary() {
             重新加载
           </Text></Link>}
           <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}><Text>
-            回到精选
+            {EDITORIAL.selectionEnabled ? "回到精选" : "回到全部"}
           </Text></Link>
           <Link reloadDocument to="/all" className={buttonClass("secondary")}><Text>
             浏览全部动态

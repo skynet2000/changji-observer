@@ -58,7 +58,7 @@ test("filtered feeds keep their exact content address but leave indexing to the 
   for (const base of ["/", "/all"]) for (const query of ["category=ai-models", "tag=Agent", "category=paper&tag=Agent"]) {
     const $ = await page(`${base}?${query}&utm_source=fixture&anchorAt=old&deep=1`);
     assert.equal($("meta[name=robots]").attr("content"), "noindex, follow", `${base}?${query}`);
-    assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}${base}?${query.replace("category=ai-models", "category=ai-products").replace("category=paper", "category=industry")}`);
+    assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}/all?${query.replace("category=ai-models", "category=industry").replace("category=paper", "category=industry")}`);
     assert.ok($("main").text().includes(item.title));
   }
   const $ = await page("/all?q=Claude&tab=relevance&page=2&anchorAt=old");
@@ -75,7 +75,7 @@ test("legacy source filters redirect without changing category, tag or search", 
 });
 
 test("ordinary feed pages remain indexable and normalize ignored parameters", async () => {
-  for (const [requested, canonical] of [["/?channel=invalid&category=invalid&tag=%20&utm_source=fixture", "/"], ["/all?channel=all&tab=relevance&anchorAt=old&page=2&utm_source=fixture", "/all?page=2"]]) {
+  for (const [requested, canonical] of [["/?channel=invalid&category=invalid&tag=%20&utm_source=fixture", "/all"], ["/all?channel=all&tab=relevance&anchorAt=old&page=2&utm_source=fixture", "/all?page=2"]]) {
     const $ = await page(requested!);
     assert.equal($("meta[name=robots]").attr("content"), undefined);
     assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}${canonical}`);

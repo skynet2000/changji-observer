@@ -1,3 +1,4 @@
+import { EDITORIAL } from "@aihot/site";
 // What an issue carries. A period carries its selected reports: public, not backfill, attributed by
 // the later of arrival and release, and not released long after they happened. The daily is computed
 // by rule, without a model judging anything: one entry per event, its most authoritative report with
@@ -84,13 +85,13 @@ export interface EditionEntry {
 }
 
 type ReportRow = RepresentativeIdentity & {
-  id: string; title: string; summary: string | null; url: string; category: string | null; tags: string[]; score: number | null;
+  id: string; title: string; summary: string | null; url: string; category: string | null; tags: string[]; score: number | null; selected: boolean;
   first_party: boolean; body_mode: "full" | "summary"; timeline_at: Date; published_at: Date | null;
   source_id: string; source_name: string; source_kind: string;
   fact_id: number | null; fact_public_id: string | null; story_id: number | null; story_public_id: string | null;
 };
 
-const REPORT_FIELDS = sql`p.article_id AS id, p.title, p.summary, p.url, p.category, p.tags, p.score, (s.tier = 'T1') AS first_party, p.body_mode, p.timeline_at, p.published_at,
+const REPORT_FIELDS = sql`p.article_id AS id, p.title, p.summary, p.url, p.category, p.tags, p.score, p.selected, (s.tier = 'T1') AS first_party, p.body_mode, p.timeline_at, p.published_at,
   ${REPRESENTATIVE_COLUMNS}, s.id AS source_id, s.name AS source_name, s.kind AS source_kind,
   f.id AS fact_id, f.public_id AS fact_public_id, st.id AS story_id, st.public_id::text AS story_public_id`;
 
@@ -111,10 +112,10 @@ export async function periodReports(start: Date, end: Date, backfillAt?: Date): 
       LEFT JOIN facts f ON f.id = p.fact_id AND ${ownFactEvidenceCondition()}
       LEFT JOIN stories st ON st.id = f.story_id
       -- Attribute each item by the later of arrival and release; either range can use its index.
-      WHERE p.visibility = 'public' AND p.selected
-        ${backfillAt ? sql`AND ${selectedCondition(backfillAt)} AND coalesce(p.published_at, p.timeline_at) >= ${start} AND coalesce(p.published_at, p.timeline_at) < ${end}` : sql`AND NOT p.backfill
+      WHERE p.visibility = 'public' AND ${EDITORIAL.selectionEnabled ? sql`p.selected` : sql`p.eligible`}
+        ${backfillAt ? sql`AND ${EDITORIAL.selectionEnabled ? selectedCondition(backfillAt) : listedCondition(backfillAt)} AND coalesce(p.published_at, p.timeline_at) >= ${start} AND coalesce(p.published_at, p.timeline_at) < ${end}` : sql`AND NOT p.backfill
         AND (
-          (p.visible_after <= p.timeline_at AND p.timeline_at >= ${start} AND p.timeline_at < ${end})
+          ((p.visible_after IS NULL OR p.visible_after <= p.timeline_at) AND p.timeline_at >= ${start} AND p.timeline_at < ${end})
           OR (p.visible_after > p.timeline_at AND p.visible_after >= ${start} AND p.visible_after < ${end})
         )
         AND p.timeline_at >= ${start}::timestamptz - interval '24 hours'`}`;
@@ -299,9 +300,9 @@ interface Fact { key: string; rows: ReportRow[]; selected: boolean; sources: str
  * selected reports and missed facts, minus what the week's issues already carried, one entry per event.
  */
 export async function dailyEdition(date: string, start: Date, end: Date, backfillAt?: Date): Promise<{ entries: EditionEntry[]; stats: Record<string, number> }> {
-  const [memory, selected, missed, judged] = await Promise.all([dailyMemory(date), periodReports(start, end, backfillAt), backfillAt ? Promise.resolve([]) : missedFacts(start, end), judgedReports(start, end, backfillAt)]);
+  const [memory, selected, missed, judged] = await Promise.all([dailyMemory(date), periodReports(start, end, backfillAt), backfillAt || !EDITORIAL.selectionEnabled ? Promise.resolve([]) : missedFacts(start, end), judgedReports(start, end, backfillAt)]);
   const raw = [
-    ...[...groupBy(selected, factKeyOf)].map(([key, rows]) => ({ key, rows, selected: true })),
+    ...[...groupBy(selected, factKeyOf)].map(([key, rows]) => ({ key, rows, selected: EDITORIAL.selectionEnabled })),
     ...missed.map((m) => ({ ...m, selected: false })),
   ];
   const kept = raw.filter((f) => !memory.keys.has(f.key) && !f.rows.some((r) => memory.keys.has(`a:${r.id}`)));
@@ -350,7 +351,7 @@ export async function dailyEdition(date: string, start: Date, end: Date, backfil
       sources: sourceIds.size,
       ...(reps.length > 1 ? { related: reps.slice(1).map((r) => asRelated(reportEntry(r))) } : {}),
       ...(previous ? { followUp: previous.key } : {}),
-      ...(fs.every((f) => !f.selected) ? { fillIn: true as const } : {}),
+      ...(EDITORIAL.selectionEnabled && fs.every((f) => !f.selected) ? { fillIn: true as const } : {}),
     };
     const ids = new Set(fs.flatMap((f) => f.rows.map((r) => r.id)));
     return {
@@ -367,7 +368,7 @@ export async function dailyEdition(date: string, start: Date, end: Date, backfil
   entries.sort((a, b) => b.importance - a.importance || a.entry.itemId.localeCompare(b.entry.itemId));
   return {
     entries,
-    stats: { judgedReports: judged, selectedReports: selected.length, facts: raw.length, repeatsSuppressed: raw.length - kept.length, fillIns: kept.filter((f) => !f.selected).length, events: entries.length },
+    stats: { judgedReports: judged, selectedReports: selected.filter(r => r.selected).length, candidateReports: selected.length, facts: raw.length, repeatsSuppressed: raw.length - kept.length, fillIns: kept.filter((f) => !f.selected).length, events: entries.length },
   };
 }
 
