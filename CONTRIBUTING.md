@@ -1,31 +1,43 @@
-# 参与贡献
+# 参与大厂观察
 
-欢迎提交可复现的问题、文档修正，以及对其他行业也有用的改进。中文或英文都可以。
+本仓库维护面向互联网中大厂职场人的大厂观察网站，基于AIHOT定制并保留其MIT许可。请把本项目的反馈提交到[本仓库Issues](https://github.com/skynet2000/changji-observer/issues/new/choose)，安全问题按[安全说明](SECURITY.md)私密报告。
 
-## 去哪里交流
+## 欢迎的贡献
 
-- [Issues](https://github.com/KKKKhazix/AIHOT/issues/new/choose)：可复现的 Bug 和有明确场景的功能建议。
-- [部署与使用问答](https://github.com/KKKKhazix/AIHOT/discussions/categories/q-a)：安装、配置、部署和使用问题；问题解决后可以标记答案。
-- [想法交流](https://github.com/KKKKhazix/AIHOT/discussions/categories/ideas)：先讨论方向和使用场景。
-- [作品展示](https://github.com/KKKKhazix/AIHOT/discussions/categories/show-and-tell)：分享你搭建的行业热点站和实践经验。
-- 安全漏洞请按 [安全报告说明](SECURITY.md) 私密提交。
+- 可复现的界面、交互、采集、归组、翻译与出刊问题。
+- 有公开出处、许可与时间信息的信源建议；配置入口不等于已验证稳定可用。
+- 文档、部署体验、无障碍与测试改进。
+- 大改产品范围、分类、模型门槛或账号权限之前，先说明场景。职场重点、内容边界与已有人工标注不能随意覆盖。
 
-## 贡献范围
+如果要向原AIHOT项目贡献通用框架能力，请另行阅读其[贡献说明](https://github.com/KKKKhazix/AIHOT/blob/main/CONTRIBUTING.md)，不要把本站专属需求默认提交给上游。
 
-优先欢迎部署体验、通用采集能力、处理流程、公开接口、可访问性、文档和可复现故障的改进。大幅调整架构或产品行为前，先在 Issue 或讨论区说明场景和方案，避免投入后才发现方向不合适。
+## 本地准备
 
-只适合你所在行业的信源和精选标准，在自己的仓库里改 `industry/`；站名、品牌和页面改 `site/`；只有你的站需要的功能做成模块放进 `modules/`（见 [架构](docs/architecture.md#模块)）。步骤参考 [定制文档](docs/customize.md)。出于合规和风险考虑，完整运营信源名单暂不分享；本仓库也不持续维护微博、小红书等平台的专用采集适配，可以按 [信源文档](docs/sources.md) 接入你自行维护的外部采集结果。
+1. Fork本仓库，从`main`创建工作分支。
+2. 按[上手教程](docs/quick-start.md)启动自己的实例，阅读[AGENTS.md](AGENTS.md)及改动相关文档。
+3. 使用自己的私有凭据和独立测试数据库。测试不连接生产站或真实付费供应商，不提交`.env`、私钥、数据库、读者记录或含敏感信息的截图。
+4. 纯文档改动核对链接、命令与实际渲染；代码改动完成以下检查：
 
-## 提交改动
+```bash
+npm ci
+npm run typecheck
+DATABASE_URL=postgres://127.0.0.1:5432/dachang_test npm test
+npm run build -w @aihot/web
+npx playwright install chromium webkit
+node --test apps/web/tests/*.test.ts
+python3 -m unittest discover -s deploy/tests
+# 自己的站点已启动后：
+node scripts/smoke.ts --base http://localhost:3000
+```
 
-1. Fork 本仓库，从最新的 `main` 创建自己的分支。若只是搭建一个独立站点，可以用 [Use this template](https://github.com/KKKKhazix/AIHOT/generate)；模板生成的项目没有共享提交历史，后续贡献代码或合并上游更新更适合用 Fork。
-2. 阅读 [AGENTS.md](AGENTS.md) 和改动对应的文档。保持一次 PR 解决一个清楚的问题，不夹带无关重构，也不夹带重装依赖带来的 `package-lock.json` 改动。
-3. 按 [部署文档](docs/deploy.md) 配置本地环境。使用独立测试库，开发时关闭采集、模型调用和外部推送；不使用生产数据库或真实付费服务做测试。
-4. 验证改动涉及的行为，在 PR 中写明运行结果；来自 Fork 的 CI 要维护者批准后才运行，不能代替本地检查。代码改动执行 `npm run typecheck`、`npm test`、网页构建与网页测试；后端测试库名必须以 `_test` 或 `_ci` 结尾（没有会自动创建并迁移），每个测试文件在它的副本上并行运行，所以测试数据库账号要有 `CREATEDB` 权限。运行中的站点可用 `node scripts/smoke.ts --base http://localhost:3000` 检查。纯文档或模板改动核对链接、语法和实际展示即可，不需要为了凑数量新增测试。
-   改数据库时，已经发布的迁移不改，修正放进新文件；新文件只放一条允许在线执行的语句，PR 会自动检查，本地可以先跑 `node scripts/check-migrations.ts --base main`。规则见 [迁移约定](docs/architecture.md#数据库迁移)。
-   备份恢复测试还需要 `tar` 和与服务端版本兼容的 `pg_dump`/`pg_restore`；测试会创建并清理独立的临时恢复库和文件目录，不访问真实对象存储。
-5. 向本仓库 `main` 提交 PR，关联相关 Issue，并勾选 “Allow edits by maintainers”：小问题维护者可以直接在你的分支上改好再合并，不用你再跑一趟。还在改就开草稿，改好再标为就绪。页面改动附截图；涉及配置或升级步骤时同步更新文档，已部署的站点升级时要做的事写进 [部署文档](docs/deploy.md) 的“更新”一节。
+测试账号需要建库权限，数据库名必须以`_test`或`_ci`结尾。`npm test`会为每个文件创建独立副本；单独跑数据库测试时也要使用隔离库/测试引导，不能把临时样本写入下一轮完整测试使用的模板。浏览器在Linux上可能还需安装系统依赖。密钥检查见[安全说明](SECURITY.md)。
 
-`main` 通过 PR 合并。准备合并时，请把 PR 分支整理成一个提交，保留正确的作者署名；更新已经推送的分支用 `git push --force-with-lease`。分支要包含最新的 `main`，GitHub 的 `check` 和 `docker` 在这个提交上通过后，维护者用 rebase 方式合并，保留你的作者信息。
+## 提交PR
 
-请勿提交 `.env`、密钥、管理员密码、Cookie、生产数据或未获授权的素材；日志和截图也要先移除敏感信息。代码沿用 [MIT 许可证](LICENSE)，品牌和第三方素材说明见 [NOTICE](NOTICE)。
+- 一次改动解决一个明确问题，说明最终行为、验证结果与兼容影响；页面改动附匿名截图。
+- 改了配置或使用方式，同步更新README、`.env.example`及对应文档。数据库迁移遵守[在线迁移约定](docs/architecture.md#数据库迁移)，不修改已发布迁移。
+- 采集、分类或归组改动应提供真实公开材料的前后对照，区分开发样本与独立验收，不能编造准确率。
+- 不因分类、改名或归组删除用户收藏、人工标注和历史刊物快照。第三方新闻与素材遵循各自许可。
+- 贡献代码继续使用[MIT许可证](LICENSE)，保留原作者版权声明和[第三方说明](NOTICE)。
+
+本仓库不提供生产服务器权限、共享模型Key或新闻全文授权。维护者会评估PR，不承诺全部合并或固定处理时间。

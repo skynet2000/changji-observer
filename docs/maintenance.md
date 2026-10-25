@@ -4,20 +4,20 @@
 
 网站、数据库与采集任务运行在腾讯云首尔服务器，已启用，不依赖你的电脑；本机旧服务已停止。2026-10-25 起按用户最新要求，每个启用自动信源每 120 分钟采集一次，失败时可能延后；打开网页不会调用模型。试运行头三天每天查看，稳定后每周看一次首页、最近日报和后台的信源/任务/模型费用，留意长时间没更新、失败积压和无关内容和分类错误。不要把后台密码、DeepSeek密钥或SSH私钥发到聊天、截图或GitHub。
 
-源码仓库：[skynet2000/changji-observer](https://github.com/skynet2000/changji-observer)（私有）。域名为 `innews.site`，服务器为腾讯云首尔 `43.155.165.21`、实例 `lhins-kynmo5rw`。网站管理员密码与服务器登录方式是两回事：网站密码用于 `/admin`，服务器用 `ubuntu` 加SSH私钥。没有查到名为 `skynet` 的系统用户；腾讯云网页账号仍按你原来的方式登录。
+源码仓库：[skynet2000/changji-observer](https://github.com/skynet2000/changji-observer)（公开），在线站域名为`innews.site`。本文的`YOUR_SERVER_HOST`、目录和SSH文件名均须换成你自己实例的信息。站主生产实例的具体入口留在本机私有运维手册，不随公开仓库分发。网站管理员、Linux系统用户与云平台账号彼此独立，不能混用密码。
 
-后台入口是 https://innews.site/admin。本机独立登录信息保存在 `.data/deploy/后台登录信息.txt`，文件仅供你本人查看，不会提交GitHub。
+后台入口是 https://innews.site/admin。新实例的后台管理员密码由初始化脚本生成，保存在自己的`.env`。既有站主私有登录记录只在本机忽略目录，不包含于仓库。
 
 ## 登录服务器
 
 在这台Mac的终端执行：
 
 ```bash
-cd "/Users/skynet/Documents/ChatGPT/信息流/tiantian-hot"
-ssh -i .data/deploy/changji-ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=.data/deploy/known_hosts ubuntu@43.155.165.21
+cd "/path/to/changji-observer"
+ssh -i .data/deploy/changji-ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=.data/deploy/known_hosts ubuntu@YOUR_SERVER_HOST
 ```
 
-私钥仅保存在本机 `.data/deploy/changji-ed25519`。请另存一份到你自己保管的离线加密U盘或不启用云同步的本地密码库；不要上传GitHub。更换电脑时需要安全迁移私钥。出现“主机密钥变化”警告时先核对服务器是否重装，不要直接忽略警告。
+SSH私钥应仅保存在你自己的本机私有位置；上面的文件名只是示例。请另存一份到你自己保管的离线加密U盘或不启用云同步的本地密码库；不要上传GitHub。更换电脑时需要安全迁移私钥。出现“主机密钥变化”警告时先核对服务器是否重装，不要直接忽略警告。
 
 当前服务器SSH已关闭密码认证，原密码不能用于SSH。系统账号和密码并没有因此被删除；如以后要改回密码方式，应先保留已验证的密钥会话，再通过腾讯云控制台处理，由你本人完成密码重置。不要直接重装系统，重装会影响网站和数据库。
 

@@ -1,0 +1,11 @@
+# Reviewed false positives tied to immutable historical findings; never ignore entire test directories.
+# IndexNow's fixed synthetic test value.
+ff232714c6e879381ce50515963560c09a38255e:tests/discovery-updates.test.ts:generic-api-key:33
+# TypeScript V1_OPERATIONS property expressions, not credentials.
+57943276cfb93e3ef200332340bc04140887dfbc:apps/api/src/routes/v1.ts:generic-api-key:145
+57943276cfb93e3ef200332340bc04140887dfbc:apps/api/src/routes/v1.ts:generic-api-key:146
+# Disposable CI signing value; never used by production.
+877d6d5b945659312194d36012a28895caf572a6:.github/workflows/check.yml:generic-api-key:37
+# Public benchmark identifiers: frontierswe-v2 and bullshitbench-v2.
+877d6d5b945659312194d36012a28895caf572a6:packages/backend/src/leaderboard/source-registry.json:generic-api-key:412
+877d6d5b945659312194d36012a28895caf572a6:packages/backend/src/leaderboard/source-registry.json:generic-api-key:638

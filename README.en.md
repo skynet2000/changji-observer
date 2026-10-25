@@ -22,6 +22,31 @@ This is [skynet2000/changji-observer](https://github.com/skynet2000/changji-obse
 
 See [Section boundaries and legacy compatibility](docs/categories.md) for classification details.
 
+## Screenshots and getting started
+
+Current anonymous views of the live site; no admin screens, accounts or credentials are included.
+
+![Desktop news: sidebar, compact trends and event grouping](docs/assets/dachang/news-desktop.png)
+
+<table>
+  <tr><th>Mobile news</th><th>Optional reader sign-in</th></tr>
+  <tr>
+    <td align="center"><img src="docs/assets/dachang/news-mobile.png" width="300" alt="Mobile news and bottom navigation"></td>
+    <td align="center"><img src="docs/assets/dachang/account-mobile.png" width="300" alt="Optional Google and GitHub reader sign-in"></td>
+  </tr>
+</table>
+
+<details>
+<summary>Daily brief layout</summary>
+
+![Daily brief with issue navigation and sections](docs/assets/dachang/daily-desktop.png)
+
+</details>
+
+Use the [step-by-step setup guide](docs/quick-start.md) (Chinese), or the local instructions below. You can start an empty site with model calls and collection disabled, then configure your own credentials, spending cap and sources. No GPU or local model installation is required.
+
+Use the [All RSS feed](https://innews.site/feed/all.xml) for current news. Set `mode=all` explicitly in API requests, for example `/api/v1/items?mode=all&window=24h&limit=5`; selected endpoints retain historical results. [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md).
+
 ## Architecture
 
 Stack: **Node.js ≥ 24.11, TypeScript, React 19, React Router SSR, Fastify, PostgreSQL 17, pg-boss, Tailwind CSS, Docker Compose and Caddy**.
@@ -107,6 +132,8 @@ New endpoints still pass scope keyword admission and model relevance checks. Ini
 
 Polling uses a **120-minute baseline** per enabled automatic source; failure backoff can extend it. Polling every two hours does not guarantee new articles on each check. Initial imports and old articles retain original publication dates; unknown dates are held from public release rather than replaced with collection timestamps.
 
+Additional independent access (2026-10-25): Economic Observer’s technology page is read directly, and LateTalk uses its publisher-operated podcast RSS (show notes only, no audio transcription). These preserve other content channels during a bridge outage; they are not automatic mirrors of the same WeChat feed. Shared WeChat bridge dependence remains.
+
 ## Models and costs
 
 Production attempts the preferred free channel **for each logical model task**, with one paid fallback only if that task encounters a channel problem:
@@ -161,10 +188,11 @@ Release order: **checks → backup → push this repository → deploy/migrate �
 
 The website and jobs run on a cloud server, independently of the owner's computer; server downtime still affects them.
 
-- **Cost email:** server-side daily email at 09:00 Asia/Shanghai for the preceding rolling 24 hours, starting 2026-10-25; no Codex scheduler dependency.
+- **Operating email:** server-side at 09:00 Asia/Shanghai for the previous calendar day, 00:00–24:00: estimated model costs, page requests, estimated UV, popular pages and content output. Partial coverage and missing history are explicitly labeled; no Codex scheduler dependency.
 - **Fault email:** server-side checks every five minutes, notifying persistent faults and one recovery. Independent off-server monitoring for complete server/network outages is not yet configured.
-- **Backups:** daily same-server backups retain seven copies. Automated offsite backups remain deferred; same-server copies cannot survive total server/disk loss.
-- **Ongoing work:** independent selection evaluation, historical grouping spot checks and free social-source coverage remain incomplete; selection and grouping are not guaranteed error-free.
+- **Backups:** daily same-server backups retain successful copies from the last seven days. Automated offsite backups remain deferred; same-server copies cannot survive total server/disk loss.
+- **Ongoing work:** automatic selection is paused with labels and logic retained; reopening requires fresh independent evaluation. Historical grouping and free social-source coverage still need spot checks.
+- **Repository safety:** Gitleaks checks full history, while GitHub push protection blocks supported secret types. These do not replace private credential storage or rotation after exposure. See [Security](SECURITY.md).
 
 | Document | Contents |
 | --- | --- |
@@ -181,5 +209,3 @@ The website and jobs run on a cloud server, independently of the owner's compute
 ## Attribution and license
 
 Thanks to [AIHOT](https://github.com/KKKKhazix/AIHOT) for the underlying framework and to public publishers and RSS maintainers. Original copyright notices are retained under the [MIT license](LICENSE). AIHOT's name and logo are not used as this site's brand. Fonts and third-party assets follow [NOTICE](NOTICE). News copyrights remain with their publishers; the code license does not grant rights to republish full articles.
-
-Additional independent access (2026-10-25): Economic Observer’s technology page is read directly, and LateTalk uses its publisher-operated podcast RSS (show notes only, no audio transcription). These preserve other content channels during a bridge outage; they are not automatic mirrors of the same WeChat feed. Shared WeChat bridge dependence remains.
