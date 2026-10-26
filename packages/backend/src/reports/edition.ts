@@ -274,11 +274,11 @@ async function missedFacts(start: Date, end: Date): Promise<Array<{ key: string;
     .map(([key, members]) => ({ key, rows: members }));
 }
 
-/** The window's public reports the editors scored: none means judging did not run there, not a quiet day. */
+/** Completed public reports: scored with selection enabled, admitted without scores during the pause. */
 async function judgedReports(start: Date, end: Date, backfillAt?: Date): Promise<number> {
   const [row] = await sql<{ n: number }[]>`
     SELECT count(*)::int AS n FROM publications p
-    WHERE ${listedCondition(backfillAt ?? end)} AND p.score IS NOT NULL
+    WHERE ${listedCondition(backfillAt ?? end)} ${EDITORIAL.selectionEnabled ? sql`AND p.score IS NOT NULL` : sql``}
       ${backfillAt ? sql`AND coalesce(p.published_at, p.timeline_at) >= ${start} AND coalesce(p.published_at, p.timeline_at) < ${end}` : sql`AND NOT p.backfill AND p.timeline_at >= ${start} AND p.timeline_at < ${end}`}`;
   return row!.n;
 }

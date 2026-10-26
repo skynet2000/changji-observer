@@ -102,19 +102,21 @@ export function GroupSources({ group, filters, parentId }: { group: GroupInfo; f
   const key = `${group.scope ?? "fact"}|${group.factId}|${parentId}`;
   const saved = openGroups.peek(entry)?.groups[key];
   const [open, setOpen] = useState(saved !== undefined);
-  const reports = useReports(reportsUrl(group, filters), saved);
+  const url = reportsUrl(group, filters);
+  const reports = useReports(url, saved);
   // Back in this history entry, an open group comes back open and is read once more; so after the browser
   // reloaded the page on back/forward (never on a reader's reload, which asks for a fresh list).
   useEffect(() => {
     const inMemory = openGroups.peek(entry)?.groups[key];
     const restored = inMemory !== undefined ? inMemory : isReload() ? undefined : openGroups.read(entry)?.groups[key];
-    if (restored === undefined) return;
-    if (inMemory === undefined) {
-      setOpen(true);
-      reports.restore(restored);
+    if (restored === undefined) {
+      if (open) void reports.load(true);
+      return;
     }
+    setOpen(true);
+    reports.restore(restored);
     void reports.load(true);
-  }, [entry, key]);
+  }, [entry, key, url]);
   useEffect(() => {
     remember(entry, key, open ? reports.reports : undefined);
   }, [entry, key, open, reports.reports]);
@@ -187,10 +189,11 @@ function GroupSheet({ open, onClose, group, filters, parentId }: {
   parentId: string;
 }) {
   const translate = useText();
-  const reports = useReports(reportsUrl(group, filters));
+  const url = reportsUrl(group, filters);
+  const reports = useReports(url);
   useEffect(() => {
     if (open) void reports.load(true);
-  }, [open]);
+  }, [open, url]);
   const others = (reports.reports ?? []).filter((r) => r.id !== parentId);
   return (
     <Sheet open={open} onClose={onClose} title={translate(group.scope === "story" ? "同一事件的进展与报道" : "同一新闻的其他报道")}>
