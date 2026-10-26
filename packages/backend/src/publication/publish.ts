@@ -322,7 +322,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const visibleAfter = selected ? (previous?.selected && previous.visible_after ? previous.visible_after : options.releasedAt ?? now) : null;
 
   const indexable = isIndexable({
-    visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
+    visibility, sourceMode: source.participation_mode, hasSummary: !!summary?.trim(), eligible, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
     [title, originalTitle, summary, publicSourceName(source.name), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),

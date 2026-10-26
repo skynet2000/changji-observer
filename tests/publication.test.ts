@@ -10,7 +10,7 @@ import { marked } from "marked";
 import { after, before, test } from "node:test";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { overrideFields, setVisibility } from "@aihot/backend/admin/content";
+import { overrideFields, setSeoIndexed, setVisibility } from "@aihot/backend/admin/content";
 import { updateSource } from "@aihot/backend/admin/sources";
 import { upsertMaterial } from "@aihot/backend/content/materials";
 import { stopBoss } from "@aihot/backend/jobs/queue";
@@ -18,6 +18,7 @@ import { publishArticle, republishSource } from "@aihot/backend/publication/publ
 import { computeHotRanking } from "@aihot/backend/events/hot";
 import { latestHotRanking } from "@aihot/backend/publication/hot";
 import { loadItemShare } from "@aihot/backend/publication/og";
+import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { buildApp } from "../apps/api/src/app.ts";
 
 const T = tag();
@@ -63,6 +64,32 @@ async function get(url: string, headers: Record<string, string> = {}) {
   const res = await app.inject({ method: "GET", url, headers });
   return { status: res.statusCode, body: res.body, etag: res.headers.etag as string | undefined };
 }
+
+test("admitted ordinary news is discoverable without selection, while exclusions and incomplete copy stay out", async () => {
+  const id = await article();
+  await sql`UPDATE analyses SET selected = false WHERE article_id = ${id}`;
+  await publishArticle(id);
+  const detail = JSON.parse((await get(`/api/site/items/${id}`)).body);
+  assert.equal(detail.selected, false);
+  assert.equal(detail.indexable, true);
+  assert.ok((await loadDiscoveryEntries()).some(e => e.loc === `/items/${id}`));
+  await setSeoIndexed(id, { indexed: false, reason: "keep editorial exclusion" }, "test");
+  await publishArticle(id);
+  assert.equal(JSON.parse((await get(`/api/site/items/${id}`)).body).indexable, false);
+  assert.ok(!(await loadDiscoveryEntries()).some(e => e.loc === `/items/${id}`));
+
+  const blocked = await article();
+  await sql`UPDATE analyses SET selected = false, relevance = 'block' WHERE article_id = ${blocked}`;
+  await publishArticle(blocked);
+  assert.equal(JSON.parse((await get(`/api/site/items/${blocked}`)).body).indexable, false);
+  const incomplete = await article();
+  await sql`UPDATE analyses SET selected = false, summary_zh = NULL WHERE article_id = ${incomplete}`;
+  await publishArticle(incomplete);
+  assert.equal(JSON.parse((await get(`/api/site/items/${incomplete}`)).body).indexable, false);
+  await sql`UPDATE analyses SET summary_zh = '   ' WHERE article_id = ${incomplete}`;
+  await publishArticle(incomplete);
+  assert.equal(JSON.parse((await get(`/api/site/items/${incomplete}`)).body).indexable, false);
+});
 
 // Failure modes: a revoked score falls back to the erroneous model score, zero is treated as
 // missing, republishing loses a correction, invalid scores or stale edits alter public state,
