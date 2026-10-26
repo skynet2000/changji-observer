@@ -1,4 +1,4 @@
-import { Text } from "@aihot/web/lib/text";
+import { Text, useText } from "@aihot/web/lib/text";
 // The dot grid in the masthead's 报眼, beside the date: one dot per day of the month (dailies), week
 // of the year (weeklies) or month (monthlies). Issues that exist are ink dots, this issue is a larger
 // teal dot in a ring, the rest are faint. Hover names the day and its issue; a click opens it. Drawn
@@ -15,6 +15,9 @@ const INTRO_MS = 700;
 const easeOutBack = (p: number) => 1 + 2.2 * (p - 1) ** 3 + 1.2 * (p - 1) ** 2;
 
 export function IssueDots({ kind, reportKey, issueNumber, index, className = "" }: { kind: ReportKind; reportKey: string; issueNumber: number; index: ReportNavigationEntry[]; className?: string }) {
+  const translate = useText();
+  const translateRef = useRef(translate);
+  translateRef.current = translate;
   const grid = useMemo(() => periodGrid(kind, reportKey, index, issueNumber), [kind, reportKey, index, issueNumber]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
@@ -101,7 +104,7 @@ export function IssueDots({ kind, reportKey, issueNumber, index, className = "" 
       const c = cells[i];
       const open = !!c && c.state === "issue";
       canvas.style.cursor = open ? "pointer" : "default";
-      canvas.title = c && c.state !== "pad" ? c.label : "";
+      canvas.title = c && c.state !== "pad" ? translateRef.current(c.label) : "";
       const next = c && c.state !== "none" && c.state !== "pad" ? i : -1;
       if (next !== hovered) {
         hovered = next;
@@ -154,13 +157,13 @@ export function IssueDots({ kind, reportKey, issueNumber, index, className = "" 
   return (
     <div className={className}>
       <div className="flex items-baseline justify-between text-[11px] text-ink-4">
-        <span className="font-semibold tracking-[0.2em] text-ink-2"><Text content>{grid.title}</Text></span>
+        <span className="font-semibold tracking-[0.2em] text-ink-2"><Text>{grid.title}</Text></span>
         <span className="num"><Text>{grid.note}</Text></span>
       </div>
       {grid.heads && (
         <div className="mt-2 grid text-center text-[10px] leading-none text-ink-4" style={{ gridTemplateColumns: `repeat(${grid.columns}, minmax(0, 1fr))` }}>
           {grid.heads.map((h) => (
-            <span key={h}><Text>{h}</Text></span>
+            <span key={h}><Text>{`周${h}`}</Text></span>
           ))}
         </div>
       )}

@@ -19,12 +19,18 @@ const lookupSizes: number[] = [];
 const failedTexts: string[] = [];
 const longItems = Array.from({ length: 32 }, (_, i) => ({ ...item, id: `long-${i}`, title: `长标题${i}`, summary: `${"长摘要".repeat(1300)}${i}` }));
 for (const [i, entry] of longItems.entries()) { translated[entry.title] = `Long story ${i}`; translated[entry.summary!] = `Long summary ${i}`; }
+let signedIn = false, sessionFailure = false;
 let failing = false, lookups = 0, web: WebServer, browser: Browser;
 const api = createServer(async (req, res) => {
   const path = new URL(req.url!, "http://fixture").pathname;
   res.setHeader("content-type", "application/json");
   if (path === "/api/site/meta") return res.end('{"changelogVersion":null}');
-  if (path === "/api/reader/session") return res.end('{"enabled":true,"providers":["google","github"],"user":null}');
+  if (path === "/api/site/hot") return res.end(JSON.stringify({ entries: [], windowHours: 48, computedAt: at }));
+  if (path === "/api/reader/session") {
+    if (sessionFailure) { res.statusCode = 503; return res.end("{}"); }
+    return res.end(JSON.stringify({ enabled: true, providers: ["google","github"], user: signedIn ? { id: "language-reader", name: "Fixture Reader", provider: "github" } : null,
+      csrf: "fixture", state: { starred: [], read: [] }, version: 1 }));
+  }
   if (path === "/api/site/pool") return res.end(JSON.stringify({filters:{channel:"all",category:null,tag:null,q:null,tab:"time"},items:(dense?longItems:[item]).map(item=>({...item,group})),page:1,pageCount:1,total:dense?longItems.length:1,todayCount:1,freshness:at}));
   if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null }, cards: (dense ? longItems : [item]).map(item => ({ key: item.id, anchorAt: at, item, group })), nextCursor: null, hot: null, dayCounts: { "2026-10-21": dense ? longItems.length : 1 } }));
   if (path === "/api/site/reports/daily/latest-page") return res.end(JSON.stringify({ index: [{ key: report.key, issueNumber: 1, title: report.title }], report }));
@@ -124,6 +130,72 @@ test("English save actions and essential sign-in copy work without translation l
     await expect(page.getByRole('main')).toContainText('By continuing, you agree to');
     await expect(page.getByRole('main')).not.toContainText('继续即表示同意');
   } finally { failing = false; await context.close(); }
+});
+
+test("phone and desktop account sync, errors and preferences stay English when translation lookups fail", async () => {
+  signedIn = true; failing = true;
+  try {
+    for (const width of [320, 1440]) {
+      const context = await browser.newContext({ viewport: { width, height: 960 } }), page = await context.newPage();
+      try {
+        await page.goto(web.origin + "/account");
+        await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+        await expect(page.locator('.account-card [role="status"]')).toHaveText("Cloud records loaded. You can choose to import existing local records below.");
+        await page.getByRole("button", { name: "Sync now", exact: true }).click();
+        await expect(page.locator('.account-card [role="status"]')).toHaveText("Saved and read stories are synced.");
+        sessionFailure = true;
+        await page.getByRole("button", { name: "Sync now", exact: true }).click();
+        await expect(page.locator('.account-card [role="status"]')).toHaveText("Unable to connect to sync. Your local records are kept.");
+        sessionFailure = false;
+        await page.locator('a[href="/more"]').filter({ visible: true }).first().click();
+        await expect(page.getByRole("heading", { name: width < 1024 ? "Tools & access" : "Tools & help", exact: true })).toBeVisible();
+        await expect(page.getByRole("combobox", { name: "Font", exact: true })).toBeVisible();
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      } finally { sessionFailure = false; await context.close(); }
+    }
+  } finally { signedIn = false; failing = false; }
+});
+
+test("English daily calendar uses weekdays, live date labels and translated original-link text", async () => {
+  report.sections = [{ label: "职场与组织", summary: null, items: [{ itemId: item.id, title: item.title, summary: item.summary, sourceName: item.source.name,
+    sourceUrl: "https://example.com/language-original", sourceIconUrl: null, firstParty: false, publishedAt: at, available: true }] }];
+  report.metrics = { totalEvents: 1, firstPartyEvents: 0 };
+  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } }), page = await context.newPage();
+  try {
+    await page.goto(web.origin + "/daily");
+    await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+    const masthead = page.locator('[data-report-masthead]');
+    await expect(masthead.getByText("Oct", { exact: true })).toBeVisible();
+    await expect(masthead.getByText("1 issue this month", { exact: true })).toBeVisible();
+    for (const day of ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]) await expect(masthead.getByText(day, { exact: true })).toBeVisible();
+    await expect(masthead).toContainText("first-party reports");
+    await expect(page.getByRole("link", { name: `Read original from Yicai · Technology: ${translated[item.title]} (opens in a new tab)`, exact: true })).toBeVisible();
+    const canvas = masthead.locator('canvas').last(), box = (await canvas.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 3.5 / 7, box.y + 10);
+    await expect(canvas).toHaveAttribute("title", "Oct 1 · Not published");
+    await page.getByRole("button", { name: "Switch to Chinese", exact: true }).click();
+    await expect(masthead.getByText("十月", { exact: true })).toBeVisible();
+    const chineseBox = (await canvas.boundingBox())!;
+    await page.mouse.move(chineseBox.x + chineseBox.width * 3.5 / 7, chineseBox.y + 10);
+    await expect(canvas).toHaveAttribute("title", "10月1日 · 未出刊");
+  } finally { report.sections = []; report.metrics = {}; await context.close(); }
+});
+
+test("phone and desktop trend headings, timestamps and empty states need no model translation", async () => {
+  failing = true;
+  try {
+    for (const width of [320,1440]) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } }), page = await context.newPage();
+      try {
+        await page.goto(web.origin + "/hot");
+        await page.getByRole("button", { name: "Switch to English", exact: true }).click();
+        await expect(page.getByRole("heading", { name: width < 1024 ? "Trending" : "Internet trends", exact: true })).toBeVisible();
+        await expect(page.getByText(/^Past 48 hours · 0 trends across our sources/).filter({ visible: true })).toHaveCount(1);
+        await expect(page.getByText("No trends yet", { exact: true })).toBeVisible();
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      } finally { await context.close(); }
+    }
+  } finally { failing = false; }
 });
 
 test("English count labels work without saved translations and long source names fit phone cards", async () => {

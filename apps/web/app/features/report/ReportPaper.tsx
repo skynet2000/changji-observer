@@ -60,7 +60,7 @@ function Masthead({ report, index, quiet }: { report: ReportDetail; index: Repor
             <span className="mt-2 text-[11.5px] text-ink-2"><Text>{mark.top}</Text></span>
             <span className="text-[11.5px] text-ink-4"><Text>{mark.bottom}</Text></span>
           </div>
-          <IssueDots kind={report.kind} reportKey={report.key} issueNumber={report.issueNumber} index={index} className="hidden w-[176px] border-l border-line px-4 py-4 @[760px]:block @[880px]:w-[196px]" />
+          <IssueDots kind={report.kind} reportKey={report.key} issueNumber={report.issueNumber} index={index} className="hidden w-[196px] border-l border-line px-4 py-4 @[760px]:block @[880px]:w-[212px]" />
         </div>
       </div>
 
@@ -99,8 +99,9 @@ function Source({ c, size = 16 }: { c: ReportCitation; size?: number }) {
  */
 function Original({ c, className = "" }: { c: ReportCitation; className?: string }) {
   const translate = useText();
+  const translateContent = useText(true);
   return (
-    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={translate(`阅读${c.sourceName}原文：${c.title}（新标签页）`)} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}><Text>
+    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={translate(`阅读${translate(c.sourceName)}原文：${translateContent(c.title)}（新标签页）`)} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}><Text>
       原文 </Text><IconArrowUpRight size={12} />
     </a>
   );
@@ -156,7 +157,7 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
       {c.available ? (
         <>
           <h3 className="mt-3 text-[19px] font-bold leading-[1.5] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] [text-wrap:pretty] @[880px]:text-[20px]">
-            <Text>{c.itemId ? (
+            <Text content>{c.itemId ? (
               <IntentLink viewTransition to={`/items/${c.itemId}`} className="transition-colors hover:text-accent">
                 <Text content>{c.title}</Text>
               </IntentLink>

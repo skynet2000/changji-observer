@@ -105,6 +105,27 @@ test("real translations preserve values across Chinese magnitudes, grouping comm
   assert.equal(validTranslations(["10月18日"], ["October 19"]), false);
 });
 
+test("model aliases, shopping-day grammar and inclusive company counts preserve their actual values", () => {
+  const cases = [
+    ["玄戒03（XRING 03）搭载LPDDR6，预计每月新增10万片。", "XRING 03 uses LPDDR6 and is expected to add 100,000 wafers per month."],
+    ["双11成AI电商试验场，月活3.68亿。", "Double 11 becomes an AI e-commerce testing ground, with 368 million monthly users."],
+    ["凤凰网等8家互联网企业签署公约", "Phoenix News and 7 other internet companies sign the convention"],
+    ["美团等8家企业签署公约", "Meituan and seven other companies sign the convention"],
+    ["均价从6.8元涨至13.46元，涨幅接近1倍。", "The average price rose from 6.8 yuan to 13.46 yuan, nearly doubling."],
+  ];
+  for (const [source, english] of cases) assert.ok(validTranslations([source!], [english!]), `${source} -> ${english}`);
+  const wrong = [
+    ["玄戒03（XRING 03）搭载LPDDR6", "XRING 04 uses LPDDR6"],
+    ["玄戒03（XRING 03）搭载LPDDR6", "XRING 03 uses LPDDR5"],
+    ["玄戒03（XRING 04）", "XRING 04"],
+    ["营收1000万元，利润1000万元", "Revenue was 10 million yuan"],
+    ["双11成AI电商试验场", "Double 110 becomes an AI e-commerce testing ground"],
+    ["凤凰网等8家互联网企业签署公约", "Phoenix News and 8 other internet companies sign the convention"],
+    ["均价涨幅接近1倍", "The average price nearly tripled"],
+  ];
+  for (const [source, english] of wrong) assert.equal(validTranslations([source!], [english!]), false, `${source} -> ${english}`);
+});
+
 test("public lookup limits bursts before doing content reads and never starts translation", async () => {
   const isolated = Fastify(); language.http!(isolated);
   try {
