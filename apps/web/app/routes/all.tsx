@@ -3,11 +3,11 @@ import { useEffect } from "react";
 import { Link, redirect, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
 import type { PoolResponse } from "@aihot/contracts/site";
-import { SITE, subjectAfter } from "@aihot/site";
+import { EDITORIAL, SITE, subjectAfter } from "@aihot/site";
 import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
+import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters, siteLd } from "../lib/seo";
 import { ActiveFilters, CategoryTabs, FeedBar, FilterRecovery, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
 import { HotTopics } from "../features/feed/HotTopics";
@@ -60,7 +60,10 @@ export function meta({ loaderData }: Route.MetaArgs) {
     description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按栏目与标签筛选，支持中英文搜索。`,
     path,
     noindex,
-    jsonLd: noindex ? undefined : itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
+    jsonLd: noindex ? undefined : [
+      ...(!EDITORIAL.selectionEnabled && path === "/all" ? siteLd() : []),
+      itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
+    ],
   });
 }
 
