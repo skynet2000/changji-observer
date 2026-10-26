@@ -213,3 +213,30 @@ test('daily reports use admitted unscored reports during the pause without chang
     assert.deepEqual(after!.content,before!.content,'normal catch-up does not rewrite published snapshots');
   } finally { EDITORIAL.selectionEnabled = enabled; }
 });
+
+test('a paused daily containing only admitted unscored repeats is quiet, not an upstream failure', async () => {
+  const { EDITORIAL } = await import('@aihot/site');
+  const enabled = EDITORIAL.selectionEnabled;
+  EDITORIAL.selectionEnabled = false;
+  try {
+    const [fact] = await sql<{ id: number }[]>`INSERT INTO facts(public_id,title) VALUES(${`pause-repeat-${T}`},'同一件已报道事实') RETURNING id`;
+    for (const [date, label] of [['2020-04-02', 'pause-first'], ['2020-04-03', 'pause-repeat']] as const) {
+      const at = editionAt('daily', date, -60);
+      const id = await analyzed(label, at);
+      await sql`UPDATE analyses SET selected=false,score=NULL WHERE article_id=${id}`;
+      await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES(${fact!.id},${id},'report')`;
+      await publishArticle(id, { now: at });
+    }
+    assert.equal((await composeDaily('2020-04-02')).entries, 1);
+    const [first] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-04-02'`;
+    assert.deepEqual(await composeDaily('2020-04-03'), { key: '2020-04-03', entries: 0 });
+    const [quiet] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-04-03'`;
+    assert.equal(quiet!.content.generator.judgedReports, 1);
+    assert.equal(quiet!.content.generator.candidateReports, 1);
+    assert.equal(quiet!.content.generator.repeatsSuppressed, 1);
+    assert.equal(quiet!.content.metrics.totalEvents, 0);
+    assert.equal(quiet!.content.leadItemId, null);
+    assert.deepEqual((await sql`SELECT content FROM reports WHERE kind='daily' AND key='2020-04-02'`)[0]!.content, first!.content);
+    await assert.rejects(composeDaily('2020-04-04'), /nothing judged/, 'no completed material remains an upstream failure');
+  } finally { EDITORIAL.selectionEnabled = enabled; }
+});

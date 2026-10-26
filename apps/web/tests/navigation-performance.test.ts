@@ -375,6 +375,46 @@ test('event reports recover from invalid responses, timeouts and stale refreshes
   }
 });
 
+test('open event reports follow category changes and history without showing a false empty state',async t=>{
+  for(const width of [390,1280])await t.test(`${width}px`,async()=>{
+    const context=await chrome.newContext({viewport:{width,height:900}});
+    const page=await context.newPage();
+    const requests:string[]=[];
+    let holdBack=false,releaseBack=()=>{};
+    const backGate=new Promise<void>(resolve=>{releaseBack=resolve;});
+    try{
+      await page.route('**/api/site/groups/**/reports*',async route=>{
+        const category=new URL(route.request().url()).searchParams.get('category');
+        requests.push(category??'all');
+        if(holdBack&&!category)await backGate;
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({factId:'group-fixture',reports:[
+          {id:'other-report',title:category?'招聘栏的其他报道':'综合栏的其他报道',source:{name:'测试媒体'},timelineAt:at,originalUrl:'https://example.org/report'}
+        ]})});
+      });
+      await page.goto(origin+'/all?tag=group-test');
+      const category=page.getByRole('navigation',{name:'栏目',exact:true}).getByRole('link',{name:'裁员与招聘',exact:true});
+      if(width===390){await category.click();await expect(category).toHaveAttribute('aria-current','page');}
+      const toggle=page.getByRole('button',{name:'3 条进展 · 3 篇报道',exact:true}).filter({visible:true});
+      await toggle.click();
+      await expect(page.getByText(width===390?'招聘栏的其他报道':'综合栏的其他报道',{exact:true})).toBeVisible();
+      if(width===390)await page.goBack();
+      else await category.click();
+      await expect(page.getByText(width===390?'综合栏的其他报道':'招聘栏的其他报道',{exact:true})).toBeVisible();
+      assert.deepEqual(requests,width===390?['jobs','all']:['all','jobs']);
+      await expect(page.getByText('暂无其他可显示的报道',{exact:true})).toHaveCount(0);
+      if(width===1280){
+        holdBack=true;
+        const refreshed=page.waitForResponse(r=>r.url().includes('/api/site/groups/')&&!new URL(r.url()).searchParams.has('category'));
+        await page.goBack();
+        await expect.poll(()=>requests.length).toBe(3);
+        await expect(page.getByText('综合栏的其他报道',{exact:true})).toBeVisible();
+        await expect(toggle).toHaveAttribute('aria-expanded','true');
+        releaseBack();await refreshed;
+      }
+    }finally{releaseBack();await context.close();}
+  });
+});
+
 
 test('reader navigation has four categories on desktop and phone; old model links select business',async()=>{
   const labels=['综合','裁员与招聘','职场与组织','经营与竞争','政策与监管'];
