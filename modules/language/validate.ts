@@ -18,7 +18,9 @@ function numbers(text: string, english = false): string[] {
     const digits = match[0].match(/^\d+(?:,\d{3})*(?:\.\d+)?/)![0].replaceAll(",", "");
     const [integer, fraction = ""] = digits.split(".");
     // Exact decimal arithmetic, including values beyond floating-point integer precision.
-    let coefficient = BigInt(integer + fraction), scale = (powers[match[1]?.toLowerCase() ?? ""] ?? 0) - fraction.length;
+    // 双11成AI试验场: 成 is a verb after the shopping-day name, not the unit meaning ten percent.
+    const unit = match[1] === "成" && text.slice(0, match.index).endsWith("双") ? "" : match[1]?.toLowerCase() ?? "";
+    let coefficient = BigInt(integer + fraction), scale = (powers[unit] ?? 0) - fraction.length;
     while (coefficient !== 0n && coefficient % 10n === 0n) { coefficient /= 10n; scale++; }
     out.push(coefficient === 0n ? "0" : `${coefficient}e${scale}`);
   }
@@ -36,6 +38,9 @@ export function validTranslations(source: string[], translated: string[]) {
     if (!(original.toLowerCase().match(/\bv\d+(?:\.\d+)+/g) ?? []).every(version => versions.includes(version))) return false;
     let numericSource = original.replace(/(\d+(?:\.\d+)?)(?:来|余|多)(万亿|亿|万)/g, "$1$2")
       .replace(/(\d+)分半钟/g, (_, n) => `${Number(n) + 0.5}分钟`);
+    // A bilingual product alias names the same version once: 玄戒03（XRING 03） → XRING 03.
+    numericSource = numericSource.replace(/\p{Script=Han}+(\d+(?:\.\d+)*)\s*[（(]([A-Za-z][A-Za-z0-9 ._-]*)[）)]/gu,
+      (raw, version, alias) => alias.match(/\d+(?:\.\d+)*$/)?.[0] === version ? alias : raw);
     if (/\bAAA\b/.test(text)) numericSource = numericSource.replace(/(?<![A-Za-z0-9])3A(?![A-Za-z0-9])/g, "AAA");
     numericSource = numericSource.replace(/(\d+(?:\.\d+)?)\s*(或|至|到|—|～|~|-)\s*(\d+(?:\.\d+)?)\s*(万亿|亿|万)/g, "$1$4$2$3$4");
     numericSource = numericSource.replace(/(\d+(?:\.\d+)?)\s*折/g, (raw, n) => {
@@ -44,6 +49,18 @@ export function validTranslations(source: string[], translated: string[]) {
       return `${(!originalPrice && /\boff\b|discount/i.test(text) ? 100 - value * 10 : value * 10).toFixed(6)}%`;
     });
     let numericOutput = text;
+    if (/^[^，。；、和及与]{1,50}等\d+家(?:互联网)?(?:企业|公司)/.test(original)) {
+      // One named company plus seven others is an inclusive count of eight companies.
+      numericOutput = numericOutput.replace(/\band\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+other\s+(?:internet\s+)?(?:companies|firms|businesses)\b/gi,
+        (_, n) => `and ${(words[n.toLowerCase()] ?? Number(n)) + 1} companies`);
+    }
+    const growth = /((?:涨幅|增幅|增长|增加|上涨|提高|提升)(?:了|近|接近|约|超过|将近|达)?)\s*(\d+(?:\.\d+)?)倍/g;
+    if (growth.test(numericSource) && /\b(?:doubl|tripl|quadrupl)(?:e|ed|ing)\b/i.test(text)) {
+      // An increase of one times means the final value doubled, not a one-fold final value.
+      numericSource = numericSource.replace(growth, (_, prefix, n) => `${prefix}${Number(n) + 1}倍`);
+      numericOutput = numericOutput.replace(/\b(doubl|tripl|quadrupl)(?:e|ed|ing)\b/gi,
+        (_, word) => String(word.toLowerCase() === "doubl" ? 2 : word.toLowerCase() === "tripl" ? 3 : 4));
+    }
     if (/周|消费|消耗|补偿|日期|期间/.test(original)) {
       const compactDates = (value: string) => value.replace(/\b(1[0-2]|0?[1-9])\.(0?[1-9]|[12]\d|3[01])[-–](1[0-2]|0?[1-9])\.(0?[1-9]|[12]\d|3[01])\b/g,
         (_, m, d, endMonth, endDay) => `${m} ${d} ${Number(m) === Number(endMonth) ? "" : endMonth} ${endDay}`);
