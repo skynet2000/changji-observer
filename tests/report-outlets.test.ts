@@ -51,6 +51,19 @@ async function dailyOutlets(key: string) {
   };
 }
 
+test('all-admitted issues never label their candidate pool as selections, while historical selection metrics stay intact', async () => {
+  for (const [kind, key] of [['daily', '2097-02-01'], ['weekly', '2097-W02'], ['monthly', '2097-02']] as const) {
+    const content = { generator: { basis: 'all-admitted' }, metrics: { totalStories: 16, selectedCount: 404, reportsCovered: 7 } };
+    await issue(kind, key, content);
+    const shown = await loadReport(kind, key);
+    assert.deepEqual(shown!.metrics, { totalStories: 16, reportsCovered: 7 }, kind);
+    const [saved] = await sql`SELECT content FROM reports WHERE kind=${kind} AND key=${key}`;
+    assert.deepEqual(saved!.content, content, 'the stored publication snapshot is unchanged');
+  }
+  await issue('weekly', '2097-W01', { metrics: { totalStories: 11, selectedCount: 10, reportsCovered: 5 } });
+  assert.equal((await loadReport('weekly', '2097-W01'))!.metrics.selectedCount, 10, 'historical selected issues keep their original meaning');
+});
+
 test('withdrawing a named lead preserves the replacement headline and its own frozen paragraph everywhere', async (t) => {
   t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 600_001 });
   const removed = await citation('Withdrawn lead');

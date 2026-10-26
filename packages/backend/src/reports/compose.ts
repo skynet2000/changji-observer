@@ -208,7 +208,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   const { entries, issues } = await periodEntries(startDate, endDateInclusive);
   const top = entries.slice(0, PERIOD_EVENTS[kind]);
   if (!top.length) throw new Error(`${kind} ${key}: no daily entries in the period`);
-  const selected = await candidates(start, end);
+  const selected = EDITORIAL.selectionEnabled ? await candidates(start, end) : [];
   const groups = SECTION_ORDER
     .map((label) => ({ label, items: top.filter((e) => sectionOf(e.category) === label) }))
     .filter((g) => g.items.length > 0);
@@ -247,7 +247,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     overview,
     themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, factKey: _f, ...e }) => e) })),
     storyOrder: top.map((e) => e.itemId),
-    metrics: { totalStories: top.length, selectedCount: selected.length, reportsCovered: issues },
+    metrics: { totalStories: top.length, ...(EDITORIAL.selectionEnabled ? { selectedCount: selected.length } : {}), reportsCovered: issues },
     generator: { version: REPORT_VERSION, ...(!EDITORIAL.selectionEnabled ? { basis: "all-admitted" } : {}), model, written: overview !== null },
   };
   await saveReport(kind, key, start, end, content, reason, model, receiptId === null ? [] : [receiptId]);

@@ -6,6 +6,7 @@ import { after, before, beforeEach, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { composeDaily, composeDueReports, composeWeekly, composeMonthly } from "@aihot/backend/reports/compose";
+import { EDITORIAL } from "@aihot/site";
 
 const T = tag();
 const SOURCE = `report-recovery-${T}`;
@@ -35,6 +36,30 @@ async function item(date: string) {
   return id;
 }
 const report = async (kind: string, key: string) => (await sql`SELECT content, revision, generated_at FROM reports WHERE kind = ${kind} AND key = ${key}`)[0];
+
+test('paused selection still carries unscored news from a daily into weekly and monthly issues without selected metrics', async () => {
+  const enabled = EDITORIAL.selectionEnabled;
+  EDITORIAL.selectionEnabled = false;
+  try {
+    const id = await item('2024-06-12');
+    await sql`UPDATE publications SET selected=false,score=NULL WHERE article_id=${id}`;
+    const calls = provider.hits();
+    await composeDaily('2024-06-12');
+    assert.equal(provider.hits(), calls, 'daily composition needs no model call');
+    for (const [kind, key, compose] of [['weekly', '2024-W24', composeWeekly], ['monthly', '2024-06', composeMonthly]] as const) {
+      await compose(key);
+      const saved = await report(kind, key);
+      assert.equal(saved!.content.generator.basis, 'all-admitted');
+      assert.deepEqual(saved!.content.storyOrder, [id]);
+      assert.deepEqual(saved!.content.metrics, { totalStories: 1, reportsCovered: 1 });
+      const beforeRetry = provider.hits();
+      await compose(key);
+      assert.deepEqual(await report(kind, key), saved);
+      assert.equal(provider.hits(), beforeRetry, 'scheduled retries do not regenerate a saved issue');
+    }
+    assert.equal(provider.hits(), calls + 2, 'only the weekly and monthly overview writers run, without rescoring');
+  } finally { EDITORIAL.selectionEnabled = enabled; }
+});
 
 test("automatic retries preserve all three published issue kinds; explicit corrections keep a revision", async () => {
   const id = await item("2024-02-02");
