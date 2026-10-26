@@ -94,16 +94,16 @@ Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, mont
 
 ### Configuration versus runtime status
 
-The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-26: 109 configurations, 87 enabled by default**:
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-26: 110 configurations, 88 enabled by default**:
 
 | Adapter | Enabled | Meaning |
 | --- | ---: | --- |
 | RSS | 51 | Native feeds and explicitly identified third-party RSS bridges |
 | Web lists | 26 | Company newsrooms, media sections and official public Weibo pages |
 | JSON lists | 8 | Public Jike activity and media JSON data |
-| External ingestion | 2 | Receives upstream script submissions; does not poll by itself |
+| External ingestion | 3 | Receives script/module submissions; the site module schedules Maimai post collection |
 
-That is **85 polling endpoints (including two isolated lead sources) and 2 ingestion endpoints**, not 87 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
+That is **85 polling endpoints (including two isolated lead sources) and 3 ingestion endpoints**, not 88 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
 The 2026-10-26 RSS expansion adds four public WeChat bridge feeds and two native feeds. LatePost AI shares its publisher signal group with LatePost; Huxiu RSS shares the Huxiu web group. These are additional access channels, not six independent media organisations. See [source notes](docs/sources.md#公众号转-rss-接入2026-10-26).
 
@@ -119,13 +119,13 @@ The 2026-10-26 RSS expansion adds four public WeChat bridge feeds and two native
 | Industry author WeChat accounts | Pan Luan’s Luanfanshu and caoz; opinion pieces still require relevance and evidence review |
 | Public Jike accounts | Internet Fangjian Bagua, Pan Luan, Lanxi and Weixi; preserve author attribution and evidence limits |
 | Official Weibo | Alibaba, Tencent, JD and Meituan; verified company accounts only, no individual Weibo bloggers |
-| External ingestion | HubSpot SEC filings and Eastmoney's Jiemian republications; ongoing updates depend on upstream push scripts |
+| External ingestion | HubSpot SEC filings and Eastmoney Jiemian republications depend on upstream scripts; Maimai public posts are collected by the site module |
 
 LatePost, Shenwang, Yuanchuan, Internet Guaitao and the 15 new WeChat endpoints use public Wechat2RSS bridges listed in [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml). **These are not publisher-operated RSS feeds** and may be delayed or unavailable. TMTPost’s failing original RSS (403) is replaced with a bridge from the same directory while retaining its source ID. Many endpoints share this bridge provider, so additional coverage does not remove the shared failure risk. Publisher/author endpoints share a `signal_group_id` for heat counting. A configured URL does not grant copyright or republication permission.
 
 New endpoints still pass scope keyword admission and model relevance checks. Initial import is capped at two candidates per new endpoint. The readable LatePost Dialogue bridge has no posts after 2025 and is not enabled or counted as a new active source.
 
-Added 2026-10-26: [Maimai workplace hotlist leads](docs/sources.md#脉脉职场热榜线索2026-10-26) use a third-party public RSS feed at 120-minute intervals. Admission requires a named internet employer and a workplace or personnel topic. Like V2EX, these are internal isolated leads: no public release, heat contribution or model calls. Missing dates stay unknown. Follow-up media reports, company statements or other traceable evidence must go through normal admission; a hotlist title is not verification.
+Added 2026-10-26: [Maimai workplace hotlist leads](docs/sources.md#脉脉职场热榜线索2026-10-26) use a third-party public RSS feed at 120-minute intervals. Hotlist admission requires an internet employer or large-tech workplace context and a personnel topic; original posts then undergo their own scope review. The hotlist itself remains isolated. The Maimai module checks due work every 15 minutes and reads public topic posts at 120-minute source intervals. Individual posts need an author, stable post link, readable text and original timestamp; they pass normal admission and carry a mandatory “Not independently verified” badge and summary notice. Known post IDs deduplicate across topics. This is bounded public coverage, not the full app or an automated verification service. Media responses are grouped through the existing event pipeline.
 
 ### Social scope and limitations
 

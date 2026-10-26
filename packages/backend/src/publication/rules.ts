@@ -19,6 +19,7 @@ export interface SourceFacts {
   first_party: boolean;
   site_fulltext: boolean;
   syndicate_fulltext: boolean;
+  publication_notice?: string | null;
 }
 
 export function channelOf(sourceKind: string, hasXPost: boolean): "x" | "news" {
@@ -37,7 +38,7 @@ export function isPoolEligible(input: {
   editorialSelection?: boolean;
 }): boolean {
   const focused = !["composite", "unknown"].includes(input.scope ?? "") || !!input.category || input.editorialSelection === true;
-  return focused && input.participationMode === "editorial" && input.relevance === "pass" && !!input.title && (!!input.summary || input.originalPost === true);
+  return focused && input.participationMode === "editorial" && input.relevance === "pass" && !!input.title?.trim() && (!!input.summary?.trim() || input.originalPost === true);
 }
 
 /**

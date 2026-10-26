@@ -195,7 +195,7 @@ export async function updateSource(id: string, input: { patch: unknown; version:
       { ...patch, ...(kindChanged ? { cursor } : {}) }, { db: tx });
     // What public exits show for this source's articles is derived from these fields: re-derive them
     // all (in the worker) so a revoked licence or an isolated source stops on every exit.
-    const publisherChanged = patch.config && ["publisherRole", "publisherUrlPrefixes", "publisherRequiresDiscovery"].some(k => JSON.stringify((before.config as Record<string, unknown>)[k]) !== JSON.stringify(patch.config![k]));
+    const publisherChanged = patch.config && ["publisherRole", "publisherUrlPrefixes", "publisherRequiresDiscovery", "publicationNotice"].some(k => JSON.stringify((before.config as Record<string, unknown>)[k]) !== JSON.stringify(patch.config![k]));
     if (publisherChanged || keys.some((k) => PUBLICATION_FIELDS.includes(k) && JSON.stringify(before[k]) !== JSON.stringify(patch[k]))) {
       await tx`INSERT INTO settings (key, value, updated_by) VALUES (${republishKey(id)}, ${tx.json({ status: "queued", queuedAt: new Date().toISOString() })}, ${actor})
                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = now()`;

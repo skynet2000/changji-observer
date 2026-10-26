@@ -3,5 +3,6 @@ import type { ServerModule } from "@aihot/backend/modules";
 import reader from "@aihot/reader/server";
 
 import language from "@aihot/language/server";
+import maimai from "@aihot/maimai/server";
 
-export const SERVER_MODULES: readonly ServerModule[] = [reader, language];
+export const SERVER_MODULES: readonly ServerModule[] = [reader, language, maimai];

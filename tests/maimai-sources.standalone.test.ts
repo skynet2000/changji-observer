@@ -38,6 +38,7 @@ test("Maimai leads require an internet employer and a workplace topic; service r
   assert.deepEqual(admitListing(candidates, source).map(c => c.title), titles.slice(0, 4));
   assert(candidates.every(c => c.publishedAt == null), "feed refresh time is not a topic publication date");
   assert.deepEqual(admitListing([{ title: "普通企业薪酬传闻", excerpt: "字节员工讨论", url: "https://maimai.cn/n/content/global-topic?topic_id=other" }], source), [], "a company in the excerpt cannot admit an unnamed headline");
+  assert.equal(admitListing([{title:"某大厂员工讨论薪酬变化",url:"https://maimai.cn/n/content/global-topic?topic_id=lead"}],source).length,1,"large-tech context can enter the isolated lead pool; post admission still requires its own evidence");
   assert.deepEqual(admitListing([{ title: titles[0]!, url: "https://example.com/unrelated" }], source), [], "topic links stay on the reviewed public route");
 });
 

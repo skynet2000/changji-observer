@@ -2,6 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { identityKeyForUrl, normalizeUrl, tweetIdFromUrl } from "../packages/backend/src/lib/url.ts";
 
+test("Maimai public share and community aliases keep one post identity without sharer tracking", () => {
+  const url = 'https://maimai.cn/n/content/gossip-detail/100123?egid=public-post&gid=100123&operation_id=tracking&share_channel=5&share_euid=sharer';
+  assert.equal(identityKeyForUrl(url),'maimai:post:100123');
+  assert.equal(identityKeyForUrl('https://maimai.cn/community/gossip-detail/100123?egid=public-post'),'maimai:post:100123');
+  assert(!normalizeUrl(url)!.includes('sharer'));
+  assert(!normalizeUrl(url)!.includes('operation_id'));
+  assert.notEqual(identityKeyForUrl(url),identityKeyForUrl('https://maimai.cn/community/gossip-detail/100124'));
+  assert.notEqual(identityKeyForUrl(url),identityKeyForUrl('https://maimai.cn.example.org/community/gossip-detail/100123'));
+});
+
 test("36kr and Huxiu RSS attribution does not duplicate their web articles", () => {
   for (const url of ["https://36kr.com/p/4026486163984519", "https://www.huxiu.com/article/4897880.html"]) {
     assert.equal(identityKeyForUrl(`${url}?f=rss`), identityKeyForUrl(url));

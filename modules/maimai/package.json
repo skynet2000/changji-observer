@@ -1,0 +1,7 @@
+{
+  "name": "@aihot/maimai",
+  "private": true,
+  "type": "module",
+  "exports": { "./*": "./*.ts" },
+  "dependencies": { "@aihot/backend": "*" }
+}

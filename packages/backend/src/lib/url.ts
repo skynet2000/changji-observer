@@ -27,6 +27,9 @@ export function normalizeUrl(input: string): string | null {
     }
     u.search = params.toString();
   } else {
+    if (u.hostname === "maimai.cn" && /^\/(?:n\/content|community)\/gossip-detail\/\d+\/?$/.test(u.pathname)) {
+      for (const key of ["operation_id", "share_channel", "share_euid", "_share_channel"]) u.searchParams.delete(key);
+    }
     // These publishers append f=rss to the same article served by their web listings.
     if (["36kr.com", "huxiu.com"].includes(u.hostname) && u.searchParams.get("f") === "rss") u.searchParams.delete("f");
     for (const key of [...u.searchParams.keys()]) if (TRACKING_PARAMS.test(key)) u.searchParams.delete(key);
@@ -60,6 +63,9 @@ export function identityKeyForUrl(url: string, opts: { keepFragment?: boolean } 
   if (tweet) return `x:${tweet}`;
   const normalized = normalizeUrl(url);
   if (!normalized) return null;
+  const parsed = new URL(normalized);
+  const post = parsed.hostname === "maimai.cn" && !parsed.port && /^\/(?:n\/content|community)\/gossip-detail\/(\d+)\/?$/.exec(parsed.pathname);
+  if (post) return `maimai:post:${post[1]}`;
   const fragment = opts.keepFragment ? new URL(url.trim()).hash : "";
   return `url:${normalized}${fragment.length > 1 ? fragment : ""}`;
 }

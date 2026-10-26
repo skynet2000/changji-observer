@@ -1,5 +1,8 @@
 // Reviewed interface labels. Longer public interface copy is filled by the worker's saved translations.
 export const englishUi: Record<string, string> = {
+  "未经独立核实": "Not independently verified",
+  "脉脉 · 公开原帖": "Maimai · Public posts",
+  "脉脉 · 公开原帖（未经独立核实）": "Maimai · Public posts (not independently verified)",
   "访问聚合与估算独立访客": "Traffic totals and estimated unique visitors",
   "为了解站点使用及运行情况，服务器按北京时间自然日累计页面访问请求、估算独立访客（UV）、已识别爬虫请求、404/5xx页面数量和热门页面路径。聚合数字及公共页面路径最多保留30天；每日运营邮件仅包含这些汇总信息。": "To understand site usage and operation, the server aggregates page requests, estimated unique visitors (UV), recognized bot requests, 404/5xx responses and popular page paths by calendar day in Beijing time. Totals and public page paths are retained for up to 30 days; daily operating emails contain only this summary information.",
   "估算UV使用连接地址与浏览器标识，通过当日随机密钥计算短期去重值。原始IP和浏览器标识不落盘，不设置统计Cookie，不读取登录身份或URL查询参数，不关联收藏和已读。去重值与随机密钥保存在本站服务器的私有统计目录，下一自然日首次统计时替换，不纳入每日备份，不用于跨日追踪、阅读画像、模型处理或第三方分析。": "Estimated UV uses the connection address and browser identifier to calculate a short-lived deduplication value with a random key for that day. Raw IP addresses and browser identifiers are not written to disk. No analytics cookies are set; login identities and URL query parameters are not read, and saved or read stories are not linked. Deduplication values and the random key are kept in the server's private statistics directory and replaced on the first counted request of the next calendar day. They are excluded from daily backups and are not used for cross-day tracking, reading profiles, model processing or third-party analytics.",
