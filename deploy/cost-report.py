@@ -100,6 +100,7 @@ def message(report, sender, recipient, day):
                  '不保存原始IP/浏览器标识，不设置统计Cookie，不关联登录账号；完全从缓存读取且未请求服务器的页面可能漏计。']
     else:
         rows.append('访问统计未启用、无历史记录或读取失败；缺失不代表零访问。')
+    rows.extend(f'统计备注：{note}' for note in traffic.get('notes', []))
     ops = report.get('operations')
     if ops:
         rows += ['', '昨日内容产出与当前运行状态：',
@@ -134,6 +135,15 @@ def smtp():
 def traffic_report(day):
     yesterday = (datetime.fromisoformat(day).date() - timedelta(days=1)).isoformat()
     result = {'day': yesterday, 'available': False}
+    try:
+        notes = json.loads((ROOT/'shared/traffic-notes.json').read_text()).get(yesterday, [])
+        if not isinstance(notes, list) or any(not isinstance(note, str) for note in notes):
+            raise ValueError('Invalid traffic notes')
+        result['notes'] = notes
+    except FileNotFoundError:
+        pass
+    except (OSError, ValueError, AttributeError):
+        result['notes'] = ['维护备注读取失败，请检查服务器 shared/traffic-notes.json；访问数字未作校正。']
     try:
         # Read only the private aggregate volume; never query cookies, addresses or raw access logs.
         script = "const f=require('fs');const dir=process.env.ACCESS_STATS_DIR;if(!dir)process.exit(2);const since=JSON.parse(f.readFileSync(dir+'/started.json')).since;let uvSince;try{uvSince=JSON.parse(f.readFileSync(dir+'/uv-started.json')).since;}catch(e){if(e.code!=='ENOENT')throw e;}let d;try{d=JSON.parse(f.readFileSync(dir+'/'+process.argv[1]+'.json'));}catch(e){if(e.code!=='ENOENT')throw e;d={views:0,bots:0,errors:0,notFound:0,pages:{},uniqueVisitors:0};}console.log(JSON.stringify({...d,uvSince:d.uvSince??uvSince,since}));"

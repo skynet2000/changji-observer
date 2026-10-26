@@ -68,11 +68,11 @@ export function mayRedistribute(source: SourceFacts, bodyMode: "full" | "summary
 }
 
 /**
- * Detail pages are noindex by default. Selected items are indexed automatically; an editor
- * can mark any other public page for indexing, or exclude a page, which then stays out.
+ * Admitted news with complete copy can be indexed without selection. Explicit editorial
+ * exclusions still win; an editor can also allow another public detail page with a summary.
  */
-export function isIndexable(p: { visibility: string; sourceMode: string; hasSummary: boolean; selected: boolean; seoIndexedAt: Date | null; seoExcludedAt: Date | null }): boolean {
-  return p.visibility === "public" && hasItemPage(p) && p.hasSummary && p.seoExcludedAt === null && (p.selected || p.seoIndexedAt !== null);
+export function isIndexable(p: { visibility: string; sourceMode: string; hasSummary: boolean; eligible: boolean; seoIndexedAt: Date | null; seoExcludedAt: Date | null }): boolean {
+  return p.visibility === "public" && hasItemPage(p) && p.hasSummary && p.seoExcludedAt === null && (p.eligible || p.seoIndexedAt !== null);
 }
 
 /** Display tags exclude internal entity markers. */

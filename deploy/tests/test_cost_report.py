@@ -86,6 +86,25 @@ class CostReportTests(unittest.TestCase):
             self.run_send()
         self.client.send_message.assert_not_called()
 
+    def test_maintenance_notes_follow_the_statistics_day_without_changing_counts(self):
+        note = '巡检误计552次PV、1个估算UV及1次测试404；按用户选择保留原值。'
+        (self.root/'shared/traffic-notes.json').write_text(json.dumps({'2026-10-26':[note]}))
+        payload = {'views':600,'bots':10,'errors':0,'notFound':3,'pages':{'/all':600},
+                   'since':'2026-10-24T16:00:00Z','uniqueVisitors':8,'uvSince':'2026-10-24T16:00:00Z'}
+        with patch.object(reporter.subprocess,'check_output',return_value=json.dumps(payload)):
+            traffic = reporter.traffic_report('2026-10-27')
+            self.assertEqual(traffic['views'],600);self.assertEqual(traffic['uniqueVisitors'],8)
+            self.assertEqual(traffic['bots'],10);self.assertEqual(traffic['notFound'],3)
+            body = reporter.message({**SAMPLE,'traffic':traffic},'s@e.com','r@e.com','2026-10-27').get_content()
+            self.assertIn('统计备注：'+note,body)
+            self.assertNotIn(note,reporter.traffic_report('2026-10-28')['notes'])
+        (self.root/'shared/traffic-notes.json').write_text('invalid')
+        with patch.object(reporter.subprocess,'check_output',side_effect=OSError()):
+            traffic = reporter.traffic_report('2026-10-27')
+            body = reporter.message({**SAMPLE,'traffic':traffic},'s@e.com','r@e.com','2026-10-27').get_content()
+            self.assertIn('维护备注读取失败',body)
+            self.assertIn('缺失不代表零访问',body)
+
     def test_uv_coverage_is_independent_of_pv_and_missing_uv_is_not_zero(self):
         payload = {'views':30,'bots':1,'errors':0,'notFound':0,'pages':{'/all':30},'since':'2026-10-23T16:00:00Z'}
         def read(extra):
