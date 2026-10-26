@@ -260,7 +260,8 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     article.grouping_status = "complete";
   }
   const [source] = await tx<SourceFacts[]>`
-    SELECT id, name, kind, tier, participation_mode, first_party, site_fulltext, syndicate_fulltext FROM sources WHERE id = ${article.source_id}`;
+    SELECT id, name, kind, tier, participation_mode, first_party, site_fulltext, syndicate_fulltext,
+           config->>'publicationNotice' AS publication_notice FROM sources WHERE id = ${article.source_id}`;
   if (!source) return null;
   const [analysis] = await tx<AnalysisRow[]>`
     SELECT id, relevance, category, tags, subjects, title_zh, summary_zh, reason_zh, score, selected, output->>'scope' AS scope
@@ -288,9 +289,12 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const zhTitle = analysis?.title_zh?.trim() ? analysis.title_zh : null;
   const original = originalPostCopy(article.x_post, article.url, article.x_article);
   const title = pickString(f.title, original?.title ?? zhTitle ?? (isChineseTitle || article.x_post ? collapseWhitespace(article.title) : null));
-  const summary = pickString(f.summary, original ? original.summary : analysis?.summary_zh ?? null);
+  const notice = source.publication_notice?.trim();
+  const copy = pickString(f.summary, original ? original.summary : analysis?.summary_zh ?? null);
+  const summary = copy?.trim() && notice && !copy.startsWith(`【${notice}】`) ? `【${notice}】${copy}` : copy;
   const category = pickString(f.category, analysis?.category ?? null);
-  const tags = Array.isArray(f.tags) ? (f.tags as string[]) : [...new Set([...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)])];
+  const copyTags = Array.isArray(f.tags) ? (f.tags as string[]) : [...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)];
+  const tags = [...new Set([...copyTags, ...(notice ? [notice] : [])])];
   const score = f.score === null || typeof f.score === "number" ? f.score : analysis?.score ?? null;
   const relevance = typeof f.relevance === "string" ? (f.relevance as string) : analysis?.relevance ?? null;
   const judgedSelected = typeof f.selected === "boolean" ? (f.selected as boolean) : analysis?.selected ?? null;

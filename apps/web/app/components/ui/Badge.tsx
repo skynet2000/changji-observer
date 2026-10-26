@@ -34,6 +34,10 @@ export function SelectedBadge() {
   );
 }
 
+export function UnverifiedBadge() {
+  return <Badge tone="amber" dot><Text>未经独立核实</Text></Badge>;
+}
+
 /** A selected report whose fact is shown by another report (the one holding its selected seat). */
 export function SameEventBadge() {
   const translate = useText();

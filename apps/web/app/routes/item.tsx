@@ -9,7 +9,7 @@ import { pageReuse } from "../lib/page-reuse";
 import { articleLd, breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
-import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
+import { SameEventBadge, SelectedBadge, UnverifiedBadge } from "../components/ui/Badge";
 import { ScoreLabel, shownScore } from "../components/ui/Score";
 import { PillTabs } from "../components/ui/Tabs";
 import { ArticleLayout, RailSection } from "../components/ui/Page";
@@ -246,6 +246,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
           {!preview.publishedAt && <span><Text>收录于</Text></span>}
           <time dateTime={shownAt} className="mono"><Text>{fullDateTime(shownAt)}</Text></time>
           {EDITORIAL.selectionEnabled && preview.selected && <span className="ml-1">{preview.sameEvent ? <SameEventBadge /> : <SelectedBadge />}</span>}
+          {preview.tags.includes("未经独立核实") && <UnverifiedBadge />}
           {shownScore(preview.score) !== null && (
             <span className="ml-1">
               <ScoreLabel score={preview.score} />
@@ -525,6 +526,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
           {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]"><Text content>{item.title}</Text></h1>}
           {!isX && item.originalTitle && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4"><Text>{item.originalTitle}</Text></p>}
 
+          {item.tags.includes("未经独立核实") && <div className="my-3"><UnverifiedBadge /></div>}
           {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
               <div className="mb-2 text-[12px] font-semibold text-accent"><Text>{summaryOnly ? "摘要" : "AI 导读"}</Text></div>

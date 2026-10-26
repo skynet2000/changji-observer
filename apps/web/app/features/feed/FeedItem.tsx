@@ -8,7 +8,7 @@ import { IntentLink } from "../../components/ui/IntentLink";
 import type { GroupInfo, FeedItemSummary, TimelineFilters } from "@aihot/contracts/site";
 import { readerCategory, readerCategoryLabel } from "@aihot/contracts/taxonomy";
 import { EDITORIAL, ITEM_COPY } from "@aihot/site";
-import { SameEventBadge, SelectedBadge } from "../../components/ui/Badge";
+import { SameEventBadge, SelectedBadge, UnverifiedBadge } from "../../components/ui/Badge";
 import { ScoreLabel } from "../../components/ui/Score";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { MediaThumbs, SourceLine, StarButton } from "./parts";
@@ -67,6 +67,8 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
           </span>
         </span>
       </header>
+
+      {item.tags.includes("未经独立核实") && <div className="mt-2"><UnverifiedBadge /></div>}
 
       {isX ? (
         item.summary ? <p className={`mt-1.5 whitespace-pre-line text-[15px] leading-[1.75] line-clamp-5 lg:mt-2 lg:line-clamp-4 ${read ? "text-ink-4" : "text-ink"}`}>

@@ -8209,6 +8209,8 @@
         },
         "ingestNoiseFilter": {
           "requireTitleAnyMatches": [
+            "互联网",
+            "大厂",
             "阿里",
             "淘宝",
             "天猫",
@@ -8306,6 +8308,27 @@
         "第三方RSS",
         "热榜线索",
         "待核实"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
+    },
+    {
+      "id": "external-maimai-posts",
+      "name": "脉脉 · 公开原帖（未经独立核实）",
+      "kind": "external",
+      "config": {
+        "publicationNotice": "未经独立核实"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": "community-maimai",
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "职场",
+        "社区",
+        "未经独立核实"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false,

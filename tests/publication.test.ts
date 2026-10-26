@@ -94,6 +94,32 @@ test("admitted ordinary news is discoverable without selection, while exclusions
 // Failure modes: a revoked score falls back to the erroneous model score, zero is treated as
 // missing, republishing loses a correction, invalid scores or stale edits alter public state,
 // or removing a correction cannot restore the saved model result without paying again.
+test("a source notice survives model copy, manual tag edits, repeated publishing and every export", async () => {
+  const source = `notice-${T}`;
+  await sql`INSERT INTO sources(id,name,kind,config,participation_mode) VALUES (${source},'Public user reports','external',${sql.json({publicationNotice:"未经独立核实"})},'editorial')`;
+  const { articleId:id } = await upsertMaterial({sourceId:source,url:`https://example.com/notice-${T}`,title:'用户自述工作变动',bodyText:'用户自行描述了工作变动，身份尚未核验。',bodyStatus:'ok',publishedAt:new Date(),via:'ingest'});
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,summary_zh,selected) VALUES (${id},1,'rule','pass','用户自行描述工作变动。',false)`;
+  await publishArticle(id);
+  const read = async () => JSON.parse((await get(`/api/site/items/${id}`)).body);
+  assert((await read()).tags.includes('未经独立核实'));
+  assert((await read()).summary.startsWith('【未经独立核实】'));
+  assert((await get(`/items/${id}/markdown`)).body.includes('未经独立核实'));
+  assert((await get('/feed/all.xml')).body.includes('【未经独立核实】'));
+  await overrideFields(id,{fields:{tags:[],summary:'更新的用户自述。'},reason:'reword without changing evidence',version:0},'test');
+  await publishArticle(id);await publishArticle(id);
+  assert((await read()).tags.includes('未经独立核实'));
+  assert.equal((await read()).summary,'【未经独立核实】更新的用户自述。');
+  const [s]=await sql`SELECT updated_at FROM sources WHERE id=${source}`;
+  await updateSource(source,{patch:{config:{publicationNotice:'另一声明'}},version:s!.updated_at.toISOString(),reason:'change source notice'},'test');
+  assert.equal((await sql`SELECT value FROM settings WHERE key=${`republish.source:${source}`}`)[0]!.value.status,'queued');
+  await republishSource(source);
+  assert.equal((await read()).summary,'【另一声明】更新的用户自述。');
+  const {articleId:empty}=await upsertMaterial({sourceId:source,url:`https://example.com/empty-notice-${T}`,title:'空摘要检查',publishedAt:new Date(),via:'ingest'});
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,summary_zh,selected) VALUES (${empty},1,'rule','pass','   ',false)`;
+  await publishArticle(empty);
+  assert.equal((await sql`SELECT eligible FROM publications WHERE article_id=${empty}`)[0]!.eligible,false,'a notice cannot turn blank copy into eligible news');
+});
+
 test("manual score corrections, including no score, survive every public projection and rebuild", async () => {
   const id = await article();
   await sql`UPDATE articles SET grouping_status = 'complete' WHERE id = ${id}`;
