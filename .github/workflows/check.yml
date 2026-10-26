@@ -35,7 +35,7 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
-    # The runner's Ubuntu mirror has taken 23 minutes to install browser libraries; leave time for tests.
+    # Leave time for browser libraries and the full test suite.
     timeout-minutes: 40
     services:
       postgres:
@@ -68,6 +68,14 @@ jobs:
         env:
           MIGRATION_BASE: ${{ github.event.pull_request.base.sha || github.sha }}
         run: node scripts/check-migrations.ts --base "$MIGRATION_BASE"
+      - name: Ubuntu package mirror
+        # The Azure mirror timed out after 30 minutes downloading Playwright's system libraries.
+        run: |
+          for file in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$file" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$file"
+            fi
+          done
       - name: PostgreSQL backup tools
         # 恢复测试需要与 PostgreSQL 17 服务匹配的客户端，不能依赖 runner 的默认版本。
         run: |
