@@ -367,6 +367,8 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
   const title = kind === "daily" ? `${withSubject("日报")} · ${key}`
     : periodIssueTitle(String(c.title ?? "")) ? `${SITE.name} ${kind === "weekly" ? "周报" : "月报"} · ${key}`
       : String((hasCitedLead && c.title === headline ? named?.title : c.title) ?? `${SITE.name} ${kind === "weekly" ? "周报" : "月报"} · ${key}`);
+  const metrics = { ...c.metrics };
+  if (c.generator?.basis === "all-admitted") delete metrics.selectedCount;
   return {
     kind,
     key,
@@ -384,7 +386,7 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
     flashes: (c.flashes ?? []).map(cite),
     cover,
     metrics: {
-      ...c.metrics,
+      ...metrics,
       ...(c.metrics?.firstPartyEvents !== undefined ? { firstPartyEvents: all.filter((i) => i.firstParty).length } : {}),
       ...(c.metrics?.sourcesCount !== undefined ? { sourcesCount: citedSources(c, kind === "daily" ? "daily" : "periodic", avail) } : {}),
     },
