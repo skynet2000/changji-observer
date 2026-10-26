@@ -2,6 +2,7 @@
 // deploy, and CI's check of the built site on an empty database.
 //   node scripts/smoke.ts [--base http://localhost:3000]
 import { SITE } from "@aihot/site";
+import { load } from "cheerio";
 
 const at = process.argv.indexOf("--base");
 const base = (at > 0 ? process.argv[at + 1] : process.env.SITE_URL) ?? "http://localhost:3000";
@@ -25,12 +26,25 @@ const MACHINE: Array<[path: string, type: RegExp]> = [
 ];
 
 let failed = 0;
-async function check(path: string, expect: (res: Response, body: string) => string | null) {
+let sitemap = "";
+const NOINDEX_PAGES = new Set(["/starred", "/feedback", "/more", "/admin/login"]);
+
+function indexingProblem(res: Response, body: string, excluded: boolean): string | null {
+  const $ = load(body);
+  const directives = [res.headers.get("x-robots-tag") ?? ""];
+  $("head meta").each((_, element) => {
+    if (["robots", "googlebot"].includes(($(element).attr("name") ?? "").toLowerCase())) directives.push($(element).attr("content") ?? "");
+  });
+  const noindex = /\b(noindex|none)\b/i.test(directives.join(","));
+  return excluded && !noindex ? "private page missing noindex" : !excluded && noindex ? "noindex on an indexable page" : null;
+}
+
+async function check(path: string, expect: (res: Response, body: string) => string | null, quiet = false) {
   try {
     const res = await fetch(base + path, { redirect: "manual", signal: AbortSignal.timeout(30_000) });
     const body = res.headers.get("content-type")?.startsWith("image/") ? "" : await res.text();
     const problem = res.status !== 200 ? `HTTP ${res.status}` : expect(res, body);
-    console.log(`${problem ? "✗" : "✓"} ${path}${problem ? `  ${problem}` : ""}`);
+    if (problem || !quiet) console.log(`${problem ? "✗" : "✓"} ${path}${problem ? `  ${problem}` : ""}`);
     if (problem) failed += 1;
   } catch (error) {
     console.log(`✗ ${path}  ${String(error)}`);
@@ -40,8 +54,35 @@ async function check(path: string, expect: (res: Response, body: string) => stri
 
 // Pages write the name as HTML text: a name such as "MyF&B" appears as "MyF&amp;B".
 const htmlName = SITE.name.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
-for (const path of PAGES) await check(path, (_res, body) => (body.includes(SITE.name) || body.includes(htmlName) ? null : `the page does not name ${SITE.name}`));
-for (const [path, type] of MACHINE) await check(path, (res) => (type.test(res.headers.get("content-type") ?? "") ? null : `content-type ${res.headers.get("content-type")}`));
+for (const path of PAGES) await check(path, (res, body) => {
+  if (!body.includes(SITE.name) && !body.includes(htmlName)) return `the page does not name ${SITE.name}`;
+  return indexingProblem(res, body, NOINDEX_PAGES.has(path));
+});
+for (const [path, type] of MACHINE) await check(path, (res, body) => {
+  if (path === "/sitemap.xml") sitemap = body;
+  return type.test(res.headers.get("content-type") ?? "") ? null : `content-type ${res.headers.get("content-type")}`;
+});
+// Sitemap entries must be indexable canonical HTML pages, including detail routes absent from PAGES.
+const sitemapDocument = load(sitemap, { xml: true });
+const urls = sitemapDocument("urlset > url > loc").map((_, element) => sitemapDocument(element).text().trim()).get();
+const beforeSitemap = failed;
+if (!urls.length) { console.log("✗ sitemap has no URLs"); failed += 1; }
+for (let i = 0; i < urls.length; i += 2) {
+  await Promise.all(urls.slice(i, i + 2).map(async (loc) => {
+    let path: string;
+    try { const url = new URL(loc); path = url.pathname + url.search; }
+    catch { console.log(`✗ invalid sitemap URL: ${loc}`); failed += 1; return; }
+    // Probe the requested deployment, even if SITE_URL advertises its public address.
+    await check(path, (res, body) => {
+      const problem = indexingProblem(res, body, false);
+      if (problem) return problem;
+      const page = load(body);
+      const canonicals = page("head link[rel=canonical]").map((_, element) => page(element).attr("href")).get();
+      return canonicals.length === 1 && canonicals[0] === loc ? null : `canonical does not match sitemap URL ${loc}`;
+    }, true);
+  }));
+}
+if (urls.length) console.log(`${failed === beforeSitemap ? "✓" : "✗"} sitemap indexing checked (${urls.length} URLs)`);
 // MCP: the handshake answers with the site's server name.
 const mcp = await fetch(`${base}/api/mcp`, {
   method: "POST",

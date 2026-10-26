@@ -2,7 +2,7 @@
 // deadline; a saved copy may bridge a restart only for the remainder of that original lifetime.
 import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ABOUT, ACCESS, AGENT, POLICY, SITE } from "@aihot/site";
+import { ABOUT, ACCESS, AGENT, EDITORIAL, POLICY, SITE } from "@aihot/site";
 import { config, REPO_ROOT } from "../config.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { loadChangelog } from "../site/meta.ts";
@@ -53,8 +53,8 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   const reportRevision = (kind: string) => sha256(stableJson(reports.filter((r) => r.kind === kind)));
   const topics = await topicPageCounts(at, !limits);
   entries.push(
-    { loc: "/", revision: activity?.selected ?? "", changefreq: "hourly", priority: 1 },
-    { loc: "/all", revision: activity?.listed ?? "", changefreq: "hourly", priority: 0.9 },
+    ...(EDITORIAL.selectionEnabled ? [{ loc: "/", revision: activity?.selected ?? "", changefreq: "hourly", priority: 1 }] : []),
+    { loc: "/all", revision: activity?.listed ?? "", changefreq: "hourly", priority: EDITORIAL.selectionEnabled ? 0.9 : 1 },
     { loc: "/daily", revision: reportRevision("daily"), changefreq: "daily", priority: 0.9 },
     { loc: "/hot", revision: limits ? undefined : sha256(stableJson((await latestHotRanking())?.entries ?? [])), changefreq: "hourly", priority: 0.9 },
     { loc: "/daily/archive", revision: reportRevision("daily"), changefreq: "daily", priority: 0.7 },

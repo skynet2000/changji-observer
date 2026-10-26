@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { sql, closeDb } from '@aihot/backend/db';
 import { config } from '@aihot/backend/config';
 import { installModules, type SitemapEntry } from '@aihot/backend/modules';
+import { EDITORIAL } from '@aihot/site';
 import { loadDiscoveryEntries } from '@aihot/backend/publication/sitemap';
 import { submitIndexNow } from '@aihot/backend/operations/indexnow';
 
@@ -48,6 +49,18 @@ async function material(id: string, options: { source?: string; future?: boolean
     VALUES (${id},${source},'公开报道','公开摘要',${`https://example.org/${id}`},'2026-10-01','2026-10-01','2026-10-01',true,true,true,
       ${options.future ? '2100-01-01' : '2026-10-01'},'2026-10-01','news','ai-models')`;
 }
+
+test('discovery advertises the canonical homepage in both editorial modes', async () => {
+  const previous = EDITORIAL.selectionEnabled;
+  try {
+    for (const enabled of [false, true]) {
+      EDITORIAL.selectionEnabled = enabled;
+      const entries = await loadDiscoveryEntries(new Date('2026-10-26'));
+      assert.equal(entries.some(e => e.loc === '/'), enabled, 'the paused homepage is an alias of /all');
+      assert.equal(entries.find(e => e.loc === '/all')?.priority, enabled ? 0.9 : 1);
+    }
+  } finally { EDITORIAL.selectionEnabled = previous; }
+});
 
 test('discovery dates follow page content and publication scope', async () => {
   await material('dates-visible');
