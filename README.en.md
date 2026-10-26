@@ -94,16 +94,16 @@ Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, mont
 
 ### Configuration versus runtime status
 
-The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-26: 108 configurations, 86 enabled by default**:
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-26: 109 configurations, 87 enabled by default**:
 
 | Adapter | Enabled | Meaning |
 | --- | ---: | --- |
-| RSS | 50 | Native feeds and explicitly identified third-party RSS bridges |
+| RSS | 51 | Native feeds and explicitly identified third-party RSS bridges |
 | Web lists | 26 | Company newsrooms, media sections and official public Weibo pages |
 | JSON lists | 8 | Public Jike activity and media JSON data |
 | External ingestion | 2 | Receives upstream script submissions; does not poll by itself |
 
-That is **84 polling endpoints (including one isolated lead source) and 2 ingestion endpoints**, not 86 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
+That is **85 polling endpoints (including two isolated lead sources) and 2 ingestion endpoints**, not 87 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
 The 2026-10-26 RSS expansion adds four public WeChat bridge feeds and two native feeds. LatePost AI shares its publisher signal group with LatePost; Huxiu RSS shares the Huxiu web group. These are additional access channels, not six independent media organisations. See [source notes](docs/sources.md#公众号转-rss-接入2026-10-26).
 
@@ -124,6 +124,8 @@ The 2026-10-26 RSS expansion adds four public WeChat bridge feeds and two native
 LatePost, Shenwang, Yuanchuan, Internet Guaitao and the 15 new WeChat endpoints use public Wechat2RSS bridges listed in [BestBlogs OPML](https://github.com/ginobefun/BestBlogs/blob/main/opml/bestblogs_wechat2rss_opml_all.opml). **These are not publisher-operated RSS feeds** and may be delayed or unavailable. TMTPost’s failing original RSS (403) is replaced with a bridge from the same directory while retaining its source ID. Many endpoints share this bridge provider, so additional coverage does not remove the shared failure risk. Publisher/author endpoints share a `signal_group_id` for heat counting. A configured URL does not grant copyright or republication permission.
 
 New endpoints still pass scope keyword admission and model relevance checks. Initial import is capped at two candidates per new endpoint. The readable LatePost Dialogue bridge has no posts after 2025 and is not enabled or counted as a new active source.
+
+Added 2026-10-26: [Maimai workplace hotlist leads](docs/sources.md#脉脉职场热榜线索2026-10-26) use a third-party public RSS feed at 120-minute intervals. Admission requires a named internet employer and a workplace or personnel topic. Like V2EX, these are internal isolated leads: no public release, heat contribution or model calls. Missing dates stay unknown. Follow-up media reports, company statements or other traceable evidence must go through normal admission; a hotlist title is not verification.
 
 ### Social scope and limitations
 
