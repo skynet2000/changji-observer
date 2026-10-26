@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path('/home/ubuntu/changji-observer')
 QUERY = """
 WITH bounds AS (SELECT (date_trunc('day',now() AT TIME ZONE 'Asia/Shanghai')-interval '1 day') AT TIME ZONE 'Asia/Shanghai' AS start_at, date_trunc('day',now() AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai' AS end_at), calls AS (
- SELECT r.service,r.purpose,a.status,a.cost,a.currency
+ SELECT r.service,r.purpose,a.status,a.cost,a.currency,a.usage
  FROM receipt_attempts a JOIN receipts r ON r.id=a.receipt_id
  WHERE a.origin='live' AND a.model IS NOT NULL
  AND a.started_at >= (SELECT start_at FROM bounds) AND a.started_at < (SELECT end_at FROM bounds)
@@ -27,11 +27,16 @@ SELECT json_build_object(
  'start',(SELECT start_at FROM bounds) AT TIME ZONE 'Asia/Shanghai',
  'end',(SELECT end_at FROM bounds) AT TIME ZONE 'Asia/Shanghai',
  'paid_cny',coalesce(sum(cost) FILTER(WHERE currency='CNY'),0)::text,
- 'paid_calls',count(*) FILTER(WHERE service<>'intern'),
+ 'paid_calls',count(*) FILTER(WHERE service NOT IN ('intern','scnet')),
  'free_success',count(*) FILTER(WHERE service='intern' AND status='received'),
  'free_failed',count(*) FILTER(WHERE service='intern' AND status='failed'),
- 'unknown_outcomes',count(*) FILTER(WHERE service<>'intern' AND status IN('unknown','pending')),
- 'unpriced_paid',count(*) FILTER(WHERE service<>'intern' AND status='received' AND (cost IS NULL OR currency IS DISTINCT FROM 'CNY')),
+ 'unknown_outcomes',count(*) FILTER(WHERE service NOT IN ('intern','scnet') AND status IN('unknown','pending')),
+ 'unpriced_paid',count(*) FILTER(WHERE service NOT IN ('intern','scnet') AND status='received' AND (cost IS NULL OR currency IS DISTINCT FROM 'CNY')),
+ 'scnet_success',count(*) FILTER(WHERE service='scnet' AND status='received'),
+ 'scnet_failed',count(*) FILTER(WHERE service='scnet' AND status='failed'),
+ 'scnet_unknown',count(*) FILTER(WHERE service='scnet' AND status IN('unknown','pending')),
+ 'scnet_tokens',coalesce(sum(CASE WHEN jsonb_typeof(usage->'total_tokens')='number' THEN greatest((usage->>'total_tokens')::numeric,0) ELSE 0 END) FILTER(WHERE service='scnet'),0),
+ 'scnet_missing_usage',count(*) FILTER(WHERE service='scnet' AND status='received' AND (usage IS NULL OR jsonb_typeof(usage->'total_tokens') IS DISTINCT FROM 'number')),
  'operations',json_build_object(
   'collected',(SELECT count(*) FROM articles WHERE discovered_at>=(SELECT start_at FROM bounds) AND discovered_at<(SELECT end_at FROM bounds)),
   'blocked',(SELECT count(*) FROM articles WHERE discovered_at>=(SELECT start_at FROM bounds) AND discovered_at<(SELECT end_at FROM bounds) AND processing_state='blocked'),
@@ -41,7 +46,7 @@ SELECT json_build_object(
   'backlog',(SELECT count(*) FROM articles WHERE processing_state='new' AND discovered_at<now()-interval '2 hours' AND discovered_at>now()-interval '2 days')),
  'purposes',(SELECT coalesce(json_agg(p ORDER BY p.cny DESC),'[]'::json) FROM
    (SELECT purpose,count(*) AS calls,coalesce(sum(cost) FILTER(WHERE currency='CNY'),0) AS cny
-    FROM calls WHERE service<>'intern' GROUP BY purpose) p)
+    FROM calls WHERE service NOT IN ('intern','scnet') GROUP BY purpose) p)
 ) FROM calls;
 """
 LABELS = {'maintenance.category4':'历史四栏准入与分类复核', 'maintenance.category4.confirm':'疑似无关报道二次复核', 'prefilter_article':'行业预筛','score_article':'精选评分','understand_article':'内容理解',
@@ -67,15 +72,18 @@ def message(report, sender, recipient, day):
     msg['Date'] = format_datetime(datetime.now(ZoneInfo('Asia/Shanghai')))
     rows = [f"统一统计窗口（北京时间）：{report['start']} 至 {report['end']}",
             f"付费通道估算费用：{money(report['paid_cny'])} 元", f"付费通道尝试：{report['paid_calls']} 次",
-            f"免费通道成功：{report['free_success']} 次；拒绝：{report['free_failed']} 次", '', '费用用途：']
+            f"书生免费通道成功：{report['free_success']} 次；拒绝：{report['free_failed']} 次", '', '费用用途：']
     rows.extend(f"- {LABELS.get(p['purpose'], p['purpose'])}：{money(p['cny'])} 元，{p['calls']} 次" for p in report['purposes'])
     if not report['purposes']:
         rows.append('- 本窗口没有付费通道调用。')
     if report['unknown_outcomes'] or report['unpriced_paid']:
         rows += ['', f"待核对：{report['unknown_outcomes']} 次调用结果未知/进行中，{report['unpriced_paid']} 次成功调用缺少可信人民币价格。未知结果可能保留费用上界。"]
-    rows += ['', '当前策略：所有任务先使用免费通道，限流或发生问题时回退付费 DeepSeek。',
+    rows += ['', f"超算 GLM 额度通道：成功 {report.get('scnet_success', 0)} 次；拒绝 {report.get('scnet_failed', 0)} 次；结果未知/进行中 {report.get('scnet_unknown', 0)} 次",
+             f"超算已返回用量：{report.get('scnet_tokens', 0)} Token；缺少可读用量的成功调用 {report.get('scnet_missing_usage', 0)} 次。",
+             '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
+    rows += ['', '当前策略：书生 DeepSeek → 国家超算 GLM 赠送额度 → DeepSeek 官方付费；前一层失败才尝试下一层。',
              '以上来自本站调用回执，按既有价格估算；最终以供应商账单为准。',
-             '不含同一密钥在其他项目的调用、服务器费用和免费平台的墨点换算。此报告生成不调用模型。']
+             '不含同一密钥在其他项目的调用、服务器费用、书生墨点换算或未核实的超算现金账单。此报告生成不调用模型。']
     traffic = report.get('traffic', {})
     rows += ['', f"昨日访问（北京时间）：{traffic.get('day', '未取得')} 00:00–24:00"]
     if traffic.get('available'):

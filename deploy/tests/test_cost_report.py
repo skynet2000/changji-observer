@@ -47,6 +47,17 @@ class CostReportTests(unittest.TestCase):
         self.assertIn('大厂观察', msg['Subject'])
         self.assertIn('大厂观察', msg['From'])
 
+    def test_scnet_quota_usage_is_separate_from_paid_cny_and_does_not_claim_zero_cost(self):
+        report = {**SAMPLE, 'scnet_success':7, 'scnet_failed':2, 'scnet_unknown':1,
+                  'scnet_tokens':4567, 'scnet_missing_usage':1}
+        body = reporter.message(report,'sender@example.com','owner@example.com','2026-10-25').get_content()
+        self.assertIn('成功 7 次；拒绝 2 次；结果未知/进行中 1 次', body)
+        self.assertIn('4567 Token', body)
+        self.assertIn('缺少可读用量的成功调用 1 次', body)
+        self.assertIn('付费通道估算费用：0.1235 元', body)
+        self.assertIn('不把未知费用记成0元', body)
+        self.assertIn('书生 DeepSeek → 国家超算 GLM', body)
+
     def test_operating_mail_distinguishes_yesterday_from_rolling_costs_and_partial_coverage(self):
         report = {**SAMPLE, 'traffic': {'day':'2026-10-24','available':True,'views':12,'bots':4,'errors':1,'notFound':2,
                   'since':'2026-10-24T12:00:00+08:00','complete':False,'topPages':[('/all',8),('/',4)]},

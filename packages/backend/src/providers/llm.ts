@@ -130,28 +130,34 @@ function isConnectFailure(error: unknown): boolean {
 }
 
 export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): Promise<ChatJsonResult<z.infer<S>>> {
-  const spec = MODELS[opts.model];
-  if (!spec?.fallback) return chatJsonOnce(opts);
-  const fallback = MODELS[spec.fallback];
-  if (!fallback || fallback.fallback || fallback.key === spec.key) throw new Error("Invalid model fallback configuration");
-  if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
-  for (let attempt = 0; ; attempt++) try {
-    // Each logical task tries its primary first; another task's refusal must not cause a paid call.
-    return await chatJsonOnce(opts);
-  } catch (error) {
-    // Do not turn local budget stops, in-flight locks, or database errors into extra paid calls.
-    if (!(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError)) throw error;
-    // A confirmed 429 has not been processed. Give this task one delayed primary attempt;
-    // never retry an unknown outcome or skip the primary for a different task.
-    if (attempt === 0 && error instanceof ProviderRejectedError && error.status === 429) {
-      await setTimeout(2000);
-      continue;
-    }
-    console.warn(JSON.stringify({ event: "model_fallback", primary: spec.key, fallback: fallback.key,
-      purpose: opts.purpose, reason: error.constructor.name, status: error instanceof ProviderRejectedError ? error.status : null }));
-    break;
+  if (!MODELS[opts.model]) throw new Error(`Unknown model ${opts.model}`);
+  const chain: ModelSpec[] = [];
+  const seen = new Set<string>();
+  for (let key: string | undefined = opts.model; key; key = MODELS[key]!.fallback) {
+    if (!MODELS[key] || seen.has(key)) throw new Error("Invalid model fallback configuration");
+    seen.add(key);
+    chain.push(MODELS[key]!);
   }
-  return chatJsonOnce({ ...opts, model: fallback.key });
+  if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
+  for (const [index, spec] of chain.entries()) {
+    const fallback = chain[index + 1];
+    for (let attempt = 0; ; attempt++) try {
+      // Each task starts at the first provider. Every layer uses the same receipts and pacing.
+      return await chatJsonOnce({ ...opts, model: spec.key });
+    } catch (error) {
+      // Local protection, missing credentials and database errors never become another provider's request.
+      if (!fallback || !(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError)) throw error;
+      // Retry a confirmed 429 once on this layer; never resend an unknown outcome.
+      if (attempt === 0 && error instanceof ProviderRejectedError && error.status === 429) {
+        await setTimeout(2000);
+        continue;
+      }
+      console.warn(JSON.stringify({ event: "model_fallback", primary: spec.key, fallback: fallback.key,
+        purpose: opts.purpose, reason: error.constructor.name, status: error instanceof ProviderRejectedError ? error.status : null }));
+      break;
+    }
+  }
+  throw new Error("Invalid model fallback configuration");
 }
 
 async function chatJsonOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>): Promise<ChatJsonResult<z.infer<S>>> {
