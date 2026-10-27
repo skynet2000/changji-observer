@@ -57,7 +57,8 @@ flowchart TB
   Worker <--> DB[("PostgreSQL 17: content, events, jobs, receipts")]
   Worker --> Router["Model routing and usage accounting"]
   Router --> Free["Intern: preferred channel"]
-  Free -->|"One fallback on rate limit, failure or invalid output"| Paid["DeepSeek: paid channel"]
+  Free -->|"Unavailable after bounded recovery"| Quota["SCNet: GLM-5.3-Flash allowance"]
+  Quota -->|"Unavailable after bounded recovery"| Paid["DeepSeek: paid channel"]
   DB --> Publication["Shared public read layer: publication/"]
   Publication --> API["api: Fastify"]
   API --> Web["web: React Router SSR"]
@@ -140,17 +141,17 @@ Additional independent access (2026-10-25): Economic Observer’s technology pag
 
 ## Models and costs
 
-Production attempts the preferred free channel **for each logical model task**, with one paid fallback only if that task encounters a channel problem:
+Production prefers **Intern → SCNet free allowance → paid DeepSeek**. Known unavailable free layers share a cooldown across tasks and processes, followed by one recovery probe. Transient failures and invalid output receive one bounded free retry; local concurrency waiting never triggers paid fallback:
 
 | Work | Preferred | Fallback |
 | --- | --- | --- |
-| Writing, structure, grouping/review, digests, weekly/monthly assistance and translation | Intern / `deepseek-v4.1-flash-1017`, preset `intern-flash` | Official DeepSeek / `deepseek-flash` |
-| Industry relevance screening (active) | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
-| Selection scoring (paused; configuration retained) | Same version with low-effort reasoning, preset `intern-flash-think` | `deepseek-flash-think`; API model name remains `deepseek-flash` |
+| Writing, structure, grouping/review, digests, weekly/monthly assistance and translation | Intern / `deepseek-v4.1-flash-1017`, preset `intern-flash` | SCNet / `GLM-5.3-Flash`, then official DeepSeek / `deepseek-flash` |
+| Industry relevance screening (active) | Same version with low-effort reasoning, preset `intern-flash-think` | SCNet / `scnet-glm-flash-think`, then `deepseek-flash-think` |
+| Selection scoring (paused; configuration retained) | Same version with low-effort reasoning, preset `intern-flash-think` | SCNet / `scnet-glm-flash-think`, then `deepseek-flash-think` |
 
 Presets live in [`site/models.ts`](site/models.ts). Effective precedence is **admin settings → environment variables → code defaults**. A fresh checkout still defaults to DeepSeek; adding an Intern key alone does not switch every step. Follow [Routing](docs/model-routing.md) and verify each active choice. The paid official name is a provider alias, not a permanent date-pinned version guarantee.
 
-Free availability depends on platform quotas, RPM/TPM and channel capacity. Paid fallback consumes balance. The current owner has removed the CNY amount cap while retaining request limits, concurrency, kill switches and receipt protection. An unknown request outcome can still have a cost; do not retry blindly. Dashboard/email amounts estimate this site's receipts, not the provider's final bill or other projects using the same key.
+The project enforces 45 RPM for Intern, 30 RPM for SCNet and three in-flight requests per free endpoint/model. Free availability still depends on platform quotas, RPM/TPM and channel capacity. Paid fallback consumes balance. The current owner has removed the CNY amount cap while retaining request limits, concurrency, kill switches and receipt protection. An unknown request outcome can still have a cost; do not retry blindly. Dashboard/email amounts estimate this site's receipts, not the provider's final bill or other projects using the same key.
 
 ## Run locally
 

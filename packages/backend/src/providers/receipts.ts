@@ -12,6 +12,7 @@ import { MODEL_REQUESTS_PER_MINUTE } from "@aihot/site/models";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
 import { beijingDate } from "@aihot/contracts/time";
+import { checkModelHealth, failureKind, recordModelHealth } from "./model-health.ts";
 
 /** The text of a spent budget's error; with `%` for both parts it is the LIKE pattern that finds every saved one. */
 export const budgetMessage = (service: string, window: string) => `Budget for ${service} exhausted (${window})`;
@@ -40,10 +41,12 @@ export class ReceiptUnknownError extends Error {
 export class ProviderRejectedError extends Error {
   readonly status: number | null;
   readonly retryable: boolean;
-  constructor(message: string, status: number | null, retryable: boolean) {
+  readonly retryAfterMs: number | null;
+  constructor(message: string, status: number | null, retryable: boolean, retryAfterMs: number | null = null) {
     super(message);
     this.status = status;
     this.retryable = retryable;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -51,9 +54,9 @@ export class ProviderRejectedError extends Error {
  * The HTTP rule for every provider: an answer outside 2xx means the request was not taken. Rate limits
  * and server errors may pass; any other status is a refusal the same request would meet again.
  */
-export function assertAccepted(service: string, status: number, body: string): void {
+export function assertAccepted(service: string, status: number, body: string, retryAfterMs: number | null = null): void {
   if (status >= 200 && status < 300) return;
-  throw new ProviderRejectedError(`${service} HTTP ${status}: ${body.slice(0, 500)}`, status, status === 429 || status >= 500);
+  throw new ProviderRejectedError(`${service} HTTP ${status}: ${body.slice(0, 500)}`, status, status === 429 || status >= 500, retryAfterMs);
 }
 
 export interface CallOutcome {
@@ -76,6 +79,8 @@ export interface ReceiptRequest {
   attemptTag?: string;
   /** Maximum bill for this attempt, reserved before sending; also bounds unknown outcomes. */
   costBudget?: { maxAmount: number; dailyLimit: number | null; currency: string };
+  /** Free model endpoint/model identity; never a credential. */
+  provider?: { scope: string; concurrency: number };
 }
 
 export interface ReceiptResult {
@@ -179,20 +184,24 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
       if (existing.status === "unknown") return { kind: "unknown" as const, row: existing };
       // failed: the provider did not take the request, or its answer was unusable; a new attempt is allowed.
       const waitMs = await checkBudget(tx, req.service, req.model);
-      if (waitMs > 0) return { kind: "wait" as const, waitMs };
+      const providerWait = req.provider ? await checkModelHealth(tx, req.service, req.provider.scope, req.provider.concurrency) : 0;
+      if (waitMs > 0 || providerWait > 0) return { kind: "wait" as const, waitMs: Math.max(waitMs, providerWait) };
       await checkCostBudget(tx, req);
       const [r] = await tx<{ attempts: number }[]>`
-        UPDATE receipts SET status = 'pending', attempts = attempts + 1, error = NULL, updated_at = now() WHERE id = ${existing.id} RETURNING attempts`;
+        UPDATE receipts SET status = 'pending', attempts = attempts + 1, error = NULL, updated_at = now(),
+          request = coalesce(request,'{}'::jsonb) || ${tx.json(req.provider ? { providerScope: req.provider.scope } : {})}
+        WHERE id = ${existing.id} RETURNING attempts`;
       const attemptId = await startAttempt(tx, existing.id, r!.attempts, req);
       return { kind: "call" as const, id: existing.id, attemptId };
     }
     const waitMs = await checkBudget(tx, req.service, req.model);
-    if (waitMs > 0) return { kind: "wait" as const, waitMs };
+    const providerWait = req.provider ? await checkModelHealth(tx, req.service, req.provider.scope, req.provider.concurrency) : 0;
+    if (waitMs > 0 || providerWait > 0) return { kind: "wait" as const, waitMs: Math.max(waitMs, providerWait) };
     await checkCostBudget(tx, req);
     const [row] = await tx<{ id: number }[]>`
       INSERT INTO receipts (logical_key, service, model, purpose, subject, status, request, attempts)
       VALUES (${logicalKey}, ${req.service}, ${req.model ?? null}, ${req.purpose}, ${req.subject ?? null}, 'pending',
-              ${tx.json((req.requestSummary ?? {}) as never)}, 1)
+              ${tx.json(({ ...req.requestSummary, ...(req.provider ? { providerScope: req.provider.scope } : {}) }) as never)}, 1)
       RETURNING id`;
     const attemptId = await startAttempt(tx, row!.id, 1, req);
     return { kind: "call" as const, id: row!.id, attemptId };
@@ -222,6 +231,11 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
     // "unknown": the request may have reached the provider (timeout, reset): do not re-send automatically.
     const message = (error instanceof ProviderRejectedError ? error.message : String(error)).slice(0, 2000);
     await sql.begin(async (tx) => {
+      if (req.provider) {
+        const kind = error instanceof ProviderRejectedError ? failureKind(error.status, error.message) : "unknown";
+        if (kind) await recordModelHealth(tx, req.service, req.provider.scope, attemptId,
+          { kind, retryAfterMs: error instanceof ProviderRejectedError ? error.retryAfterMs : null });
+      }
       await tx`UPDATE receipts SET status = ${status}, error = ${message}, updated_at = now() WHERE id = ${receiptId}`;
       await tx`UPDATE receipt_attempts SET status = ${status}, error = ${message}, latency_ms = ${Date.now() - started}, finished_at = now() WHERE id = ${attemptId}`;
       if (error instanceof ProviderRejectedError && req.costBudget) {
@@ -234,6 +248,7 @@ export async function paidRequest(req: ReceiptRequest, call: () => Promise<CallO
   }
 
   await sql.begin(async (tx) => {
+    if (req.provider) await recordModelHealth(tx, req.service, req.provider.scope, attemptId);
     const cost = outcome.cost ?? (req.costBudget ? { amount: req.costBudget.maxAmount, currency: req.costBudget.currency, basis: "estimated" } : null);
     await tx`
       UPDATE receipts SET

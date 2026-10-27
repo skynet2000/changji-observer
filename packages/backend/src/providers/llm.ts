@@ -4,11 +4,13 @@
 // (site/models.ts).
 import type { z } from "zod";
 import { setTimeout } from "node:timers/promises";
-import { PRESETS } from "@aihot/site/models";
+import { MODEL_MAX_CONCURRENT, PRESETS } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
 import { assertAccepted, paidRequest, ProviderRejectedError, ReceiptUnknownError, rejectReceivedResponse } from "./receipts.ts";
 import { budgetedOutputTokens, modelCost, reserveModelCost } from "./model-cost.ts";
+import { failureKind, ProviderCoolingError, retryAfterMs } from "./model-health.ts";
+import { shutdownSignal } from "../lib/shutdown.ts";
 
 export interface ModelSpec {
   key: string;
@@ -141,19 +143,35 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
   if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
   for (const [index, spec] of chain.entries()) {
     const fallback = chain[index + 1];
-    for (let attempt = 0; ; attempt++) try {
-      // Each task starts at the first provider. Every layer uses the same receipts and pacing.
+    let retries = 0, waited = 0;
+    for (;;) try {
+      // Reuse an existing answer before checking provider health; each new send is paced and receipted.
       return await chatJsonOnce({ ...opts, model: spec.key });
     } catch (error) {
       // Local protection, missing credentials and database errors never become another provider's request.
-      if (!fallback || !(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError)) throw error;
-      // Retry a confirmed 429 once on this layer; never resend an unknown outcome.
-      if (attempt === 0 && error instanceof ProviderRejectedError && error.status === 429) {
-        await setTimeout(2000);
+      if (!fallback || !(error instanceof ProviderRejectedError || error instanceof ReceiptUnknownError || error instanceof ModelOutputError || error instanceof ProviderCoolingError)) throw error;
+      const protectedLayer = !!MODEL_MAX_CONCURRENT[spec.service];
+      // A shared short cooldown may recover within this task. Quota/auth cooldowns use the next layer.
+      const coolingWait = error instanceof ProviderCoolingError &&
+        (!["quota", "auth", "probe"].includes(error.reason) || error.reason === "probe" && index > 0) ? error.retryAfterMs : null;
+      if (coolingWait !== null && waited + coolingWait <= 20_000) {
+        waited += coolingWait;
+        await setTimeout(coolingWait, undefined, { signal: shutdownSignal.signal });
         continue;
       }
+      const kind = error instanceof ProviderRejectedError ? failureKind(error.status, error.message) : null;
+      // One recovery attempt on free layers for known transient failures or unusable output, never an unknown outcome.
+      if (protectedLayer && retries === 0 && (error instanceof ModelOutputError || kind === "rate" || kind === "server")) {
+        const delay = error instanceof ProviderRejectedError ? error.retryAfterMs ?? (kind === "rate" ? 5000 : 2000) : 1000;
+        if (waited + delay <= 20_000) {
+          retries++; waited += delay;
+          await setTimeout(delay, undefined, { signal: shutdownSignal.signal });
+          continue;
+        }
+      }
       console.warn(JSON.stringify({ event: "model_fallback", primary: spec.key, fallback: fallback.key,
-        purpose: opts.purpose, reason: error.constructor.name, status: error instanceof ProviderRejectedError ? error.status : null }));
+        purpose: opts.purpose, reason: error instanceof ProviderCoolingError ? `cooldown:${error.reason}` : error.constructor.name,
+        status: error instanceof ProviderRejectedError ? error.status : null }));
       break;
     }
   }
@@ -198,6 +216,10 @@ async function chatJsonOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>): Prom
       requestSummary: { promptVersion: opts.promptVersion, systemHash: sha256(opts.system), userHash: sha256(userText), userChars: userText.length, temperature, maxTokens },
       attemptTag: opts.attemptTag,
       costBudget,
+      ...(MODEL_MAX_CONCURRENT[spec.service] ? { provider: {
+        scope: `${spec.service}.${sha256(baseUrl.replace(/\/$/, "") + ":" + spec.model).slice(0, 24)}`,
+        concurrency: MODEL_MAX_CONCURRENT[spec.service]!,
+      } } : {}),
     },
     async () => {
       const started = Date.now();
@@ -214,7 +236,7 @@ async function chatJsonOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>): Prom
         throw error;
       }
       const text = await res.text();
-      assertAccepted(spec.service, res.status, text);
+      assertAccepted(spec.service, res.status, text, retryAfterMs(res.headers.get("retry-after")));
       let json: Record<string, unknown>;
       try {
         json = JSON.parse(text);
