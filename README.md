@@ -218,6 +218,7 @@ node scripts/smoke.ts --base http://localhost:3000
 | --- | --- |
 | [架构](docs/architecture.md) | 进程、业务边界、公开出口与迁移 |
 | [信源](docs/sources.md) | 各种适配器、分级、权限、时间与外部推送 |
+| [时间与旧闻](docs/content-freshness.md) | 发布时间、旧事新进展、重发旧闻的准入和处理 |
 | [精选与校准](docs/selection.md) | 提示词、门槛、人工样本和评测限制；现行数值以 `industry/selection.ts` 为准 |
 | [事件归组](docs/grouping.md) | 同一事实、事件进展与关系评测 |
 | [模型通道](docs/model-routing.md) | 免费优先、付费回退与回执保护 |
