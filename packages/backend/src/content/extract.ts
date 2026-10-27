@@ -29,6 +29,11 @@ export interface ExtractedBody {
 
 const MIN_BODY_CHARS = 200;
 
+/** Some publishers omit Content-Type; only an HTML document signature can fill that absence. */
+export function isHtmlDocument(contentType: string | null, text: string): boolean {
+  return contentType ? /html/i.test(contentType) : /^\s*(?:<!doctype\s+html\b|<html\b)/i.test(text);
+}
+
 /** Restore only completed React streaming boundaries, without evaluating any page script. */
 function settleStreamedContent(document: ReturnType<typeof parseHTML>["document"]) {
   for (const script of document.querySelectorAll("script:not([src])")) {
@@ -139,7 +144,7 @@ export async function extractFromUrl(url: string, subject: string, utcOffset?: s
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 6 * 1024 * 1024 });
     if (isVideoPageUrl(res.url)) return null;
     const type = res.headers.get("content-type") ?? "";
-    if (res.status === 200 && /html/.test(type)) {
+    if (res.status === 200 && isHtmlDocument(type || null, res.text())) {
       const got = readable(res.text(), res.url, utcOffset);
       if (got) return got;
     }

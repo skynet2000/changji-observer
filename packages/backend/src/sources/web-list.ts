@@ -4,7 +4,7 @@ import { guardedFetch } from "../lib/http-fetch.ts";
 import { fetchListing } from "./listing-fetch.ts";
 import { identityKeyForUrl, normalizeUrl } from "../lib/url.ts";
 import { collapseWhitespace, stripTags } from "../lib/text.ts";
-import { readable, type ExtractedBody } from "../content/extract.ts";
+import { isHtmlDocument, readable, type ExtractedBody } from "../content/extract.ts";
 import { sanitizeBody } from "../content/sanitize.ts";
 import { jinaRead } from "../providers/jina.ts";
 import { articleUtcOffset, parseLooseDate } from "./dates.ts";
@@ -385,7 +385,7 @@ export async function fetchDetail(url: string, source: SourceRow, need: DetailNe
     const res = await fetchListing(url, { timeoutMs: 20_000 });
     if (res.status !== 200) throw new FetchError(`HTTP ${res.status} for detail`, res.status);
     html = res.text();
-    if (need.body && /html/.test(res.headers.get("content-type") ?? "")) {
+    if (need.body && isHtmlDocument(res.headers.get("content-type"), html)) {
       try { body = readable(html, res.url, offset); }
       catch { /* A failed extraction must not discard the detail metadata. */ }
     }

@@ -139,6 +139,8 @@ export const englishUi: Record<string, string> = {
   "时代周报 · 科技与互联网": "Time Weekly · Technology & internet",
   "蓝鲸新闻 · 互联网商业": "Lanjing News · Internet business",
   "创业邦 · 企业与职场": "CYZone · Companies & workplace",
+  "北京商报 · 科技": "Beijing Business Today · Technology",
+  "财联社 · 公司报道": "CLS · Company news",
   "硅谷101 · 企业与竞争": "Silicon Valley 101 · Companies & competition",
   "游戏研究社 · 企业与员工": "YYS · Companies & employees",
   "晚点AI · 企业与商业": "LatePost AI · Companies & business",
