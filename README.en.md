@@ -95,20 +95,20 @@ Edition times use Asia/Shanghai: daily at 08:00, weekly on Monday at 10:00, mont
 
 ### Configuration versus runtime status
 
-The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-27: 112 configurations, 90 enabled by default**:
+The versioned inventory is [`industry/sources.json`](industry/sources.json); adapter documentation is in [Sources](docs/sources.md). **Code snapshot, 2026-10-27: 112 configurations, 89 enabled by default**:
 
 | Adapter | Enabled | Meaning |
 | --- | ---: | --- |
 | RSS | 51 | Native feeds and explicitly identified third-party RSS bridges |
-| Web lists | 27 | Company newsrooms, media sections and official public Weibo pages |
+| Web lists | 26 | Company newsrooms, media sections and official public Weibo pages |
 | JSON lists | 9 | Public Jike activity and media JSON data |
 | External ingestion | 3 | Receives script/module submissions; the site module schedules Maimai post collection |
 
-That is **87 polling endpoints (including two isolated lead sources) and 3 ingestion endpoints**, not 90 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
+That is **86 polling endpoints (including two isolated lead sources) and 3 ingestion endpoints**, not 89 independent publishers or a guarantee that every endpoint is healthy. Admin settings may differ from seeds. Seeding adds missing sources without overwriting existing settings. Check the backend for current health, last success and errors.
 
 The 2026-10-26 RSS expansion adds four public WeChat bridge feeds and two native feeds. LatePost AI shares its publisher signal group with LatePost; Huxiu RSS shares the Huxiu web group. These are additional access channels, not six independent media organisations. See [source notes](docs/sources.md#公众号转-rss-接入2026-10-26).
 
-The 2026-10-27 expansion adds direct endpoints for Beijing Business Today's technology section and CLS company coverage, independent of the WeChat RSS bridge. Title admission rejects promotions, ads and stock-market roundups before the normal relevance pipeline. Both poll every 120 minutes, with at most two first-import candidates; original dates and summary-only publication remain unchanged. See [verification and unavailable candidates](docs/sources.md#媒体直连接入2026-10-27).
+The 2026-10-27 expansion enables direct CLS company coverage, independent of the WeChat RSS bridge. Beijing Business Today's technology section remains configured but disabled: its list and initial detail fetch worked, but repeated detail checks returned 403. Title admission rejects promotions, ads and stock-market roundups before the normal relevance pipeline. Active sources poll every 120 minutes, with at most two first-import candidates; original dates and summary-only publication remain unchanged. See [verification and unavailable candidates](docs/sources.md#媒体直连接入2026-10-27).
 
 ### Main configured sources
 
