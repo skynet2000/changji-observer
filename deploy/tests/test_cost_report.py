@@ -15,6 +15,14 @@ SAMPLE = {'start':'2026-10-24 00:00','end':'2026-10-25 00:00','paid_cny':'0.1234
           'purposes':[{'purpose':'score_article','calls':3,'cny':0.123456}]}
 
 class CostReportTests(unittest.TestCase):
+    def test_free_provider_failures_and_current_cooldown_are_visible(self):
+        report = {**SAMPLE, 'model_errors':[{'service':'intern','reason':'quota','count':30}],
+                  'provider_health':[{'service':'intern','reason':'quota','until':int(reporter.datetime.now().timestamp()*1000)+3600000}]}
+        body = reporter.message(report,'sender@example.com','owner@example.com','2026-10-25').get_content()
+        self.assertIn('书生：额度拒绝 30 次',body)
+        self.assertIn('当前通道状态（非昨日统计）',body)
+        self.assertIn('冷却至',body)
+
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.root = Path(self.folder.name)

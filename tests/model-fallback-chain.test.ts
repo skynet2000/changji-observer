@@ -57,23 +57,23 @@ test("both failed quota layers reach paid once and preserve the thinking variant
   }, async (p, m, f) => {
     const result = await call("intern-flash-think");
     assert.equal(result.model, "deepseek-flash-think");
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 2, 1]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 1, 1]);
     const rows = await sql`SELECT a.service,a.status FROM receipt_attempts a JOIN receipts r ON r.id=a.receipt_id
       WHERE r.subject=(SELECT subject FROM receipts WHERE id=${result.receiptId}) ORDER BY a.started_at`;
-    assert.deepEqual(rows.map(r => [r.service, r.status]), [["intern", "failed"], ["intern", "failed"], ["scnet", "failed"], ["scnet", "failed"], ["deepseek", "received"]]);
+    assert.deepEqual(rows.map(r => [r.service, r.status]), [["intern", "failed"], ["intern", "failed"], ["scnet", "failed"], ["deepseek", "received"]]);
   });
 });
 
 test("unusable middle output falls through while a local middle budget stop never buys paid fallback", async () => {
   await withChain(() => new Reply(503, {}), () => ({ choices: [{ message: { content: "not JSON" } }] }), async (p, m, f) => {
     assert.equal((await call()).model, "deepseek-flash");
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [1, 1, 1]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 2, 1]);
   });
   await withChain(() => new Reply(503, {}), () => answer, async (p, m, f) => {
     await sql`INSERT INTO budgets(service,per_minute,per_hour,per_day) VALUES('scnet',0,0,0)`;
     try { await assert.rejects(call(), BudgetExceededError); }
     finally { await sql`DELETE FROM budgets WHERE service='scnet'`; }
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [1, 0, 0]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 0, 0]);
   });
 });
 
@@ -81,7 +81,7 @@ test("a timed-out middle provider is not resent; its receipt stays unknown when 
   await withChain(() => new Reply(503, {}), async () => { await new Promise(resolve => setTimeout(resolve, 800)); return answer; }, async (p, m, f) => {
     const result = await call("intern-flash", 500);
     assert.equal(result.model, "deepseek-flash");
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [1, 1, 1]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 1, 1]);
     const [row] = await sql`SELECT status FROM receipts WHERE service='scnet'
       AND subject=(SELECT subject FROM receipts WHERE id=${result.receiptId})`;
     assert.equal(row!.status, "unknown");
@@ -101,14 +101,14 @@ test("cycles and missing links are rejected before any request; final provider f
   });
   await withChain(() => new Reply(503, {}), () => new Reply(503, {}), async (p, m, f) => {
     await assert.rejects(call(), ProviderRejectedError);
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [1, 1, 1]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 2, 1]);
   }, () => new Reply(503, {}));
 });
 
 test("an exhausted SCNet free allowance falls to paid without retrying the empty allowance", async () => {
   await withChain(() => new Reply(503, {}), () => new Reply(434, { error: "free allowance exhausted" }), async (p, m, f) => {
     assert.equal((await call()).model, "deepseek-flash");
-    assert.deepEqual([p.hits(), m.hits(), f.hits()], [1, 1, 1]);
+    assert.deepEqual([p.hits(), m.hits(), f.hits()], [2, 1, 1]);
   });
 });
 

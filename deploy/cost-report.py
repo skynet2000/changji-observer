@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path('/home/ubuntu/changji-observer')
 QUERY = """
 WITH bounds AS (SELECT (date_trunc('day',now() AT TIME ZONE 'Asia/Shanghai')-interval '1 day') AT TIME ZONE 'Asia/Shanghai' AS start_at, date_trunc('day',now() AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai' AS end_at), calls AS (
- SELECT r.service,r.purpose,a.status,a.cost,a.currency,a.usage
+ SELECT r.service,r.purpose,a.status,a.cost,a.currency,a.usage,a.error
  FROM receipt_attempts a JOIN receipts r ON r.id=a.receipt_id
  WHERE a.origin='live' AND a.model IS NOT NULL
  AND a.started_at >= (SELECT start_at FROM bounds) AND a.started_at < (SELECT end_at FROM bounds)
@@ -37,6 +37,14 @@ SELECT json_build_object(
  'scnet_unknown',count(*) FILTER(WHERE service='scnet' AND status IN('unknown','pending')),
  'scnet_tokens',coalesce(sum(CASE WHEN jsonb_typeof(usage->'total_tokens')='number' THEN greatest((usage->>'total_tokens')::numeric,0) ELSE 0 END) FILTER(WHERE service='scnet'),0),
  'scnet_missing_usage',count(*) FILTER(WHERE service='scnet' AND status='received' AND (usage IS NULL OR jsonb_typeof(usage->'total_tokens') IS DISTINCT FROM 'number')),
+ 'model_errors',(SELECT coalesce(json_agg(e),'[]'::json) FROM (
+   SELECT service,CASE WHEN error ILIKE '%quota%' OR error LIKE '%HTTP 434%' THEN 'quota'
+     WHEN error LIKE '%HTTP 429%' THEN 'rate' WHEN status IN ('unknown','pending') THEN 'unknown'
+     WHEN error ~ 'HTTP 5[0-9][0-9]' THEN 'server' ELSE 'other' END AS reason,count(*) AS count
+   FROM calls WHERE service IN ('intern','scnet') AND status<>'received' GROUP BY 1,2) e),
+ 'provider_health',(SELECT coalesce(json_agg(json_build_object('service',split_part(key,'.',3),
+   'reason',value->>'reason','until',value->'until')),'[]'::json) FROM settings
+   WHERE key LIKE 'model.health.%' AND (value->>'failures')::int>0),
  'operations',json_build_object(
   'collected',(SELECT count(*) FROM articles WHERE discovered_at>=(SELECT start_at FROM bounds) AND discovered_at<(SELECT end_at FROM bounds)),
   'blocked',(SELECT count(*) FROM articles WHERE discovered_at>=(SELECT start_at FROM bounds) AND discovered_at<(SELECT end_at FROM bounds) AND processing_state='blocked'),
@@ -81,7 +89,20 @@ def message(report, sender, recipient, day):
     rows += ['', f"超算 GLM 额度通道：成功 {report.get('scnet_success', 0)} 次；拒绝 {report.get('scnet_failed', 0)} 次；结果未知/进行中 {report.get('scnet_unknown', 0)} 次",
              f"超算已返回用量：{report.get('scnet_tokens', 0)} Token；缺少可读用量的成功调用 {report.get('scnet_missing_usage', 0)} 次。",
              '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
+    providers = {'intern':'书生','scnet':'超算'}
+    reasons = {'quota':'额度拒绝','rate':'限流','unknown':'结果未知/进行中','server':'上游服务错误','other':'其他失败'}
+    rows += ['', '昨日免费通道异常（尝试次数，重试分别计数）：']
+    rows.extend(f"- {providers.get(e['service'],e['service'])}：{reasons.get(e['reason'],e['reason'])} {e['count']} 次" for e in report.get('model_errors', []))
+    if not report.get('model_errors'): rows.append('- 本窗口没有记录到免费通道异常。')
+    rows += ['', '当前通道状态（非昨日统计）：']
+    for h in report.get('provider_health', []):
+        until = datetime.fromtimestamp(h['until']/1000, ZoneInfo('Asia/Shanghai'))
+        state = f"冷却至 {until:%m-%d %H:%M:%S}" if until > datetime.now(ZoneInfo('Asia/Shanghai')) else '等待单条恢复探测'
+        rows.append(f"- {providers.get(h['service'],h['service'])}：{reasons.get(h['reason'],h['reason'])}，{state}。")
+    if not report.get('provider_health'): rows.append('- 当前无持久化冷却，实际可用性仍以调用结果为准。')
     rows += ['', '当前策略：书生 DeepSeek → 国家超算 GLM 赠送额度 → DeepSeek 官方付费；前一层失败才尝试下一层。',
+             '已确认不可用的免费层在冷却期间暂时跳过；恢复探测成功后重新优先。并发排队不触发付费，超时未知不在原层盲重发。',
+             '成功数表示收到模型回复，不保证通过全部业务校验；冷却跳过不会记作一次模型请求。',
              '以上来自本站调用回执，按既有价格估算；最终以供应商账单为准。',
              '不含同一密钥在其他项目的调用、服务器费用、书生墨点换算或未核实的超算现金账单。此报告生成不调用模型。']
     traffic = report.get('traffic', {})

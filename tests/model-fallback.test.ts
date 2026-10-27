@@ -35,20 +35,21 @@ test("an explicitly rate-rejected primary gets one recovery chance before a paid
   });
 });
 
-test("each task tries priority first after another task's 429; recovery immediately avoids payment", async () => {
+test("known quota exhaustion is shared until a recovery probe restores primary priority", async () => {
   let recover = false;
-  await withProviders(() => recover ? answer : new Reply(429, { error: "rate limit" }), async (p, f) => {
+  await withProviders(() => recover ? answer : new Reply(429, { error: "quota exceeded" }), async (p, f) => {
     assert.equal((await call()).model, "deepseek-flash");
     assert.equal((await call("intern-flash-think")).model, "deepseek-flash-think");
-    assert.equal(p.hits(), 4); assert.equal(f.hits(), 2);
+    assert.equal(p.hits(), 1); assert.equal(f.hits(), 2);
     recover = true;
-    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 5); assert.equal(f.hits(), 2);
+    await sql`UPDATE settings SET value=jsonb_set(value,'{until}','0') WHERE key LIKE 'model.health.intern.%'`;
+    assert.equal((await call()).model, "intern-flash"); assert.equal(p.hits(), 2); assert.equal(f.hits(), 2);
   });
 });
 
 test("unusable primary output falls back while keeping both receipts", async () => {
   await withProviders(() => ({ choices: [{ message: { content: "invalid json" } }] }), async (p, f) => {
-    assert.equal((await call()).model, "deepseek-flash"); assert.equal(p.hits(), 1); assert.equal(f.hits(), 1);
+    assert.equal((await call()).model, "deepseek-flash"); assert.equal(p.hits(), 2); assert.equal(f.hits(), 1);
   });
 });
 
