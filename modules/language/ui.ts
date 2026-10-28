@@ -141,6 +141,7 @@ export const englishUi: Record<string, string> = {
   "创业邦 · 企业与职场": "CYZone · Companies & workplace",
   "北京商报 · 科技": "Beijing Business Today · Technology",
   "财联社 · 公司报道": "CLS · Company news",
+  "定焦One · 职场故事": "Dingjiao One · Workplace stories",
   "硅谷101 · 企业与竞争": "Silicon Valley 101 · Companies & competition",
   "游戏研究社 · 企业与员工": "YYS · Companies & employees",
   "晚点AI · 企业与商业": "LatePost AI · Companies & business",
