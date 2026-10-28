@@ -8642,6 +8642,84 @@
       "site_fulltext": false,
       "syndicate_fulltext": false,
       "enabled": true
+    },
+    {
+      "id": "web-dingjiao-workplace",
+      "name": "定焦One · 职场故事",
+      "kind": "web_list",
+      "config": {
+        "_aihot": {
+          "initialBackfillLimit": 2,
+          "initialBackfillMonths": 1
+        },
+        "url": "https://dingjiaoone.com/category/故事",
+        "parseMode": "html",
+        "itemSelector": ".article-list > a[href^=\"/article/\"]",
+        "titleSelector": "td:last-child > div:first-child",
+        "publishedAtUtcOffset": "+08:00",
+        "detail": {
+          "publishedAtRegex": "\"datePublished\"\\s*:\\s*\"([^\"]+)\"",
+          "publishedAtAuthoritative": true,
+          "titleSelector": "h1.article-title",
+          "summarySelector": ".article-excerpt",
+          "maxFetches": 12
+        },
+        "publishedAfter": "2026-09-27T16:00:00.000Z",
+        "sortByPublishedAt": true,
+        "allowUrlPrefixes": [
+          "https://dingjiaoone.com/article/"
+        ],
+        "ingestNoiseFilter": {
+          "requireTitleAnyMatches": [
+            "大厂",
+            "互联网",
+            "打工人",
+            "职场",
+            "员工",
+            "程序员",
+            "产品经理",
+            "薪",
+            "绩效",
+            "奖金",
+            "年终奖",
+            "福利",
+            "加班",
+            "招聘",
+            "校招",
+            "社招",
+            "裁员",
+            "裁撤",
+            "离职",
+            "辞职",
+            "失业",
+            "求职",
+            "面试",
+            "实习",
+            "岗位",
+            "用工",
+            "外包",
+            "管理层",
+            "组织调整",
+            "劳动争议",
+            "竞业"
+          ]
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "signal_group_id": "media-dingjiao",
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "first_party": false,
+      "tags": [
+        "媒体",
+        "国内",
+        "职场",
+        "组织与人才"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": true
     }
   ]
 }
