@@ -66,6 +66,10 @@ test('unverified citations retain their notice in daily sections, related report
   assert.equal((await v1Daily(key))!.report.flashes[0]!.unverified, true);
   const agent = await app.inject({ method: 'GET', url: `/api/v1/agent/daily/${key}` });
   assert.match(agent.body, /Unverified post\]\([^\n]+未经独立核实/);
+  await issue('weekly', '2095-W46', { leadItemId: uncertain.itemId, themes: [{ heading: 'News', storyRefs: [uncertain] }] });
+  const feed = (await feedIssues('weekly', 30)).find((entry) => entry.key === '2095-W46')!;
+  assert.match(feed.headline!, /未经独立核实/);
+  assert.match(feed.sections[0]!.items[0]!.title, /未经独立核实/);
 });
 
 test('all-admitted issues never label their candidate pool as selections, while historical selection metrics stay intact', async () => {

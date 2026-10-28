@@ -6,7 +6,7 @@ import { after, before, beforeEach, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { composeDaily, composeDueReports, composeWeekly, composeMonthly } from "@aihot/backend/reports/compose";
-import { loadReport } from "@aihot/backend/publication/reports";
+import { feedIssues, loadReport } from "@aihot/backend/publication/reports";
 import { EDITORIAL } from "@aihot/site";
 
 const T = tag();
@@ -73,6 +73,7 @@ test('period writers exclude explicitly unverified posts but retain them in the 
   assert.equal(provider.hits(), calls, 'no model request when the entire issue is unverified');
   assert.deepEqual((await report('weekly', '2024-W33'))!.content.storyOrder, [uncertain]);
   assert.doesNotMatch((await loadReport('weekly', '2024-W33'))!.overview!, /未核实独家消息/);
+  assert.doesNotMatch((await feedIssues('weekly', 10)).find((issue) => issue.key === '2024-W33')!.leadParagraph!, /未核实独家消息/);
 
   const verified = await item('2024-08-13');
   await sql`UPDATE publications SET title='公司公开公告', summary='公司公告内容。' WHERE article_id=${verified}`;

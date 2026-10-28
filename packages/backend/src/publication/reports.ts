@@ -550,6 +550,7 @@ export async function feedIssues(kind: ReportKind, limit: number): Promise<FeedI
     : await sql<{ key: string; generated_at: Date; content: Record<string, any> }[]>`
       SELECT key, generated_at, jsonb_build_object(
         'headline', content->'headline', 'title', content->'title', 'overview', content->'overview',
+        'generator', content->'generator',
         'leadItemId', content->'leadItemId', 'highlights', content->'highlights',
         'themes', (SELECT coalesce(jsonb_agg(jsonb_build_object('heading', t->'heading', 'storyRefs',
           (SELECT coalesce(jsonb_agg(jsonb_build_object('itemId', i->'itemId', 'title', i->'title') ORDER BY ord), '[]'::jsonb)
@@ -557,7 +558,9 @@ export async function feedIssues(kind: ReportKind, limit: number): Promise<FeedI
           FROM jsonb_array_elements(coalesce(content->'themes', '[]'::jsonb)) WITH ORDINALITY AS x(t, tord))) AS content
       FROM reports WHERE kind = ${kind} ORDER BY key DESC LIMIT ${limit}`;
   const shape = kind === "daily" ? "daily" : "periodic";
-  const gone = await unavailableIds(rows.flatMap((r) => entriesOf(r.content, shape).map((i) => i.itemId)));
+  const ids = rows.flatMap((r) => entriesOf(r.content, shape).map((i) => i.itemId)).filter(Boolean) as string[];
+  const avail = await availability([...new Set(ids)]);
+  const gone = goneIn(avail);
   const leads = kind === "daily" ? await dailyLeads(rows, gone) : null;
   return rows.map((r) => {
     const lead = leads ? leads.get(r.key) : issueLead(r.content, shape, gone);
@@ -567,11 +570,13 @@ export async function feedIssues(kind: ReportKind, limit: number): Promise<FeedI
     return {
       key: r.key,
       generatedAt: r.generated_at,
-      headline: lead?.title ?? null,
+      headline: lead ? `${lead.itemId && avail.get(lead.itemId)?.unverified ? "【未经独立核实】" : ""}${lead.title}` : null,
       leadParagraph: kind === "daily" ? lead?.leadParagraph ?? null : periodOverview(r.content, kind, gone),
       sections: groups.map((g) => ({
         label: String(g.label),
-        items: (g.items ?? []).filter((i) => i.itemId && !gone.has(i.itemId)).map((i) => ({ title: String(i.title), link: itemUrl(i.itemId) })),
+        items: (g.items ?? []).filter((i) => i.itemId && !gone.has(i.itemId)).map((i) => ({
+          title: `${avail.get(i.itemId)?.unverified ? "【未经独立核实】" : ""}${String(i.title)}`, link: itemUrl(i.itemId),
+        })),
       })).filter((s) => s.items.length > 0),
     };
   });
