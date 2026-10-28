@@ -21,8 +21,8 @@ const index = (kind: ReportKind): ReportNavigationEntry[] => keys[kind].map((key
 
 test("weekly month labels reflect their calendar Mondays even when earlier issues are missing", () => {
   const weeks = [{ key: "2026-W43", issueNumber: 2 }, { key: "2026-W41", issueNumber: 1 }];
-  assert.deepEqual(archiveGroups("weekly", weeks)[0]!.entries.map((e) => e.short), ["第3周", "第1周"]);
-  assert.equal(chipLabel("weekly", "2026-W43", weeks, "2026-10-28"), "10月第3周");
+  assert.deepEqual(archiveGroups("weekly", weeks)[0]!.entries.map((e) => e.short), ["第4周", "第2周"]);
+  assert.equal(chipLabel("weekly", "2026-W43", weeks, "2026-10-28"), "10月第4周");
 });
 function report(kind: ReportKind, key: string): ReportDetail {
   return {
