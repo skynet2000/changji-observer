@@ -12,6 +12,20 @@ import { composeStoryDigest } from "./digest.ts";
 import { mergeStoryInto } from "./merge.ts";
 import { emit } from "../modules.ts";
 
+/** Correct source-time evidence without changing the report's event or editorial identity. */
+export async function correctStorySignalTime(tx: Tx, articleId: string, oldTime: Date, correctedTime: Date): Promise<number[]> {
+  const signals = await tx<{ story_id:number }[]>`UPDATE story_signals SET observed_at=${correctedTime}
+    WHERE article_id=${articleId} AND observed_at=${oldTime} RETURNING story_id`;
+  const storyIds = [...new Set(signals.map(s => Number(s.story_id)))];
+  for (const storyId of storyIds) {
+    await tx`UPDATE stories st SET first_report_at=x.first_at,latest_at=x.last_at,version=st.version+1,updated_at=now()
+      FROM (SELECT min(observed_at) AS first_at,max(observed_at) AS last_at FROM story_signals WHERE story_id=${storyId}) x
+      WHERE st.id=${storyId} AND st.merged_into IS NULL`;
+    await enqueue(QUEUES.digest, {storyId}, {singletonKey:`story:${storyId}`}, tx);
+  }
+  return storyIds;
+}
+
 /**
  * Takes an article out of its fact; it is shown on its own again and stays that way (automatic
  * grouping, retries and later revisions do not re-attach it; an explicit regroup does). Its heat

@@ -4,9 +4,9 @@ import { sql } from "../db.ts";
 import { audit, Conflict } from "../audit.ts";
 import { stableJson } from "../lib/ids.ts";
 import { emit } from "../modules.ts";
-import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { publishArticleTx } from "../publication/publish.ts";
 import { STALE_ON_DISCOVERY_MS } from "../content/materials.ts";
+import { correctStorySignalTime } from "../events/corrections.ts";
 
 export async function correctVerifiedRssTime(id: string, input: {
   sourceId: string; url: string; revision: number; oldTime: string; correctedTime: string; requestId: string;
@@ -35,15 +35,7 @@ export async function correctVerifiedRssTime(id: string, input: {
       FROM publications p WHERE article_id=${id}`;
     const timeline = +a.timeline_at === +old ? corrected : a.timeline_at;
     await tx`UPDATE articles SET published_at=${corrected}, published_at_claim=${corrected}, timeline_at=${timeline},updated_at=now() WHERE id=${id}`;
-    const signals = await tx<{ story_id:number }[]>`UPDATE story_signals SET observed_at=${corrected}
-      WHERE article_id=${id} AND observed_at=${old} RETURNING story_id`;
-    const storyIds = [...new Set(signals.map(s => Number(s.story_id)))];
-    for (const storyId of storyIds) {
-      await tx`UPDATE stories st SET first_report_at=x.first_at,latest_at=x.last_at,version=st.version+1,updated_at=now()
-        FROM (SELECT min(observed_at) AS first_at,max(observed_at) AS last_at FROM story_signals WHERE story_id=${storyId}) x
-        WHERE st.id=${storyId} AND st.merged_into IS NULL`;
-      await enqueue(QUEUES.digest, {storyId}, {singletonKey:`story:${storyId}`}, tx);
-    }
+    const storyIds = await correctStorySignalTime(tx,id,old,corrected);
     if (previous) {
       await publishArticleTx(tx,id);
       const [next] = await tx<{ decision:unknown }[]>`SELECT to_jsonb(p)-ARRAY['published_at','timeline_at','sort_at','revision','updated_at'] AS decision
