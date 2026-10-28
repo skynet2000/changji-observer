@@ -14,6 +14,10 @@ export async function mergeStoryInto(fromId: number, intoId: number, reason: str
     const [into] = await tx<{ merged_into: number | null; origin: string }[]>`SELECT merged_into, origin FROM stories WHERE id = ${intoId} FOR UPDATE`;
     if (!from || !into || from.merged_into || into.merged_into) return null;
     if (actor === "grouping" && (from.origin === "manual" || into.origin === "manual")) return null;
+    if (actor === "grouping") {
+      const [locked] = await tx`SELECT 1 FROM facts WHERE story_id IN (${fromId}, ${intoId}) AND manual LIMIT 1`;
+      if (locked) return null;
+    }
     await tx`UPDATE facts SET story_id = ${intoId}, updated_at = now() WHERE story_id = ${fromId}`;
     // A report with evidence in both stories keeps one row: (story, article) is unique.
     await tx`INSERT INTO story_signals (story_id, article_id, participant_key, source_id, kind, observed_at)

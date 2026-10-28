@@ -88,6 +88,51 @@ export async function moveToFact(id: string, factPublicId: string, reason: strin
   return { fact: moved.fact, story: moved.story, left: moved.facts.length };
 }
 
+/** Move one verified development, retaining its identity and leaving other facts in place. */
+export async function moveFactToStory(factPublicId: string, fromStoryId: number, intoStoryId: number, reason: string, actor: string) {
+  if (fromStoryId === intoStoryId) throw new Conflict("原事件与目标事件相同");
+  return sql.begin(async tx => {
+    const reports = await tx<{ article_id: string }[]>`
+      SELECT fa.article_id FROM fact_articles fa JOIN facts f ON f.id = fa.fact_id
+      WHERE f.public_id = ${factPublicId} AND fa.role IN ('primary', 'report') ORDER BY fa.article_id`;
+    if (!reports.length) throw new Conflict("事实没有可移动的报道");
+    const ids = reports.map(r => r.article_id);
+    await tx`SELECT id FROM articles WHERE id = ANY(${ids}) ORDER BY id FOR UPDATE`;
+    const stories = await tx<{ id: number; merged_into: number | null }[]>`
+      SELECT id, merged_into FROM stories WHERE id IN (${fromStoryId}, ${intoStoryId}) ORDER BY id FOR UPDATE`;
+    if (stories.length !== 2 || stories.some(s => s.merged_into !== null)) throw new Conflict("事件不存在或已被合并");
+    const [fact] = await tx<{ id: number; story_id: number }[]>`SELECT id, story_id FROM facts WHERE public_id = ${factPublicId} FOR UPDATE`;
+    if (!fact || Number(fact.story_id) !== fromStoryId) throw new Conflict("事实所属事件已变化，请重新核对");
+    const current = await tx<{ article_id: string }[]>`SELECT article_id FROM fact_articles
+      WHERE fact_id = ${fact.id} AND role IN ('primary', 'report') ORDER BY article_id`;
+    if (JSON.stringify(current.map(r => r.article_id)) !== JSON.stringify(ids)) throw new Conflict("事实报道已变化，请重新核对");
+    const [remaining] = await tx`SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id
+      WHERE f.story_id = ${fromStoryId} AND f.id <> ${fact.id} AND fa.role IN ('primary', 'report') LIMIT 1`;
+    if (!remaining) throw new Conflict("原事件将不再有报道，需单独处理事件地址");
+    await tx`UPDATE facts SET story_id = ${intoStoryId}, manual = true, updated_at = now() WHERE id = ${fact.id}`;
+    await tx`UPDATE fact_articles SET manual = true WHERE fact_id = ${fact.id} AND role IN ('primary', 'report')`;
+    await tx`INSERT INTO story_signals (story_id, article_id, participant_key, source_id, kind, observed_at)
+      SELECT ${intoStoryId}, article_id, participant_key, source_id, kind, observed_at FROM story_signals
+      WHERE story_id = ${fromStoryId} AND article_id = ANY(${ids}) ON CONFLICT (story_id, article_id) DO NOTHING`;
+    await tx`DELETE FROM story_signals ss WHERE ss.story_id = ${fromStoryId} AND ss.article_id = ANY(${ids})
+      AND NOT EXISTS (SELECT 1 FROM fact_articles fa JOIN facts f ON f.id = fa.fact_id
+        WHERE fa.article_id = ss.article_id AND fa.role IN ('primary', 'report') AND f.story_id = ${fromStoryId})`;
+    await tx`UPDATE stories st SET first_report_at = x.first_at, latest_at = x.last_at,
+      version = st.version + 1, updated_at = now() FROM
+      (SELECT story_id, min(observed_at) AS first_at, max(observed_at) AS last_at
+       FROM story_signals WHERE story_id IN (${fromStoryId}, ${intoStoryId}) GROUP BY story_id) x WHERE st.id = x.story_id`;
+    for (const id of ids) {
+      const published = await publishArticleTx(tx, id);
+      if (published?.changed) await emit("articleChanged", { id, reason: "fact moved", kind: published.changeKind,
+        reduced: published.reduced, previousStoryIds: [fromStoryId] }, tx);
+    }
+    for (const storyId of [fromStoryId, intoStoryId]) await enqueue(QUEUES.digest, { storyId }, { singletonKey: `story:${storyId}` }, tx);
+    await audit(actor, "story.move-fact", `fact:${factPublicId}`, reason,
+      { story: fromStoryId }, { story: intoStoryId, reports: ids }, { db: tx });
+    return { fact: Number(fact.id), fromStory: fromStoryId, story: intoStoryId, reports: ids.length };
+  });
+}
+
 /** Merges one story into another: facts move, the old public id keeps working as an alias. */
 export async function mergeStories(fromId: number, intoId: number, reason: string, actor: string) {
   if (fromId === intoId) throw new Error("cannot merge a story into itself");
