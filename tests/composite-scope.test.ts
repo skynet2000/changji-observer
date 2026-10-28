@@ -9,6 +9,7 @@ import { latestCompositeCondition, compositeCondition, ownFactEvidenceCondition 
 import { candidateViews } from "@aihot/backend/events/recall";
 import { overrideFields } from "@aihot/backend/admin/content";
 import { moveFactToStory, moveToFact } from "@aihot/backend/events/corrections";
+import { mergeStoryInto } from "@aihot/backend/events/merge";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { loadPool } from "@aihot/backend/publication/pool";
 import { loadGroupReports } from "@aihot/backend/publication/groups";
@@ -181,6 +182,8 @@ test("move one response into the dispute without merging the revenue denial", as
   const signals=await sql`SELECT story_id,article_id FROM story_signals WHERE article_id=ANY(${ids})`;
   assert.equal(Number(signals.find(s=>s.article_id===ids[1])!.story_id),into);
   assert.equal(Number(signals.find(s=>s.article_id===ids[2])!.story_id),from);
+  assert.equal(await mergeStoryInto(from,into,'不能自动重新合并已人工拆分的事件','grouping'),null);
+  assert.equal(Number((await sql`SELECT story_id FROM facts WHERE public_id=${factIds[2]!}`)[0]!.story_id),from);
   const audit=await sql`SELECT 1 FROM audit_log WHERE subject=${'fact:'+factIds[1]} AND action='story.move-fact'`;
   assert.equal(audit.length,1);
 });
