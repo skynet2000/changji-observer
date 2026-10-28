@@ -212,17 +212,23 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   const groups = SECTION_ORDER
     .map((label) => ({ label, items: top.filter((e) => sectionOf(e.category) === label) }))
     .filter((g) => g.items.length > 0);
-  const corpus = [`${startDate} ${endDateInclusive}`, ...top.map((e) => `${e.title} ${e.summary}`)].join("\n");
+  // Unverified posts stay in the issue, but a model must not turn their claims into assertions
+  // in an overview or introduction. Those passages are generated only from the remaining reports.
+  const writerGroups = groups.map((g) => ({ ...g, items: g.items.filter((e) => !e.summary.startsWith("【未经独立核实】")) }))
+    .filter((g) => g.items.length > 0);
+  const corpus = [`${startDate} ${endDateInclusive}`, ...writerGroups.flatMap((g) => g.items.map((e) => `${e.title} ${e.summary}`))].join("\n");
   const model = await modelFor("report");
   let written: z.infer<typeof PeriodSchema> = { overview: "", sections: {} };
   let receiptId: number | null = null;
   try {
-    const res = await chatJson({
-      model, purpose: `report_${kind}`, subject: `report:${kind}:${key}`, promptVersion: REPORT_VERSION,
-      ...periodPrompt(kind, startDate, endDateInclusive, groups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
-    });
-    written = res.data;
-    receiptId = res.receiptId;
+    if (writerGroups.length) {
+      const res = await chatJson({
+        model, purpose: `report_${kind}`, subject: `report:${kind}:${key}`, promptVersion: REPORT_VERSION,
+        ...periodPrompt(kind, startDate, endDateInclusive, writerGroups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
+      });
+      written = res.data;
+      receiptId = res.receiptId;
+    }
   } catch (error) {
     if (shutdownSignal.signal.aborted) throw error;
     console.error(JSON.stringify({ level: "warn", msg: "period writer failed; the issue goes out with its plain overview", report: `${kind}:${key}`, error: logError(error) }));
@@ -233,7 +239,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   };
   // Without a usable one the read layer says what the issue carries, naming only what is still public.
   const overview = usable(written.overview, OVERVIEW_CHARS[kind]);
-  const intro = (g: { label: string; items: Candidate[] }) => g.items.length >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null;
+  const intro = (g: { label: string; items: Candidate[] }) => (writerGroups.find((w) => w.label === g.label)?.items.length ?? 0) >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null;
   const [lead] = top as [Candidate, ...Candidate[]];
   const content = {
     kind,
@@ -248,7 +254,8 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, factKey: _f, ...e }) => e) })),
     storyOrder: top.map((e) => e.itemId),
     metrics: { totalStories: top.length, ...(EDITORIAL.selectionEnabled ? { selectedCount: selected.length } : {}), reportsCovered: issues },
-    generator: { version: REPORT_VERSION, ...(!EDITORIAL.selectionEnabled ? { basis: "all-admitted" } : {}), model, written: overview !== null },
+    generator: { version: REPORT_VERSION, ...(!EDITORIAL.selectionEnabled ? { basis: "all-admitted" } : {}), model, written: overview !== null,
+      ...(!writerGroups.length ? { unverifiedOnly: true } : {}) },
   };
   await saveReport(kind, key, start, end, content, reason, model, receiptId === null ? [] : [receiptId]);
   return { key, entries: top.length };

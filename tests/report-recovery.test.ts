@@ -6,14 +6,17 @@ import { after, before, beforeEach, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { composeDaily, composeDueReports, composeWeekly, composeMonthly } from "@aihot/backend/reports/compose";
+import { feedIssues, loadReport } from "@aihot/backend/publication/reports";
 import { EDITORIAL } from "@aihot/site";
 
 const T = tag();
 const SOURCE = `report-recovery-${T}`;
 const answer = async (user: string) => ({ title: user.slice(0, 100), leadParagraph: "导语", highlights: [1], headline: "本期进展", overview: "总述", themes: [{ heading: "主题", summary: "摘要", refs: [1] }] });
-const provider = await stub(async (_hit, request) => ({
-  choices: [{ message: { content: JSON.stringify(await answer(JSON.parse(request.body).messages.at(-1).content)) } }],
-}));
+let lastUser = "";
+const provider = await stub(async (_hit, request) => {
+  lastUser = JSON.parse(request.body).messages.at(-1).content;
+  return { choices: [{ message: { content: JSON.stringify(await answer(lastUser)) } }] };
+});
 process.env.DEEPSEEK_BASE_URL = `${provider.url}/v1`;
 process.env.DEEPSEEK_API_KEY = "test-key";
 before(async () => {
@@ -59,6 +62,27 @@ test('paused selection still carries unscored news from a daily into weekly and 
     }
     assert.equal(provider.hits(), calls + 2, 'only the weekly and monthly overview writers run, without rescoring');
   } finally { EDITORIAL.selectionEnabled = enabled; }
+});
+
+test('period writers exclude explicitly unverified posts but retain them in the issue', async () => {
+  const uncertain = await item('2024-08-12');
+  await sql`UPDATE publications SET title='未核实独家消息', summary='【未经独立核实】用户自述。' WHERE article_id=${uncertain}`;
+  await composeDaily('2024-08-12');
+  const calls = provider.hits();
+  await composeWeekly('2024-W33');
+  assert.equal(provider.hits(), calls, 'no model request when the entire issue is unverified');
+  assert.deepEqual((await report('weekly', '2024-W33'))!.content.storyOrder, [uncertain]);
+  assert.doesNotMatch((await loadReport('weekly', '2024-W33'))!.overview!, /未核实独家消息/);
+  assert.doesNotMatch((await feedIssues('weekly', 10)).find((issue) => issue.key === '2024-W33')!.leadParagraph!, /未核实独家消息/);
+
+  const verified = await item('2024-08-13');
+  await sql`UPDATE publications SET title='公司公开公告', summary='公司公告内容。' WHERE article_id=${verified}`;
+  await composeDaily('2024-08-13');
+  await composeMonthly('2024-08');
+  assert.equal(provider.hits(), calls + 1);
+  assert.match(lastUser, /公司公开公告/);
+  assert.doesNotMatch(lastUser, /未核实独家消息|用户自述/);
+  assert.deepEqual(new Set((await report('monthly', '2024-08'))!.content.storyOrder), new Set([verified, uncertain]));
 });
 
 test("automatic retries preserve all three published issue kinds; explicit corrections keep a revision", async () => {

@@ -47,7 +47,8 @@ export interface ArchiveGroup {
 }
 
 /**
- * The archive column: days grouped by month, weeks by the month their Monday falls in ("第2周"),
+ * The archive column: days grouped by month, weeks by the month their Monday falls in ("第2周";
+ * a partial first calendar week counts),
  * months by year. Newest first, as the index comes.
  */
 export function archiveGroups(kind: ReportKind, index: ReportNavigationEntry[]): ArchiveGroup[] {
@@ -58,15 +59,12 @@ export function archiveGroups(kind: ReportKind, index: ReportNavigationEntry[]):
     else groups.push({ id, label, entries: [e] });
   };
   if (kind === "weekly") {
-    const byMonth = new Map<string, string[]>();
     for (const e of index) {
-      const m = isoWeekRange(e.key)!.start.slice(0, 7);
-      byMonth.set(m, [...(byMonth.get(m) ?? []), e.key]);
-    }
-    for (const e of index) {
-      const m = isoWeekRange(e.key)!.start.slice(0, 7);
-      const weeks = [...byMonth.get(m)!].sort();
-      push(m, `${m.slice(0, 4)} 年 ${Number(m.slice(5))} 月`, { ...e, short: `第${weeks.indexOf(e.key) + 1}周` });
+      const start = isoWeekRange(e.key)!.start;
+      const m = start.slice(0, 7);
+      const firstDay = new Date(`${m}-01T00:00:00Z`).getUTCDay();
+      const week = Math.ceil((Number(start.slice(8, 10)) + (firstDay + 6) % 7) / 7);
+      push(m, `${m.slice(0, 4)} 年 ${Number(m.slice(5))} 月`, { ...e, short: `第${week}周` });
     }
     return groups;
   }

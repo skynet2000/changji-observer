@@ -12,7 +12,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { ReportCitation, ReportDetail, ReportNavigationEntry } from "@aihot/contracts/site";
 import { REPORTS, SITE, subjectAfter, withSubject } from "@aihot/site";
-import { Badge } from "../../components/ui/Badge";
+import { Badge, UnverifiedBadge } from "../../components/ui/Badge";
 import { IconArrowLeft, IconArrowRight, IconArrowUpRight } from "../../components/icons";
 import { Kicker } from "../../components/ui/Kicker";
 import type { OutlineEntry } from "../../components/ui/OutlineSheet";
@@ -89,6 +89,7 @@ function Source({ c, size = 16 }: { c: ReportCitation; size?: number }) {
       <SourceAvatar name={c.sourceName} iconUrl={c.sourceIconUrl} iconSrcSet={c.sourceIconSrcSet} size={size} />
       <span className="truncate"><Text>{c.sourceName}</Text></span>
       {c.firstParty && <Badge tone="accent"><Text>一手</Text></Badge>}
+      {c.unverified && <UnverifiedBadge />}
     </span>
   );
 }
@@ -127,6 +128,7 @@ function Related({ items, className = "" }: { items: ReportCitation[]; className
               <span title={translate(WITHDRAWN_NOTE)} className="text-ink-4 line-through"><Text content>{r.title}</Text></span>
             )}
             {r.available && <span className="ml-2 text-[12px] text-ink-4"><Text>{r.sourceName}</Text></span>}
+            {r.available && r.unverified && <span className="ml-2"><UnverifiedBadge /></span>}
           </span>
         </li>
       ))}
@@ -347,6 +349,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
                       <span className="min-w-0">
                         <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent"><Text content>{h.title}</Text></span>
                         <span className="mt-1.5 block truncate text-[12px] text-ink-4"><Text>{h.sourceName}</Text></span>
+                        {h.unverified && <span className="mt-1 block"><UnverifiedBadge /></span>}
                       </span>
                     </Link>
                   </li>
@@ -526,6 +529,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
                     <span className="text-ink"><Text content>{f.title}</Text></span>
                   )}
                   {f.available && <span className="ml-2 text-[12px] text-ink-4"><Text>{f.sourceName}</Text></span>}
+                  {f.available && f.unverified && <span className="ml-2"><UnverifiedBadge /></span>}
                   {f.available && f.followUp && <Badge className="ml-2 align-[1px]" title={translate(`${monthDay(f.followUp)}的日报报道过这件事，这里是新进展`)}><Text>跟进</Text></Badge>}
                 </span>
               </li>

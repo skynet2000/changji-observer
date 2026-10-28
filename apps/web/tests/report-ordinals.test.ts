@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { after, before, test } from "node:test";
 import type { ReportDetail, ReportKind, ReportNavigationEntry } from "@aihot/contracts/site";
 import { isoWeekLabel } from "@aihot/contracts/time";
-import { issueNumber, periodGrid } from "../app/features/report/format.ts";
+import { archiveGroups, chipLabel, issueNumber, periodGrid } from "../app/features/report/format.ts";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 const kinds: ReportKind[] = ["daily", "weekly", "monthly"];
@@ -18,10 +18,19 @@ const keys = Object.fromEntries(kinds.map((kind) => [kind, Array.from({ length: 
 })])) as Record<ReportKind, string[]>;
 /** The navigation as the api sends it: the newest 400 issues, each with its number in the whole series. */
 const index = (kind: ReportKind): ReportNavigationEntry[] => keys[kind].map((key, i) => ({ key, issueNumber: i + 1, title: `第${i + 1}期` })).reverse().slice(0, 400);
+
+test("weekly month labels reflect their calendar Mondays even when earlier issues are missing", () => {
+  const weeks = [{ key: "2026-W43", issueNumber: 2 }, { key: "2026-W41", issueNumber: 1 }];
+  assert.deepEqual(archiveGroups("weekly", weeks)[0]!.entries.map((e) => e.short), ["第4周", "第2周"]);
+  assert.equal(chipLabel("weekly", "2026-W43", weeks, "2026-10-28"), "10月第4周");
+});
 function report(kind: ReportKind, key: string): ReportDetail {
   return {
     kind, key, issueNumber: keys[kind].indexOf(key) + 1, title: "测试刊物", generatedAt: "2020-01-02T00:00:00Z",
-    lead: null, leadItemId: null, overview: null, highlights: [], sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null,
+    lead: null, leadItemId: null, overview: null, highlights: [], sections: [], flashes: kind === "daily" && key === keys.daily.at(-1) ? [{
+      itemId: "unverified-post", title: "职场用户自述", summary: "【未经独立核实】用户自述", sourceName: "脉脉", sourceUrl: "https://example.com/", sourceIconUrl: null,
+      firstParty: false, unverified: true, publishedAt: null, available: true,
+    }] : [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null,
   };
 }
 let web: WebServer;
@@ -87,4 +96,9 @@ test("the daily archive counts every issue, as the masthead numbers them", async
   const response = await fetch(`${web.origin}/daily/archive`);
   assert.equal(response.status, 200, web.logs());
   assert.match(masthead(await response.text()), /共\s*405\s*期/);
+});
+
+test("daily flash visibly marks an unverified post", async () => {
+  const html = await (await fetch(`${web.origin}/daily`)).text();
+  assert.match(html, /职场用户自述[\s\S]*?未经独立核实/);
 });
