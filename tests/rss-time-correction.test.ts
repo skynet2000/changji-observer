@@ -72,3 +72,20 @@ test("does not silently change a report across the historical backfill boundary"
   const [a] = await sql`SELECT published_at FROM articles WHERE id=${f.id}`;
   assert.equal(a!.published_at.toISOString(),oldTime);
 });
+
+test("a failed audit rolls back article, publication and story time together", async () => {
+  const f = await fixture();
+  await sql.unsafe(`CREATE FUNCTION reject_rss_time_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.actor='reject-rss-time' THEN RAISE EXCEPTION 'audit unavailable'; END IF; RETURN NEW; END $$`);
+  await sql.unsafe('CREATE TRIGGER reject_rss_time_audit BEFORE INSERT ON audit_log FOR EACH ROW EXECUTE FUNCTION reject_rss_time_audit()');
+  try {
+    await assert.rejects(correctVerifiedRssTime(f.id,f.input,'reject-rss-time'),/audit unavailable/);
+    const [row] = await sql`SELECT a.published_at,p.published_at AS public_at,ss.observed_at,st.latest_at
+      FROM articles a JOIN publications p ON p.article_id=a.id JOIN story_signals ss ON ss.article_id=a.id
+      JOIN stories st ON st.id=ss.story_id WHERE a.id=${f.id}`;
+    for (const value of Object.values(row!)) assert.equal(value.toISOString(),oldTime);
+    assert.equal((await sql`SELECT 1 FROM audit_log WHERE subject=${`content:${f.id}`} AND action='content.correct-rss-timezone'`).length,0);
+  } finally {
+    await sql.unsafe('DROP TRIGGER reject_rss_time_audit ON audit_log');
+    await sql.unsafe('DROP FUNCTION reject_rss_time_audit()');
+  }
+});
