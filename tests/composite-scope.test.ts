@@ -8,8 +8,10 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { latestCompositeCondition, compositeCondition, ownFactEvidenceCondition } from "@aihot/backend/publication/scope";
 import { candidateViews } from "@aihot/backend/events/recall";
 import { overrideFields } from "@aihot/backend/admin/content";
-import { moveToFact } from "@aihot/backend/events/corrections";
+import { moveFactToStory, moveToFact } from "@aihot/backend/events/corrections";
 import { publishArticle } from "@aihot/backend/publication/publish";
+import { loadPool } from "@aihot/backend/publication/pool";
+import { loadGroupReports } from "@aihot/backend/publication/groups";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 
 after(async () => { await stopBoss(); await closeDb(); });
@@ -102,4 +104,83 @@ test("audited scope corrections survive reanalysis and can be cleared without re
   assert.ok(history.every(r=>r.scope==='composite'),'model records are immutable');
   const audit = await sql`SELECT 1 FROM audit_log WHERE subject=${`content:${id}`} AND action='content.override'`;
   assert.equal(audit.length,2);
+});
+
+test("an audited reprint of one dispute joins its original without folding an unrelated roundup", async () => {
+  const key = `scope-dispute-${tag()}`;
+  const at = new Date("2026-10-28T03:20:00Z");
+  const now = new Date("2026-10-28T05:00:00Z");
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES
+    (${key},'First publisher','rss','T2','editorial'),(${key+'-reprint'},'Reprint','rss','T2','editorial')`;
+  const ids = [key+'-original',key+'-reprint',key+'-roundup'];
+  for (const [i,id] of ids.entries()) {
+    const source = i===1 ? key+'-reprint' : key;
+    const title = i===2 ? '字节时间争议、另一公司融资及独立政策的早报' : '中国互联网是否存在字节时间？抖音高管反驳，秦朔再回应';
+    await sql`INSERT INTO articles (id,source_id,identity_key,url,title,discovered_at,timeline_at,grouping_status)
+      VALUES (${id},${source},${id},${'https://example.org/'+id},${title},${at},${at},'complete')`;
+    await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,category,tags,title_zh,summary_zh,selected,output)
+      VALUES (${id},1,'rule','pass','industry',${[key]},${title},'秦朔回应李亮对同一争议的反驳。',false,${sql.json({scope:i===0?'single':'composite'})})`;
+    await publishArticle(id, {releasedAt: at});
+  }
+  const [story] = await sql`INSERT INTO stories(public_id,title) VALUES (${randomUUID()},'字节时间之争') RETURNING id`;
+  const factId=randomUUID();
+  const [fact] = await sql`INSERT INTO facts(public_id,story_id,title) VALUES (${factId},${story!.id},'秦朔再回应') RETURNING id`;
+  await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES (${fact!.id},${ids[0]!},'primary')`;
+  await publishArticle(ids[0]!);
+  const q={channel:'all' as const,category:null,tag:key,now};
+  assert.equal((await loadPool(q)).total,3,'the mistaken composite initially produces a duplicate card');
+  await overrideFields(ids[1]!,{fields:{scope:'single'},version:0,reason:'原文核对为同一篇争议报道的转载'},'scope-test');
+  await moveToFact(ids[1]!,factId,'核对原稿与转载正文一致','scope-test');
+  const result=await loadPool(q);
+  assert.equal(result.total,2,'the unrelated multi-topic roundup remains separate');
+  const group=result.items.find((item)=>item.group)?.group;
+  assert.equal(group?.reportCount,2);
+  const reports=await loadGroupReports({factPublicId:factId,scope:'story',channel:'all',category:null,tag:key},now);
+  assert.deepEqual(new Set(reports!.reports.map((item)=>item.id)),new Set(ids.slice(0,2)));
+});
+
+test("move one response into the dispute without merging the revenue denial", async () => {
+  const key = `split-dispute-${tag()}`;
+  const at = new Date("2026-10-28T04:00:00Z");
+  const now = new Date("2026-10-28T05:00:00Z");
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode) VALUES (${key},'Dispute source','rss','T2','editorial')`;
+  const ids = [key+'-qin', key+'-li', key+'-denial'];
+  const titles = ['秦朔再回应字节时间争议','李亮再次回应秦朔','红果否认年收入400亿元'];
+  const [debate] = await sql`INSERT INTO stories(public_id,title) VALUES (${randomUUID()},'字节时间争议') RETURNING id`;
+  const [mixed] = await sql`INSERT INTO stories(public_id,title) VALUES (${randomUUID()},'红果收入辟谣') RETURNING id`;
+  const factIds = [randomUUID(),randomUUID(),randomUUID()];
+  for (let i=0;i<ids.length;i++) {
+    const id=ids[i]!;
+    const storyId=i===0?debate!.id:mixed!.id;
+    await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at,grouping_status)
+      VALUES (${id},${key},${id},${'https://example.org/'+id},${titles[i]!},${at},${at},'complete')`;
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,tags,title_zh,summary_zh,selected,output)
+      VALUES (${id},1,'rule','pass','industry',${[key]},${titles[i]!},'原文报道的独立进展。',false,'{"scope":"single"}')`;
+    const [fact]=await sql`INSERT INTO facts(public_id,story_id,title) VALUES (${factIds[i]!},${storyId},${titles[i]!}) RETURNING id`;
+    await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES (${fact!.id},${id},'report')`;
+    await sql`INSERT INTO story_signals(story_id,article_id,participant_key,source_id,kind,observed_at)
+      VALUES (${storyId},${id},${key},${key},'editorial',${at})`;
+    await publishArticle(id,{releasedAt:at});
+  }
+  const from=Number(mixed!.id), into=Number(debate!.id);
+  const query={channel:'all' as const,category:null,tag:key,now};
+  assert.equal((await loadPool(query)).total,2);
+  await assert.rejects(moveFactToStory(factIds[1]!,into,from,'旧状态','scope-test'),{code:'conflict'});
+  const moved=await moveFactToStory(factIds[1]!,from,into,'同一争议的后续回应','scope-test');
+  assert.equal(moved.reports,1);
+  const state=await sql`SELECT p.article_id,p.story_id,f.public_id,fa.manual FROM publications p
+    JOIN fact_articles fa ON fa.article_id=p.article_id AND fa.role='report'
+    JOIN facts f ON f.id=fa.fact_id WHERE p.article_id=ANY(${ids}) ORDER BY p.article_id`;
+  assert.equal(Number(state.find(r=>r.article_id===ids[1])!.story_id),into);
+  assert.equal(state.find(r=>r.article_id===ids[1])!.public_id,factIds[1]);
+  assert.equal(state.find(r=>r.article_id===ids[1])!.manual,true);
+  assert.equal(Number(state.find(r=>r.article_id===ids[2])!.story_id),from);
+  const reports=await loadGroupReports({factPublicId:factIds[0]!,scope:'story',channel:'all',category:null,tag:key},now);
+  assert.deepEqual(new Set(reports!.reports.map(r=>r.id)),new Set(ids.slice(0,2)));
+  assert.equal((await loadPool(query)).total,2,'separate revenue denial stays visible');
+  const signals=await sql`SELECT story_id,article_id FROM story_signals WHERE article_id=ANY(${ids})`;
+  assert.equal(Number(signals.find(s=>s.article_id===ids[1])!.story_id),into);
+  assert.equal(Number(signals.find(s=>s.article_id===ids[2])!.story_id),from);
+  const audit=await sql`SELECT 1 FROM audit_log WHERE subject=${'fact:'+factIds[1]} AND action='story.move-fact'`;
+  assert.equal(audit.length,1);
 });
