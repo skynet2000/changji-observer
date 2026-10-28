@@ -8,7 +8,7 @@ const PUBLISHER = ["publisherRole", "publisherUrlPrefixes", "publisherRequiresDi
 const COLLECTED = [...PUBLISHER, "_aihot", "allowUrlPrefixes", "denyUrlPrefixes", "ingestNoiseFilter", "itemUrlPrefixRewrite", "sortByPublishedAt", "detail", "fetchPublicContent", "publishedAfter"];
 
 const KEYS: Record<SourceRow["kind"], string[]> = {
-  rss: [...COLLECTED, "feedUrl", "summaryIsBody", "preserveUrlFragment", "allowCategories", "denyCategories"],
+  rss: [...COLLECTED, "feedUrl", "summaryIsBody", "preserveUrlFragment", "allowCategories", "denyCategories", "publishedAtUtcOffset"],
   web_list: [
     ...COLLECTED, "url", "baseUrl", "parseMode", "adapter", "cacheToleranceSeconds", "linksStartLine", "preserveUrlFragment",
     "itemSelector", "linkSelector", "titleSelector", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset",
@@ -63,6 +63,8 @@ export function unsupportedConfig(kind: SourceRow["kind"], config: Record<string
     else if (kind === "web_list" && key === "bodyForm" && (config.method !== "POST" || !value || typeof value !== "object"
       || Array.isArray(value) || !Object.values(value).every(v => typeof v === "string"))) out.push(key);
     else if (key === "publishedAfter" && !utcInstant(value)) out.push(key);
+    else if (kind === "rss" && key === "publishedAtUtcOffset" && (typeof value !== "string"
+      || !/^[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00)$/.test(value))) out.push(key);
     else if (key === "publisherUrlPrefixes" && (!Array.isArray(value) || !value.every((v) => {
       if (typeof v !== "string") return false;
       try { const u = new URL(v); return /^https?:$/.test(u.protocol) && !u.username && !u.password && !u.search && !u.hash; } catch { return false; }
