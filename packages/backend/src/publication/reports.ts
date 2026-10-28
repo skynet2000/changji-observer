@@ -25,6 +25,7 @@ interface Availability {
   available: boolean;
   /** The article's public summary, for issues saved before summaries were frozen into them. */
   summary: string | null;
+  unverified: boolean;
   firstParty: boolean;
   sourceId: string | null;
   sourceName: string | null;
@@ -35,8 +36,8 @@ interface Availability {
 async function availability(ids: string[]): Promise<Map<string, Availability>> {
   const out = new Map<string, Availability>();
   if (ids.length === 0) return out;
-  const rows = await sql<{ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }[]>`
-    SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, s.icon_url,
+  const rows = await sql<{ id: string; available: boolean; summary: string | null; unverified: boolean; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }[]>`
+    SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, '未经独立核实' = ANY(p.tags) AS unverified, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, s.icon_url,
       coalesce(p.published_at, p.discovered_at) AS at
     FROM publications p LEFT JOIN sources s ON s.id = p.source_id
     WHERE p.article_id IN ${sql(ids)}`;
@@ -44,6 +45,7 @@ async function availability(ids: string[]): Promise<Map<string, Availability>> {
     out.set(r.id, {
       available: r.available,
       summary: r.summary,
+      unverified: r.unverified,
       firstParty: r.first_party,
       sourceId: r.source_id,
       sourceName: r.source_name,
@@ -169,6 +171,7 @@ function periodOverview(content: Record<string, any>, kind: "weekly" | "monthly"
   if (!changed && typeof content.overview === "string" && content.overview) return content.overview;
   const shown = leadCandidates(content, "periodic").filter((e) => !e.itemId || !gone.has(String(e.itemId)));
   if (!shown.length) return null;
+  if (content.generator?.unverifiedOnly) return `${kind === "weekly" ? "本周" : "本月"} ${shown.length} ${REPORTS.entry.measure}${REPORTS.entry.noun}，详情见各栏目。`;
   return `${kind === "weekly" ? "本周" : "本月"} ${shown.length} ${REPORTS.entry.measure}${REPORTS.entry.noun}，最受关注的是：${shown.slice(0, 3).map((e) => e.title).join("；")}。`;
 }
 
@@ -235,6 +238,7 @@ function citationFrom(raw: Record<string, any>, avail: Map<string, Availability>
     itemId: id,
     title: String(raw.title ?? ""),
     ...metadata,
+    ...(a?.unverified || String(metadata.summary ?? "").startsWith("【未经独立核实】") ? { unverified: true } : {}),
     sourceName: publicSourceName(metadata.sourceName),
     sourceIconUrl: a?.sourceIcon ? proxiedImage(a.sourceIcon, "avatar") : null,
     ...(iconSrcSet ? { sourceIconSrcSet: iconSrcSet } : {}),
@@ -458,7 +462,7 @@ export async function v1Dailies(limit: number) {
  */
 export interface DailyNote {
   otherSources: number;
-  related: Array<{ title: string; link: string }>;
+  related: Array<{ title: string; link: string; unverified?: boolean }>;
   followUp: string | null;
 }
 
@@ -478,7 +482,8 @@ export async function dailyWithNotes(date: string | "latest") {
   const lead = c.lead || c.leadItemId ? issueLead(c, "daily", goneIn(avail)) : null;
   const notes = new Map<string, DailyNote>();
   for (const i of raw.filter(ok)) {
-    const related = (i.related ?? []).filter((x: any) => x.itemId && ok(x)).map((x: any) => ({ title: String(x.title), link: itemUrl(x.itemId) }));
+    const related = (i.related ?? []).filter((x: any) => x.itemId && ok(x)).map((x: any) => ({ title: String(x.title), link: itemUrl(x.itemId),
+      ...(avail.get(x.itemId)?.unverified ? { unverified: true } : {}) }));
     const otherSources = Number(i.sources) > 1 ? Number(i.sources) - 1 : 0;
     if (otherSources || related.length || i.followUp) notes.set(links(i).aihot ?? links(i).original, { otherSources, related, followUp: i.followUp ?? null });
   }
@@ -504,6 +509,7 @@ export async function dailyWithNotes(date: string | "latest") {
       })),
       flashes: (c.flashes ?? []).filter(ok).map((i: any) => ({
         title: String(i.title),
+        ...(avail.get(i.itemId)?.unverified || String(metadata(i).summary ?? "").startsWith("【未经独立核实】") ? { unverified: true } : {}),
         source: { name: metadata(i).sourceName },
         links: links(i),
         publishedAt: metadata(i).publishedAt ?? r.generated_at.toISOString(),

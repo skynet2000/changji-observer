@@ -276,6 +276,8 @@ export interface ReportCitation {
   sourceIconUrl: string | null;
   sourceIconSrcSet?: string;
   firstParty: boolean;
+  /** The source's report is explicitly marked as not independently verified. */
+  unverified?: boolean;
   /** When the cited report was published, if it is still in the database. */
   publishedAt: string | null;
   /** False once the item was withdrawn; the citation then shows as removed. */

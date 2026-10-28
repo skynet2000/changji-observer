@@ -158,7 +158,7 @@ export interface DailyReport {
   links: { aihot: string };
   lead: { title: string; leadParagraph: string } | null;
   sections: { label: string; items: { title: string; summary: string; source: { name: string }; links: Links }[] }[];
-  flashes: { title: string; publishedAt: string; source: { name: string }; links: Links }[];
+  flashes: { title: string; publishedAt: string; source: { name: string }; links: Links; unverified?: boolean }[];
 }
 
 /** A daily entry's note: other sources, the daily it follows, and the event's other developments. */
@@ -166,7 +166,7 @@ function noteLines(note: DailyNote | undefined): string[] {
   if (!note) return [];
   return [
     ...(note.followUp ? [`   跟进：${note.followUp} 的日报报道过这件事，这里是新进展`] : []),
-    ...note.related.slice(0, 4).map((x) => `   - 相关：[${linkText(x.title)}](${x.link})`),
+    ...note.related.slice(0, 4).map((x) => `   - 相关：[${linkText(x.title)}](${x.link})${x.unverified ? " · 未经独立核实" : ""}`),
   ];
 }
 
@@ -185,7 +185,7 @@ export function dailyAnswer(r: DailyReport, via: Via, notes: Map<string, DailyNo
     data.push("");
   }
   if (r.flashes.length) {
-    data.push("【快讯】", ...r.flashes.map((f) => `- ${stamp(f.publishedAt)} · [${linkText(f.title)}](${f.links.aihot ?? f.links.original}) · ${publicSourceName(f.source.name)}`), "");
+    data.push("【快讯】", ...r.flashes.map((f) => `- ${stamp(f.publishedAt)} · [${linkText(f.title)}](${f.links.aihot ?? f.links.original}) · ${publicSourceName(f.source.name)}${f.unverified ? " · 未经独立核实" : ""}`), "");
   }
   return answer([
     `# ${SITE.name} 日报 · ${r.date}（${beijingWeekday(r.date)}）`,

@@ -58,15 +58,11 @@ export function archiveGroups(kind: ReportKind, index: ReportNavigationEntry[]):
     else groups.push({ id, label, entries: [e] });
   };
   if (kind === "weekly") {
-    const byMonth = new Map<string, string[]>();
     for (const e of index) {
-      const m = isoWeekRange(e.key)!.start.slice(0, 7);
-      byMonth.set(m, [...(byMonth.get(m) ?? []), e.key]);
-    }
-    for (const e of index) {
-      const m = isoWeekRange(e.key)!.start.slice(0, 7);
-      const weeks = [...byMonth.get(m)!].sort();
-      push(m, `${m.slice(0, 4)} 年 ${Number(m.slice(5))} 月`, { ...e, short: `第${weeks.indexOf(e.key) + 1}周` });
+      const start = isoWeekRange(e.key)!.start;
+      const m = start.slice(0, 7);
+      const week = Math.ceil(Number(start.slice(8, 10)) / 7);
+      push(m, `${m.slice(0, 4)} 年 ${Number(m.slice(5))} 月`, { ...e, short: `第${week}周` });
     }
     return groups;
   }

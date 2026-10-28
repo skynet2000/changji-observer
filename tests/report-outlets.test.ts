@@ -51,6 +51,23 @@ async function dailyOutlets(key: string) {
   };
 }
 
+test('unverified citations retain their notice in daily sections, related reports and flashes', async () => {
+  const primary = await citation('Verified report');
+  const uncertain = await citation('Unverified post');
+  await sql`UPDATE publications SET tags = ARRAY['未经独立核实'], summary = '【未经独立核实】用户自述' WHERE article_id = ${uncertain.itemId}`;
+  const key = '2095-11-11';
+  await issue('daily', key, { leadItemId: primary.itemId, lead: { title: primary.title, leadParagraph: primary.summary },
+    sections: [{ label: 'News', items: [{ ...primary, related: [{ itemId: uncertain.itemId, title: uncertain.title }] }] }],
+    flashes: [{ itemId: uncertain.itemId, title: uncertain.title }] });
+  const report = (await loadReport('daily', key))!;
+  assert.equal(report.sections[0]!.items[0]!.related![0]!.unverified, true);
+  assert.equal(report.flashes[0]!.unverified, true);
+  assert.equal(report.sections[0]!.items[0]!.unverified, undefined);
+  assert.equal((await v1Daily(key))!.report.flashes[0]!.unverified, true);
+  const agent = await app.inject({ method: 'GET', url: `/api/v1/agent/daily/${key}` });
+  assert.match(agent.body, /Unverified post\]\([^\n]+未经独立核实/);
+});
+
 test('all-admitted issues never label their candidate pool as selections, while historical selection metrics stay intact', async () => {
   for (const [kind, key] of [['daily', '2097-02-01'], ['weekly', '2097-W02'], ['monthly', '2097-02']] as const) {
     const content = { generator: { basis: 'all-admitted' }, metrics: { totalStories: 16, selectedCount: 404, reportsCovered: 7 } };
