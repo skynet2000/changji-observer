@@ -3292,6 +3292,7 @@
       "kind": "rss",
       "config": {
         "feedUrl": "https://rss.mydrivers.com/Rss.aspx?cid=9",
+        "publishedAtUtcOffset": "+08:00",
         "fetchPublicContent": true,
         "sortByPublishedAt": true,
         "publishedAfter": "2026-10-20T16:00:00Z",

@@ -7,6 +7,7 @@ import { identityKeyFor } from "../content/materials.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { normalizeUrl } from "../lib/url.ts";
 import { isVideoPageUrl } from "../lib/video-url.ts";
+import { parseLooseDate } from "./dates.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
 
 const parser = new XMLParser({
@@ -58,8 +59,15 @@ function mediaDescription(entry: Record<string, any>): string | null {
   return null;
 }
 
-function parseDate(v: string): Date | null {
+function parseDate(v: string, utcOffset?: string): Date | null {
   if (!v) return null;
+  // A feed may publish a local wall-clock time without a zone. Never let the worker host's
+  // timezone decide it; unspecified feeds keep the previous UTC deployment behavior.
+  const wallClock = /^(\d{4}-\d{1,2}-\d{1,2}[ T]\d{1,2}:\d{2}(?::\d{2})?)(?:\.(\d+))?$/.exec(v.trim());
+  if (wallClock) {
+    const parsed = parseLooseDate(wallClock[1], utcOffset ?? "+00:00");
+    return parsed ? new Date(parsed.getTime() + Number(`0.${wallClock[2] ?? "0"}`) * 1000) : null;
+  }
   const t = Date.parse(v);
   if (Number.isFinite(t)) return new Date(t);
   // RFC 822 variants with Chinese weekday or odd zones
@@ -200,7 +208,7 @@ export async function fetchRss(source: SourceRow, opts: { force?: boolean } = {}
         ...(mediaFile ? { identityKey: identityKeyFor({ sourceId: source.id, url: guid, title, via: "fetch" }) } : {}),
         title,
         author: text(it["dc:creator"]) || text(it.author) || null,
-        publishedAt: parseDate(text(it.pubDate) || text(it["dc:date"]) || text(it.published)),
+        publishedAt: parseDate(text(it.pubDate) || text(it["dc:date"]) || text(it.published), source.config.publishedAtUtcOffset),
         ...feedText(bodyHtml, description ? stripTags(description) : null, source, !mediaFile && !video),
         ...(videoExcerpt ? { excerpt: videoExcerpt } : {}),
         media: media.slice(0, 6),
@@ -231,8 +239,8 @@ export async function fetchRss(source: SourceRow, opts: { force?: boolean } = {}
         url: entryUrl,
         title,
         author: text(arr(e.author)[0]?.name) || null,
-        publishedAt: parseDate(text(e.published) || text(e.updated)),
-        sourceUpdatedAt: parseDate(text(e.updated)),
+        publishedAt: parseDate(text(e.published) || text(e.updated), source.config.publishedAtUtcOffset),
+        sourceUpdatedAt: parseDate(text(e.updated), source.config.publishedAtUtcOffset),
         ...feedText(bodyHtml, summary, source, !video, plainBody),
         ...(videoExcerpt ? { excerpt: videoExcerpt } : {}),
         media: bodyHtmlRaw ? imagesFrom(bodyHtmlRaw, entryUrl) : [],
