@@ -1,0 +1,11 @@
+[Unit]
+Description=Dachang Observer old image and release cleanup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/libexec/dachang-observer/prune-site-storage.py --apply
+TimeoutStartSec=1800
+UMask=0077
+NoNewPrivileges=true
