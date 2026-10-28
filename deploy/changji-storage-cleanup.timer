@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Dachang Observer storage cleanup
+
+[Timer]
+OnCalendar=*-*-* 19:00:00 UTC
+Persistent=true
+Unit=changji-storage-cleanup.service
+
+[Install]
+WantedBy=timers.target
