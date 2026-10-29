@@ -355,3 +355,7 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 ### 2026-10-27 免费模型恢复保护升级
 
 无需新增数据库表或修改凭据。两层免费通道的共享冷却保存在现有`settings`的`model.health.*`，在途请求通过回执预约统计；常规发布只更新web/api/worker。并发、冷却不创建虚假调用回执，原预算、停用及未知回执保护保留。回滚代码不删除历史回执或修改模型凭据；旧版忽略新增健康状态。运营邮件读取当前发布目录中的`deploy/cost-report.py`，无需新增定时器或补发今日邮件。
+
+### 2026-10-30 超算中间层移除
+
+更新前备份数据库；将 `models.*` 中直接指定 `scnet-glm-flash` / `scnet-glm-flash-think` 的步骤改成对应 Intern 预设。私有环境与凭据目录删除 SCNET 配置，清理该服务的 budgets 和 `model.health.scnet.*` / `model.pace.scnet*` 当前状态（以实际键名核对）；历史 receipts、receipt_attempts、审计及账务数据保留。仅重新部署本站 web/api/worker。不要修改共享 HTTPS 入口或其他项目。

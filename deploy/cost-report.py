@@ -86,9 +86,10 @@ def message(report, sender, recipient, day):
         rows.append('- 本窗口没有付费通道调用。')
     if report['unknown_outcomes'] or report['unpriced_paid']:
         rows += ['', f"待核对：{report['unknown_outcomes']} 次调用结果未知/进行中，{report['unpriced_paid']} 次成功调用缺少可信人民币价格。未知结果可能保留费用上界。"]
-    rows += ['', f"超算 GLM 额度通道：成功 {report.get('scnet_success', 0)} 次；拒绝 {report.get('scnet_failed', 0)} 次；结果未知/进行中 {report.get('scnet_unknown', 0)} 次",
-             f"超算已返回用量：{report.get('scnet_tokens', 0)} Token；缺少可读用量的成功调用 {report.get('scnet_missing_usage', 0)} 次。",
-             '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
+    if any(report.get(k, 0) for k in ('scnet_success', 'scnet_failed', 'scnet_unknown')):
+        rows += ['', f"历史超算 GLM（已停用）：成功 {report.get('scnet_success', 0)} 次；拒绝 {report.get('scnet_failed', 0)} 次；结果未知/进行中 {report.get('scnet_unknown', 0)} 次",
+                 f"超算已返回用量：{report.get('scnet_tokens', 0)} Token；缺少可读用量的成功调用 {report.get('scnet_missing_usage', 0)} 次。",
+                 '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
     providers = {'intern':'书生','scnet':'超算'}
     reasons = {'quota':'额度拒绝','rate':'限流','unknown':'结果未知/进行中','server':'上游服务错误','other':'其他失败'}
     rows += ['', '昨日免费通道异常（尝试次数，重试分别计数）：']
@@ -100,7 +101,7 @@ def message(report, sender, recipient, day):
         state = f"冷却至 {until:%m-%d %H:%M:%S}" if until > datetime.now(ZoneInfo('Asia/Shanghai')) else '等待单条恢复探测'
         rows.append(f"- {providers.get(h['service'],h['service'])}：{reasons.get(h['reason'],h['reason'])}，{state}。")
     if not report.get('provider_health'): rows.append('- 当前无持久化冷却，实际可用性仍以调用结果为准。')
-    rows += ['', '当前策略：书生 DeepSeek → 国家超算 GLM 赠送额度 → DeepSeek 官方付费；前一层失败才尝试下一层。',
+    rows += ['', '当前策略：书生 DeepSeek 免费 → DeepSeek 官方付费；免费层失败才尝试付费。超算层已移除。',
              '已确认不可用的免费层在冷却期间暂时跳过；恢复探测成功后重新优先。并发排队不触发付费，超时未知不在原层盲重发。',
              '成功数表示收到模型回复，不保证通过全部业务校验；冷却跳过不会记作一次模型请求。',
              '以上来自本站调用回执，按既有价格估算；最终以供应商账单为准。',

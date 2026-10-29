@@ -30,8 +30,7 @@ export function reserveModelCost(baseUrl: string, body: Record<string, unknown>)
   if (new URL(baseUrl).origin !== MODEL_COST_POLICY.origin || body.model !== MODEL_COST_POLICY.model) {
     // The quota provider reports tokens but no CNY bill. Keep its monetary cost unknown, not a
     // fabricated zero or DeepSeek's retail price. A future finite cap must fail closed.
-    const quotaModel = (new URL(baseUrl).origin === "https://discovery-api.intern-ai.org.cn" && body.model === "deepseek-v4.1-flash-1017")
-      || (baseUrl.replace(/\/$/, "") === "https://api.scnet.cn/api/llm/v1" && body.model === "GLM-5.3-Flash");
+    const quotaModel = new URL(baseUrl).origin === "https://discovery-api.intern-ai.org.cn" && body.model === "deepseek-v4.1-flash-1017";
     if (dailyLimit === null && quotaModel) return undefined;
     throw new Error("Cost budget requires the verified DeepSeek Flash endpoint and model");
   }

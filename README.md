@@ -156,19 +156,19 @@ flowchart TB
 
 ## 模型调用与费用
 
-通道顺序是**书生 DeepSeek 免费 → 国家超算 GLM 赠送额度 → DeepSeek 官方付费**；优先使用可用的前两层，已确认不可用的免费层共享冷却与恢复探测，付费仅兜底：
+通道顺序是**书生 DeepSeek 免费 → DeepSeek 官方付费**；优先使用可用的免费层，已确认不可用的免费层共享冷却与恢复探测，付费仅兜底：
 
-| 用途 | 第一层 | 第二层 | 第三层 |
-| --- | --- | --- | --- |
-| 写作、结构化、归组及复核、综述、周月报辅助、翻译 | Intern / `deepseek-v4.1-flash-1017`，预设 `intern-flash` | SCNet / `GLM-5.3-Flash`，预设 `scnet-glm-flash` | DeepSeek 官方 / `deepseek-flash` |
-| 行业预筛（继续运行） | 同版本，低强度推理预设 `intern-flash-think` | SCNet / `GLM-5.3-Flash`，预设 `scnet-glm-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
-| 精选双次评分（当前暂停，配置保留） | 同版本，低强度推理预设 `intern-flash-think` | SCNet / `GLM-5.3-Flash`，预设 `scnet-glm-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
+| 用途 | 免费优先 | 付费兜底 |
+| --- | --- | --- |
+| 写作、结构化、归组及复核、综述、周月报辅助、翻译 | Intern / `deepseek-v4.1-flash-1017`，预设 `intern-flash` | DeepSeek 官方 / `deepseek-flash` |
+| 行业预筛（继续运行） | 同版本，低强度推理预设 `intern-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
+| 精选双次评分（当前暂停，配置保留） | 同版本，低强度推理预设 `intern-flash-think` | `deepseek-flash-think`，API 模型仍为 `deepseek-flash` |
 
 模型预设在 [`site/models.ts`](site/models.ts)，实际选择优先级为**后台设置 → 环境变量 → 代码默认**。仓库新建实例默认仍使用 DeepSeek；只填写 Intern 密钥不会自动把全部步骤切到免费通道，需按 [通道路由说明](docs/model-routing.md) 配置并核对每步选择。官方付费模型是服务商别名，不承诺永久固定到同一日期版本。
 
-书生与超算赠送额度受平台规则、有效期、RPM/TPM与可用容量限制，不承诺无限免费。超算使用通用API Key，启用前须确认免费额度及额度耗尽后的现金扣费保护，不使用Token Plan。付费回退仍消耗余额；当前站主选择不限人民币金额，保留请求限速、并发、停用与回执保护。请求结果未知时不保证没有费用，不能盲目重试。后台和费用邮件显示本站回执的估算，不是供应商最终账单，也不包含同一密钥在其他项目的消费。
+书生免费额度受平台规则、有效期、RPM/TPM与可用容量限制，不承诺无限免费。超算通道已因额度不足于2026-10-30移除。付费回退仍消耗余额；当前站主选择不限人民币金额，保留请求限速、并发、停用与回执保护。请求结果未知时不保证没有费用，不能盲目重试。后台和费用邮件显示本站回执的估算，不是供应商最终账单，也不包含同一密钥在其他项目的消费。
 
-免费 Intern 通道的普通、推理及重试请求共用 **45 次/滚动分钟**的节奏，相邻发送预约至少间隔 1,334ms；超算GLM预设共用本站30次/滚动分钟的保护，相邻预约至少2000ms，这不是平台上限声明。后台与维护进程通过同一数据库协调。本地排队不触发付费回退，金额不限额也不会绕开此节奏。配置与适用边界见 [通道路由说明](docs/model-routing.md)。
+免费 Intern 通道的普通、推理及重试请求共用 **45 次/滚动分钟**的节奏，相邻发送预约至少间隔 1,334ms。后台与维护进程通过同一数据库协调。本地排队不触发付费回退，金额不限额也不会绕开此节奏。配置与适用边界见 [通道路由说明](docs/model-routing.md)。
 
 ## 本地运行
 

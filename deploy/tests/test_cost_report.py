@@ -64,7 +64,8 @@ class CostReportTests(unittest.TestCase):
         self.assertIn('缺少可读用量的成功调用 1 次', body)
         self.assertIn('付费通道估算费用：0.1235 元', body)
         self.assertIn('不把未知费用记成0元', body)
-        self.assertIn('书生 DeepSeek → 国家超算 GLM', body)
+        self.assertIn('历史超算 GLM（已停用）', body)
+        self.assertIn('书生 DeepSeek 免费 → DeepSeek 官方付费', body)
 
     def test_operating_mail_distinguishes_yesterday_from_rolling_costs_and_partial_coverage(self):
         report = {**SAMPLE, 'traffic': {'day':'2026-10-24','available':True,'views':12,'bots':4,'errors':1,'notFound':2,

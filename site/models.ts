@@ -23,19 +23,10 @@ export interface ModelPreset {
 export const PRESETS: Record<string, ModelPreset> = {
   "intern-flash": {
     service: "intern", model: "deepseek-v4.1-flash-1017", baseUrlEnv: "INTERN_BASE_URL", apiKeyEnv: "INTERN_API_KEY",
-    extra: { thinking: { type: "disabled" } }, jsonMode: true, fallback: "scnet-glm-flash",
+    extra: { thinking: { type: "disabled" } }, jsonMode: true, fallback: "deepseek-flash",
   },
   "intern-flash-think": {
     service: "intern", model: "deepseek-v4.1-flash-1017", baseUrlEnv: "INTERN_BASE_URL", apiKeyEnv: "INTERN_API_KEY", reasoningTokens: 12000,
-    extra: { thinking: { type: "enabled" }, reasoning_effort: "low" }, jsonMode: true, fallback: "scnet-glm-flash-think",
-  },
-  // 超算通用 API 的赠送额度中间层；GLM 实测始终推理，显式使用低强度并预留输出空间。
-  "scnet-glm-flash": {
-    service: "scnet", model: "GLM-5.3-Flash", baseUrlEnv: "SCNET_BASE_URL", apiKeyEnv: "SCNET_API_KEY", reasoningTokens: 12000,
-    extra: { thinking: { type: "enabled" }, reasoning_effort: "low" }, jsonMode: true, fallback: "deepseek-flash",
-  },
-  "scnet-glm-flash-think": {
-    service: "scnet", model: "GLM-5.3-Flash", baseUrlEnv: "SCNET_BASE_URL", apiKeyEnv: "SCNET_API_KEY", reasoningTokens: 12000,
     extra: { thinking: { type: "enabled" }, reasoning_effort: "low" }, jsonMode: true, fallback: "deepseek-flash-think",
   },
   // GLM 5.3 Flash always reasons; the lowest effort keeps short structured tasks fast.
@@ -83,9 +74,9 @@ export const PRESETS: Record<string, ModelPreset> = {
 export const DEFAULTS: Record<string, string> = { score: "deepseek-flash-think" };
 
 // 同一 service 的普通、推理、重试及维护请求共用节奏；给平台 50 RPM 留出余量。
-export const MODEL_REQUESTS_PER_MINUTE: Readonly<Record<string, number>> = { intern: 45, scnet: 30 };
+export const MODEL_REQUESTS_PER_MINUTE: Readonly<Record<string, number>> = { intern: 45 };
 // Shared with maintenance processes through receipt reservations; local waiting never buys a fallback.
-export const MODEL_MAX_CONCURRENT: Readonly<Record<string, number>> = { intern: 3, scnet: 3 };
+export const MODEL_MAX_CONCURRENT: Readonly<Record<string, number>> = { intern: 3 };
 
 // 2026-10-21 核验：https://api-docs.deepseek.com/zh-cn/quick_start/pricing
 // 当前 deepseek-flash 对应官方 V4.1-Flash-1017；官方未公布单独可调用的日期版名称。
