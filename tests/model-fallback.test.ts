@@ -2,7 +2,7 @@ import { stub, Reply, tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { z } from "zod";
-import { chatJson } from "@aihot/backend/providers/llm";
+import { chatJson, MODELS } from "@aihot/backend/providers/llm";
 import { closeDb, sql } from "@aihot/backend/db";
 import { BudgetExceededError } from "@aihot/backend/providers/receipts";
 import { reserveModelCost } from "@aihot/backend/providers/model-cost";
@@ -12,9 +12,9 @@ after(closeDb);
 const answer = { choices: [{ message: { content: '{"ok":true}' } }], usage: { prompt_tokens: 2, completion_tokens: 4 } };
 const call = (model = "intern-flash") => chatJson({ model, purpose: "fallback-test", subject: tag(), promptVersion: tag(), system: "Return JSON", user: "test", schema: z.object({ ok: z.boolean() }) });
 async function withProviders(primary: Parameters<typeof stub>[0], run: (p: Awaited<ReturnType<typeof stub>>, f: Awaited<ReturnType<typeof stub>>) => Promise<void>) {
-  const p = await stub(primary), m = await stub(() => new Reply(503, { error: "middle unavailable" })), f = await stub(() => answer);
-  Object.assign(process.env, { INTERN_BASE_URL: p.url, INTERN_API_KEY: "test", SCNET_BASE_URL: m.url, SCNET_API_KEY: "test", DEEPSEEK_BASE_URL: f.url, DEEPSEEK_API_KEY: "test" });
-  try { await run(p, f); } finally { await p.close(); await m.close(); await f.close(); }
+  const p = await stub(primary), f = await stub(() => answer);
+  Object.assign(process.env, { INTERN_BASE_URL: p.url, INTERN_API_KEY: "test", DEEPSEEK_BASE_URL: f.url, DEEPSEEK_API_KEY: "test" });
+  try { await run(p, f); } finally { await p.close(); await f.close(); }
 }
 
 test("successful priority answers use the exact requested version and never pay the fallback", async () => {
@@ -71,14 +71,9 @@ test("unknown quota pricing is allowed only without a monetary cap and never fab
   try {
     process.env.LLM_DAILY_BUDGET_CNY = "unlimited";
     assert.equal(reserveModelCost("https://discovery-api.intern-ai.org.cn/v1", body), undefined);
-    const scnetBody = { ...body, model: "GLM-5.3-Flash" };
-    assert.equal(reserveModelCost("https://api.scnet.cn/api/llm/v1", scnetBody), undefined);
-    assert.throws(() => reserveModelCost("https://api.scnet.cn/other/v1", scnetBody));
-    assert.throws(() => reserveModelCost("https://api.scnet.cn/api/llm/v1", body));
     assert.throws(() => reserveModelCost("https://example.com/v1", body));
     process.env.LLM_DAILY_BUDGET_CNY = "0.5";
     assert.throws(() => reserveModelCost("https://discovery-api.intern-ai.org.cn/v1", body));
-    assert.throws(() => reserveModelCost("https://api.scnet.cn/api/llm/v1", scnetBody));
   } finally { if (before === undefined) delete process.env.LLM_DAILY_BUDGET_CNY; else process.env.LLM_DAILY_BUDGET_CNY = before; }
 });
 
@@ -87,6 +82,12 @@ test("a timed-out primary retains an unknown receipt and uses only one fallback"
     const result = await chatJson({ model: "intern-flash", purpose: "timeout-fallback-test", subject: tag(), promptVersion: tag(), system: "JSON", user: "test", schema: z.object({ ok: z.boolean() }), timeoutMs: 500 });
     assert.equal(result.model, "deepseek-flash"); assert.equal(p.hits(), 1); assert.equal(f.hits(), 1);
     const rows = await sql`SELECT service,status FROM receipts WHERE purpose='timeout-fallback-test' ORDER BY id`;
-    assert.deepEqual(rows.map(r => [r.service, r.status]), [["intern", "unknown"], ["scnet", "failed"], ["deepseek", "received"]]);
+    assert.deepEqual(rows.map(r => [r.service, r.status]), [["intern", "unknown"], ["deepseek", "received"]]);
   });
+});
+
+test("production routes have only Intern and paid fallback, with no retired provider", () => {
+  assert.equal(MODELS["intern-flash"]!.fallback, "deepseek-flash");
+  assert.equal(MODELS["intern-flash-think"]!.fallback, "deepseek-flash-think");
+  assert.ok(!Object.values(MODELS).some(model => model.service === "scnet"));
 });
