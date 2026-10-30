@@ -65,7 +65,14 @@ class CostReportTests(unittest.TestCase):
         self.assertIn('付费通道估算费用：0.1235 元', body)
         self.assertIn('不把未知费用记成0元', body)
         self.assertIn('历史超算 GLM（已停用）', body)
-        self.assertIn('书生 DeepSeek 免费 → DeepSeek 官方付费', body)
+        self.assertIn('书生免费 → 硅基流动 DeepSeek → DeepSeek 官方付费', body)
+
+    def test_siliconflow_priced_usage_is_separate_from_official_deepseek(self):
+        report = {**SAMPLE, 'provider_costs':[{'service':'siliconflow','calls':2,'cny':'0.2'}, {'service':'deepseek','calls':1,'cny':'0.1'}]}
+        body = reporter.message(report,'sender@example.com','owner@example.com','2026-10-30').get_content()
+        self.assertIn('硅基流动：2 次；0.2000 元', body)
+        self.assertIn('DeepSeek官方：1 次；0.1000 元', body)
+        self.assertIn('硅基流动是有价模型', body)
 
     def test_operating_mail_distinguishes_yesterday_from_rolling_costs_and_partial_coverage(self):
         report = {**SAMPLE, 'traffic': {'day':'2026-10-24','available':True,'views':12,'bots':4,'errors':1,'notFound':2,

@@ -14,7 +14,7 @@ export class ProviderCoolingError extends Error {
 }
 
 export function failureKind(status: number | null, message: string): FailureKind | null {
-  if (status === 434 || status === 429 && /quota|allowance|balance|额度|配额/i.test(message)) return "quota";
+  if (status === 402 || status === 434 || status === 429 && /quota|allowance|balance|额度|配额/i.test(message)) return "quota";
   if (status === 429) return "rate";
   if (status === 401 || status === 403) return "auth";
   if (status === null || status >= 500) return "server";

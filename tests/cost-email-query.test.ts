@@ -15,6 +15,7 @@ test("the actual email SQL separates SCNet quota calls from paid estimates in th
     { service: "scnet", status: "received", usage: {}, cost: null },
     { service: "scnet", status: "failed", usage: null, cost: null },
     { service: "scnet", status: "unknown", usage: null, cost: null },
+    { service: "siliconflow", status: "received", usage: { total_tokens: 60 }, cost: 0.1 },
     { service: "deepseek", status: "received", usage: { total_tokens: 50 }, cost: 0.25 },
   ];
   for (const r of rows) {
@@ -27,9 +28,10 @@ test("the actual email SQL separates SCNet quota calls from paid estimates in th
   await sql`INSERT INTO settings(key,value) VALUES('model.health.intern.fixture',${sql.json({failures:1,reason:'quota',until:Date.now()+300000,attemptId:1})})`;
   const [row] = await sql.unsafe(query);
   const report = row!.json_build_object;
-  assert.equal(report.paid_calls, 1);
-  assert.equal(Number(report.paid_cny), 0.25);
+  assert.equal(report.paid_calls, 2);
+  assert.equal(Number(report.paid_cny), 0.35);
   assert.equal(report.free_success, 1);
+  assert.deepEqual(Object.fromEntries(report.provider_costs.map((p: { service: string; cny: string }) => [p.service, Number(p.cny)])), { deepseek: 0.25, siliconflow: 0.1 });
   assert.equal(report.scnet_success, 2);
   assert.equal(report.scnet_failed, 1);
   assert.equal(report.scnet_unknown, 1);
@@ -40,5 +42,5 @@ test("the actual email SQL separates SCNet quota calls from paid estimates in th
   assert.equal(report.provider_health[0].reason,'quota');
   assert.equal(report.unknown_outcomes, 0);
   assert.equal(report.unpriced_paid, 0);
-  assert.deepEqual(report.purposes.map((p: { calls: number }) => Number(p.calls)), [1]);
+  assert.deepEqual(report.purposes.map((p: { calls: number }) => Number(p.calls)), [2]);
 });

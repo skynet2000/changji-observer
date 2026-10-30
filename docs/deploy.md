@@ -359,3 +359,7 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 ### 2026-10-30 超算中间层移除
 
 更新前备份数据库；将 `models.*` 中直接指定 `scnet-glm-flash` / `scnet-glm-flash-think` 的步骤改成对应 Intern 预设。私有环境与凭据目录删除 SCNET 配置，清理该服务的 budgets 和 `model.health.scnet.*` / `model.pace.scnet*` 当前状态（以实际键名核对）；历史 receipts、receipt_attempts、审计及账务数据保留。仅重新部署本站 web/api/worker。不要修改共享 HTTPS 入口或其他项目。
+
+### 2026-10-30 硅基流动中间层
+
+按 `docs/model-routing.md` 在服务器私有环境填写 SILICONFLOW_BASE_URL / SILICONFLOW_API_KEY。保持每步选择Intern，次级回退由站点预设指定。上线前实测普通/推理参数；按峰值价格登记该服务的费用估算，费用日报分别列有价通道，不能把赠送余额当永久免费。仅发布本站web/api/worker，共享入口不重建。

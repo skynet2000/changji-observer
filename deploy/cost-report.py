@@ -28,6 +28,7 @@ SELECT json_build_object(
  'end',(SELECT end_at FROM bounds) AT TIME ZONE 'Asia/Shanghai',
  'paid_cny',coalesce(sum(cost) FILTER(WHERE currency='CNY'),0)::text,
  'paid_calls',count(*) FILTER(WHERE service NOT IN ('intern','scnet')),
+ 'provider_costs',(SELECT coalesce(json_agg(p),'[]'::json) FROM (SELECT service,count(*) AS calls,coalesce(sum(cost) FILTER(WHERE currency='CNY'),0)::text AS cny FROM calls WHERE service IN ('siliconflow','deepseek') GROUP BY service) p),
  'free_success',count(*) FILTER(WHERE service='intern' AND status='received'),
  'free_failed',count(*) FILTER(WHERE service='intern' AND status='failed'),
  'unknown_outcomes',count(*) FILTER(WHERE service NOT IN ('intern','scnet') AND status IN('unknown','pending')),
@@ -38,10 +39,10 @@ SELECT json_build_object(
  'scnet_tokens',coalesce(sum(CASE WHEN jsonb_typeof(usage->'total_tokens')='number' THEN greatest((usage->>'total_tokens')::numeric,0) ELSE 0 END) FILTER(WHERE service='scnet'),0),
  'scnet_missing_usage',count(*) FILTER(WHERE service='scnet' AND status='received' AND (usage IS NULL OR jsonb_typeof(usage->'total_tokens') IS DISTINCT FROM 'number')),
  'model_errors',(SELECT coalesce(json_agg(e),'[]'::json) FROM (
-   SELECT service,CASE WHEN error ILIKE '%quota%' OR error LIKE '%HTTP 434%' THEN 'quota'
+   SELECT service,CASE WHEN error ILIKE '%quota%' OR error LIKE '%HTTP 402%' OR error LIKE '%HTTP 434%' THEN 'quota'
      WHEN error LIKE '%HTTP 429%' THEN 'rate' WHEN status IN ('unknown','pending') THEN 'unknown'
      WHEN error ~ 'HTTP 5[0-9][0-9]' THEN 'server' ELSE 'other' END AS reason,count(*) AS count
-   FROM calls WHERE service IN ('intern','scnet') AND status<>'received' GROUP BY 1,2) e),
+   FROM calls WHERE service IN ('intern','scnet','siliconflow') AND status<>'received' GROUP BY 1,2) e),
  'provider_health',(SELECT coalesce(json_agg(json_build_object('service',split_part(key,'.',3),
    'reason',value->>'reason','until',value->'until')),'[]'::json) FROM settings
    WHERE key LIKE 'model.health.%' AND (value->>'failures')::int>0),
@@ -90,7 +91,9 @@ def message(report, sender, recipient, day):
         rows += ['', f"历史超算 GLM（已停用）：成功 {report.get('scnet_success', 0)} 次；拒绝 {report.get('scnet_failed', 0)} 次；结果未知/进行中 {report.get('scnet_unknown', 0)} 次",
                  f"超算已返回用量：{report.get('scnet_tokens', 0)} Token；缺少可读用量的成功调用 {report.get('scnet_missing_usage', 0)} 次。",
                  '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
-    providers = {'intern':'书生','scnet':'超算'}
+    providers = {'intern':'书生','scnet':'超算','siliconflow':'硅基流动','deepseek':'DeepSeek官方'}
+    rows += ['', '有价通道分别统计（估算，不等于账户实际扣款）：']
+    rows.extend(f"- {providers.get(p['service'],p['service'])}：{p['calls']} 次；{money(p['cny'])} 元。" for p in report.get('provider_costs', []))
     reasons = {'quota':'额度拒绝','rate':'限流','unknown':'结果未知/进行中','server':'上游服务错误','other':'其他失败'}
     rows += ['', '昨日免费通道异常（尝试次数，重试分别计数）：']
     rows.extend(f"- {providers.get(e['service'],e['service'])}：{reasons.get(e['reason'],e['reason'])} {e['count']} 次" for e in report.get('model_errors', []))
@@ -101,7 +104,7 @@ def message(report, sender, recipient, day):
         state = f"冷却至 {until:%m-%d %H:%M:%S}" if until > datetime.now(ZoneInfo('Asia/Shanghai')) else '等待单条恢复探测'
         rows.append(f"- {providers.get(h['service'],h['service'])}：{reasons.get(h['reason'],h['reason'])}，{state}。")
     if not report.get('provider_health'): rows.append('- 当前无持久化冷却，实际可用性仍以调用结果为准。')
-    rows += ['', '当前策略：书生 DeepSeek 免费 → DeepSeek 官方付费；免费层失败才尝试付费。超算层已移除。',
+    rows += ['', '当前策略：书生免费 → 硅基流动 DeepSeek → DeepSeek 官方付费；前一层失败才进入下一层。硅基流动是有价模型，赠送余额抵扣以平台账单为准。',
              '已确认不可用的免费层在冷却期间暂时跳过；恢复探测成功后重新优先。并发排队不触发付费，超时未知不在原层盲重发。',
              '成功数表示收到模型回复，不保证通过全部业务校验；冷却跳过不会记作一次模型请求。',
              '以上来自本站调用回执，按既有价格估算；最终以供应商账单为准。',

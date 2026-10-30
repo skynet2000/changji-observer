@@ -1,6 +1,6 @@
 # 模型优先通道与回退（2026-10-30）
 
-用户授权优先使用书生端砚 `https://discovery-api.intern-ai.org.cn/v1` 的 `deepseek-v4.1-flash-1017`，不可用时回退原付费 DeepSeek。2026-10-25起按用户要求，每个启用自动信源每120分钟采集一次；RSS/网页下载本身通常不调用模型。
+用户授权优先使用书生端砚 `https://discovery-api.intern-ai.org.cn/v1` 的 `deepseek-v4.1-flash-1017`，不可用时先回退硅基流动的 `deepseek-ai/DeepSeek-V4.1-Flash`，再回退原付费 DeepSeek。2026-10-25起按用户要求，每个启用自动信源每120分钟采集一次；RSS/网页下载本身通常不调用模型。
 
 - 普通任务选择 `intern-flash`；行业预筛与保留的评分配置选择低强度推理 `intern-flash-think`。预筛继续运行，建设期评分及精选深度写作暂停，详见`docs/selection.md`。
 - 覆盖预筛、双次评分、摘要、内容理解、措辞、结构抽取、事件归组及复核、综述、周月报和中英文翻译；后台模型设置可覆盖环境选择。上线时必须核对 `modelSources()`，尤其评分的既有后台设置。
@@ -23,3 +23,13 @@
 ## 超算通道已移除（2026-10-30）
 
 生产回执持续返回 HTTP 402 / Insufficient Balance，按用户要求永久移除超算中间层。普通任务为 `intern-flash → deepseek-flash`，推理任务为 `intern-flash-think → deepseek-flash-think`。删除超算预设、专用限速/并发配置、凭据与当前健康/节奏状态；直接选用旧预设的步骤改回对应 Intern 预设。通用多层回退机制保留，历史回执及邮件中的历史超算用量保留用于账务核对，不能将其算成付费 DeepSeek。
+
+## 硅基流动中间层（2026-10-30）
+
+用户要求以硅基流动替代已移除的超算通道。普通任务 `intern-flash → siliconflow-flash → deepseek-flash`，推理任务 `intern-flash-think → siliconflow-flash-think → deepseek-flash-think`。地址 `https://api.siliconflow.cn/v1`，私有配置 `SILICONFLOW_BASE_URL` / `SILICONFLOW_API_KEY`。
+
+实际接口验证普通与推理JSON均成功，模型返回 `deepseek-ai/DeepSeek-V4.1-Flash`；该名字不独立证明底层固定到1017版本。普通任务用 `enable_thinking:false`，推理任务用 `enable_thinking:true,thinking_budget:12000`。与官方DeepSeek的 `thinking.type` 参数分开。
+
+硅基流动是有价通道，不能视为永久免费。按[官方价格](https://www.siliconflow.cn/pricing)高峰价每百万Token输入2元、缓存命中0.04元、输出8元估算上界；忽略低谷优惠。最大输出费用预约还包含单独推理预算。赠送余额抵扣/充值扣费以供应商账单为准，费用邮件分别列硅基流动和DeepSeek官方，不把未知费用记为0。
+
+本站对硅基流动主动设置30 RPM、3个在途请求（不是平台限额承诺），普通/推理及维护任务共用数据库协调。402余额不足进入共享额度冷却，不重试空余额；429、连接/5xx、无效输出按既有保护执行。配置错误与本地预算保护仍终止，不跳供应商绕过。
