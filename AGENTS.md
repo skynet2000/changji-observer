@@ -83,3 +83,5 @@
 2026-10-30 用户要求永久移除已耗尽额度的超算层：普通 intern-flash → deepseek-flash，推理 intern-flash-think → deepseek-flash-think。保留书生节奏、并发与恢复保护及历史用量回执，清理超算预设、密钥和当前健康状态。
 
 2026-10-30 最新：用户要求原超算位置改为硅基流动 deepseek-ai/DeepSeek-V4.1-Flash。书生 → 硅基流动 → DeepSeek官方，普通/推理分别保留模式。硅基是有价通道，不能称免费；单独统计费用并保留回执。硅基本站限30RPM/3并发，402余额不足共享冷却，不盲目重试。密钥仅私有环境，模型别名不保证1017固定版本。
+
+2026-10-30 最新：用户确认 https://aihubmix.com/ 为推理时代官网，并要求放在硅基与DeepSeek官方之间。现四层书生→硅基→推理时代1017→官方。请求 deepseek-v4.1-flash-1017，普通用原生thinking disabled与reasoning_effort none（仅none实测不关闭），推理保留enabled/low。推理时代按USD保守估算，邮件单列美元不得混加人民币；有限人民币预算无可信换算时拒绝USD调用。保护30RPM/3并发。

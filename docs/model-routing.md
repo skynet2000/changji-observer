@@ -33,3 +33,18 @@
 硅基流动是有价通道，不能视为永久免费。按[官方价格](https://www.siliconflow.cn/pricing)高峰价每百万Token输入2元、缓存命中0.04元、输出8元估算上界；忽略低谷优惠。最大输出费用预约还包含单独推理预算。赠送余额抵扣/充值扣费以供应商账单为准，费用邮件分别列硅基流动和DeepSeek官方，不把未知费用记为0。
 
 本站对硅基流动主动设置30 RPM、3个在途请求（不是平台限额承诺），普通/推理及维护任务共用数据库协调。402余额不足进入共享额度冷却，不重试空余额；429、连接/5xx、无效输出按既有保护执行。配置错误与本地预算保护仍终止，不跳供应商绕过。
+
+## 推理时代 AIHubMix 第三层（2026-10-30）
+
+用户确认官网 https://aihubmix.com/，在硅基流动与DeepSeek官方之间插入推理时代。
+
+| 层 | 通道 | 普通 / 推理预设 |
+| --- | --- | --- |
+| 1 | 书生 | intern-flash / intern-flash-think |
+| 2 | 硅基流动 | siliconflow-flash / siliconflow-flash-think |
+| 3 | 推理时代 AIHubMix | aihubmix-flash / aihubmix-flash-think |
+| 4 | DeepSeek官方 | deepseek-flash / deepseek-flash-think |
+
+私有变量 `AIHUBMIX_BASE_URL=https://aihubmix.com/v1`、`AIHUBMIX_API_KEY`。请求模型 `deepseek-v4.1-flash-1017`，真实生成返回 `deepseek-v4-1-flash-261017`。普通任务仅设 `reasoning_effort:none` 实测仍有推理Token，因此同时传原生 `thinking.type:disabled`；该组合实测推理Token为0。推理任务保留 `thinking.type:enabled,reasoning_effort:low`，额外预留12000输出Token。本站设30RPM/3并发保护，并继续使用回执、冷却、有限重试和后继通道机制。
+
+[官方报价](https://aihubmix.com/blog/aihubmix-desktop-1-0-one-click-setup-for-11-agents-and-half-price-deepseek-v4-1-flash-1017-for-two-weeks)以美元计费。估算取非促销高峰价：每百万Token输入0.3098美元、输出1.2392美元，忽略缓存和促销折扣作为上界。USD单独写入回执、价格表和邮件；不套用DeepSeek人民币价格，不将两种货币直接相加。若恢复有限人民币预算，在没有可信换算机制时阻止此美元通道，不能换币绕过上限。当前不限额模式不受影响。实际扣款以推理时代账单为准。
