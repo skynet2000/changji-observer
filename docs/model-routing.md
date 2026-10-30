@@ -48,3 +48,9 @@
 私有变量 `AIHUBMIX_BASE_URL=https://aihubmix.com/v1`、`AIHUBMIX_API_KEY`。请求模型 `deepseek-v4.1-flash-1017`，真实生成返回 `deepseek-v4-1-flash-261017`。普通任务仅设 `reasoning_effort:none` 实测仍有推理Token，因此同时传原生 `thinking.type:disabled`；该组合实测推理Token为0。推理任务保留 `thinking.type:enabled,reasoning_effort:low`，额外预留12000输出Token。本站设30RPM/3并发保护，并继续使用回执、冷却、有限重试和后继通道机制。
 
 [官方报价](https://aihubmix.com/blog/aihubmix-desktop-1-0-one-click-setup-for-11-agents-and-half-price-deepseek-v4-1-flash-1017-for-two-weeks)以美元计费。估算取非促销高峰价：每百万Token输入0.3098美元、输出1.2392美元，忽略缓存和促销折扣作为上界。USD单独写入回执、价格表和邮件；不套用DeepSeek人民币价格，不将两种货币直接相加。若恢复有限人民币预算，在没有可信换算机制时阻止此美元通道，不能换币绕过上限。当前不限额模式不受影响。实际扣款以推理时代账单为准。
+
+### 最新汇率展示（2026-10-30 用户补充）
+
+费用邮件发送时，如昨天有美元消费，调用Yahoo Finance的USD/CNY最新可得行情，统一折算总额、通道与用途的人民币估算。邮件保留原美元及报价时间/来源；报价可能延迟。周末等情况下超过24小时的最近报价显著标为非实时，超过4天、异常价格/币对或接口失败不换算，不把未折算部分算成0元。实际充值结算汇率可能不同。
+
+美元回执保留原币，汇率快照随邮件发送状态保存，避免改写历史账务。此展示换算不改变模型调用的CNY预算保护。邮件脚本为主机任务，可按校验和独立更新，更新前备份并记录Git提交及文件哈希；无需重启web/api/worker或共享入口。

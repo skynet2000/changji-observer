@@ -9,6 +9,7 @@ import smtplib
 import ssl
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime, timedelta
 from decimal import Decimal
 from email.message import EmailMessage
@@ -73,6 +74,35 @@ def money(value):
     return f'{Decimal(str(value)):.4f}'
 
 
+def latest_usd_cny():
+    """Fetch latest available USD/CNY market quote; never silently reuse a cached rate."""
+    try:
+        request = urllib.request.Request('https://query1.finance.yahoo.com/v8/finance/chart/CNY=X?interval=1m&range=1d', headers={'User-Agent':'DachangObserver/1.0'})
+        with urllib.request.urlopen(request, timeout=12) as response:
+            meta = json.loads(response.read(2000000))['chart']['result'][0]['meta']
+        now = datetime.now(ZoneInfo('UTC'))
+        rate = Decimal(str(meta['regularMarketPrice']))
+        quoted = datetime.fromtimestamp(meta['regularMarketTime'], ZoneInfo('UTC'))
+        age = (now - quoted).total_seconds()
+        if meta['symbol'] != 'CNY=X' or meta['currency'] != 'CNY' or not rate.is_finite() or rate <= 0 or age < -300 or age > 4*86400:
+            raise ValueError('Invalid or stale USD/CNY quote')
+        return {'available':True,'rate':str(rate),'quoted_at':quoted.astimezone(ZoneInfo('Asia/Shanghai')).isoformat(),
+                'fetched_at':now.isoformat(),'source':'Yahoo Finance USD/CNY https://finance.yahoo.com/quote/CNY=X/',
+                'older_quote':age>86400}
+    except (OSError, ValueError, KeyError, TypeError, IndexError, ArithmeticError):
+        return {'available':False,'reason':'汇率接口失败、无有效报价或报价已过期'}
+
+
+def cost_text(cny, usd, fx):
+    cny, usd = Decimal(str(cny)), Decimal(str(usd))
+    if usd == 0:
+        return f'{money(cny)} 元'
+    if fx.get('available'):
+        total = cny + usd * Decimal(fx['rate'])
+        return f'约 {money(total)} 元（原美元部分 {money(usd)} 美元）'
+    return (f'{money(cny)} 元 + ' if cny else '') + f'{money(usd)} 美元（汇率不可用，尚未折算）'
+
+
 def message(report, sender, recipient, day):
     msg = EmailMessage()
     msg['From'] = formataddr(('大厂观察', sender))
@@ -80,12 +110,18 @@ def message(report, sender, recipient, day):
     msg['Subject'] = f'大厂观察｜网站运营日报｜{day}'
     msg['Message-ID'] = f'<changji-cost-{day}@innews.site>'
     msg['Date'] = format_datetime(datetime.now(ZoneInfo('Asia/Shanghai')))
+    fx = report.get('fx', {})
     rows = [f"统一统计窗口（北京时间）：{report['start']} 至 {report['end']}",
             f"付费通道估算费用：{money(report['paid_cny'])} 元", f"付费通道尝试：{report['paid_calls']} 次",
             f"书生免费通道成功：{report['free_success']} 次；拒绝：{report['free_failed']} 次", '', '费用用途：']
-    rows.extend(f"- {LABELS.get(p['purpose'], p['purpose'])}：{money(p['cny'])} 元" + (f" + {money(p['usd'])} 美元" if p.get('usd') else '') + f"，{p['calls']} 次" for p in report['purposes'])
+    rows.extend(f"- {LABELS.get(p['purpose'], p['purpose'])}：{cost_text(p['cny'], p.get('usd', 0), fx)}，{p['calls']} 次" for p in report['purposes'])
     if Decimal(str(report.get('paid_usd', 0))) > 0:
-        rows.insert(2, f"另计推理时代等美元费用：{money(report['paid_usd'])} 美元；未与人民币相加。")
+        rows[1] = '付费通道估算费用（统一折合人民币）：' + cost_text(report['paid_cny'], report['paid_usd'], fx)
+        if fx.get('available'):
+            quote_label = '较旧行情（非实时）' if fx.get('older_quote') else '最新可得行情（可能延迟）'
+            rows.insert(2, f"汇率：1 美元 = {fx['rate']} 元；{quote_label}，报价时间 {fx['quoted_at']}；来源 {fx['source']}。仅用于估算，不等于充值结算汇率。")
+        else:
+            rows.insert(2, '汇率获取失败：人民币合计尚不完整，原始美元费用保留；不按0元处理。')
     if not report['purposes']:
         rows.append('- 本窗口没有付费通道调用。')
     if report['unknown_outcomes'] or report['unpriced_paid']:
@@ -96,7 +132,7 @@ def message(report, sender, recipient, day):
                  '超算按调用回执统计 Token，不是平台剩余额度或已核实现金账单；不把未知费用记成0元。']
     providers = {'intern':'书生','scnet':'超算','siliconflow':'硅基流动','deepseek':'DeepSeek官方','aihubmix':'推理时代'}
     rows += ['', '有价通道分别统计（估算，不等于账户实际扣款）：']
-    rows.extend(f"- {providers.get(p['service'],p['service'])}：{p['calls']} 次；" + (f"{money(p['usd'])} 美元。" if p['service']=='aihubmix' else f"{money(p['cny'])} 元。") for p in report.get('provider_costs', []))
+    rows.extend(f"- {providers.get(p['service'],p['service'])}：{p['calls']} 次；{cost_text(p['cny'],p.get('usd',0),fx)}。" for p in report.get('provider_costs', []))
     reasons = {'quota':'额度拒绝','rate':'限流','unknown':'结果未知/进行中','server':'上游服务错误','other':'其他失败'}
     rows += ['', '昨日优先通道及历史超算异常（尝试次数，重试分别计数）：']
     rows.extend(f"- {providers.get(e['service'],e['service'])}：{reasons.get(e['reason'],e['reason'])} {e['count']} 次" for e in report.get('model_errors', []))
@@ -218,6 +254,8 @@ def main():
         return
     report = json.loads(subprocess.check_output(['docker','compose','exec','-T','db','psql','-U','aihot','-d','aihot','-Atc',QUERY], cwd=ROOT/'current', text=True))
     report['traffic'] = traffic_report(day)
+    if Decimal(str(report.get('paid_usd', 0))) > 0:
+        report['fx'] = latest_usd_cny()
     if not args.send:
         print(message(report, os.environ.get('SMTP_FROM','operator@example.com'),
                       os.environ.get('COST_EMAIL_TO','operator@example.com'), day).as_string())
@@ -235,7 +273,7 @@ def main():
         with smtp() as client:
             msg = message(report, os.environ['SMTP_FROM'], os.environ['COST_EMAIL_TO'], day)
             state = {k:v for k,v in sorted(state.items())[-34:]}
-            state[day] = {'status':'sending','cny':report['paid_cny'],'window_end':report['end']}
+            state[day] = {'status':'sending','cny':report['paid_cny'],'usd':report.get('paid_usd','0'),'fx':report.get('fx'),'window_end':report['end']}
             save_state(state_path, state)
             try:
                 client.send_message(msg, to_addrs=[os.environ['COST_EMAIL_TO']])

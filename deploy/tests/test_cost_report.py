@@ -74,12 +74,64 @@ class CostReportTests(unittest.TestCase):
         self.assertIn('DeepSeek官方：1 次；0.1000 元', body)
         self.assertIn('硅基流动是有价模型', body)
 
-    def test_usd_is_shown_separately_and_never_added_to_cny(self):
+    def test_usd_without_quote_is_not_pretended_to_be_a_complete_cny_total(self):
         report = {**SAMPLE, 'paid_usd':'0.02','provider_costs':[{'service':'aihubmix','calls':2,'cny':'0','usd':'0.02'}]}
         body = reporter.message(report,'sender@example.com','owner@example.com','2026-10-30').get_content()
-        self.assertIn('付费通道估算费用：0.1235 元', body)
-        self.assertIn('0.0200 美元；未与人民币相加', body)
+        self.assertIn('0.1235 元 + 0.0200 美元', body)
+        self.assertIn('人民币合计尚不完整', body)
         self.assertIn('推理时代：2 次；0.0200 美元', body)
+
+    def test_latest_quote_converts_total_provider_and_purpose_without_double_counting(self):
+        fx = {'available':True,'rate':'7','quoted_at':'2026-10-30T08:59:00+08:00','source':'Yahoo Finance','older_quote':False}
+        report = {**SAMPLE, 'paid_usd':'0.02','fx':fx,
+                  'purposes':[{'purpose':'translate_body','calls':3,'cny':'0.123456','usd':'0.02'}],
+                  'provider_costs':[{'service':'aihubmix','calls':2,'cny':'0','usd':'0.02'}]}
+        body = reporter.message(report,'sender@example.com','owner@example.com','2026-10-30').get_content()
+        self.assertIn('统一折合人民币）：约 0.2635 元',body)
+        self.assertIn('推理时代：2 次；约 0.1400 元',body)
+        self.assertIn('全文翻译：约 0.2635 元',body)
+        self.assertIn('2026-10-30T08:59:00+08:00',body)
+        self.assertIn('1 美元 = 7 元',body)
+        self.assertIn('原美元部分 0.0200 美元',body)
+
+    def quote(self, **changes):
+        meta = {'symbol':'CNY=X','currency':'CNY','regularMarketPrice':6.7,
+                'regularMarketTime':int(reporter.datetime.now().timestamp())}
+        meta.update(changes)
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps({'chart':{'result':[{'meta':meta}]}}).encode()
+        return response
+
+    def test_latest_quote_is_fetched_and_validates_pair_rate_and_age(self):
+        with patch.object(reporter.urllib.request,'urlopen',return_value=self.quote()) as fetch:
+            fx = reporter.latest_usd_cny()
+        self.assertTrue(fx['available'])
+        self.assertEqual(fx['rate'],'6.7')
+        self.assertTrue(fx['quoted_at'].endswith('+08:00'))
+        self.assertEqual(fetch.call_args.kwargs['timeout'],12)
+        for changes in [{'symbol':'CNH=X'},{'regularMarketPrice':-1},{'regularMarketPrice':'NaN'}, {'regularMarketTime':0}]:
+            with patch.object(reporter.urllib.request,'urlopen',return_value=self.quote(**changes)):
+                self.assertFalse(reporter.latest_usd_cny()['available'])
+        with patch.object(reporter.urllib.request,'urlopen',side_effect=OSError('offline')):
+            self.assertFalse(reporter.latest_usd_cny()['available'])
+
+    def test_old_but_latest_market_quote_is_marked_as_non_realtime(self):
+        with patch.object(reporter.urllib.request,'urlopen',return_value=self.quote(regularMarketTime=int(reporter.datetime.now().timestamp())-2*86400)):
+            fx = reporter.latest_usd_cny()
+        self.assertTrue(fx['available'])
+        body = reporter.message({**SAMPLE,'paid_usd':'0.02','fx':fx},'sender@example.com','owner@example.com','2026-10-30').get_content()
+        self.assertIn('较旧行情（非实时）',body)
+
+    def test_sent_report_retains_original_usd_and_the_exchange_quote(self):
+        fx = {'available':True,'rate':'7','quoted_at':'2026-10-30T08:59:00+08:00','source':'Yahoo Finance','older_quote':False}
+        with patch('sys.argv',['cost-report.py','--send']), patch.object(reporter.subprocess,'check_output',return_value=json.dumps({**SAMPLE,'paid_usd':'0.02'})), patch.object(reporter,'smtp',return_value=self.client), patch.object(reporter,'latest_usd_cny',return_value=fx) as fetch:
+            reporter.main()
+        fetch.assert_called_once()
+        state = json.loads((self.root/'shared/cost-mail-state.json').read_text())
+        sent = next(iter(state.values()))
+        self.assertEqual(sent['usd'],'0.02')
+        self.assertEqual(sent['fx']['rate'],'7')
+        self.assertEqual(sent['status'],'sent')
 
     def test_operating_mail_distinguishes_yesterday_from_rolling_costs_and_partial_coverage(self):
         report = {**SAMPLE, 'traffic': {'day':'2026-10-24','available':True,'views':12,'bots':4,'errors':1,'notFound':2,
