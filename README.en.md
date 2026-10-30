@@ -157,7 +157,7 @@ Presets live in [`site/models.ts`](site/models.ts). Effective precedence is **ad
 
 The project enforces 45 RPM for Intern, 30 RPM for SiliconFlow and three in-flight requests per protected endpoint/model. Free availability still depends on platform quotas, RPM/TPM and channel capacity. Paid fallback consumes balance. The current owner has removed the CNY amount cap while retaining request limits, concurrency, kill switches and receipt protection. An unknown request outcome can still have a cost; do not retry blindly. Dashboard/email amounts estimate this site's receipts, not the provider's final bill or other projects using the same key.
 
-AIHubMix is the third tier (`deepseek-v4.1-flash-1017`). Its USD estimates are reported separately, never added to CNY; see [routing](docs/model-routing.md).
+AIHubMix is the third tier (`deepseek-v4.1-flash-1017`). Its original USD ledger is retained; operating emails convert USD into CNY using the latest available quote, with source and quote time; see [routing](docs/model-routing.md).
 
 ## Run locally
 
