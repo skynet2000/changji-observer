@@ -81,7 +81,7 @@ export const PRESETS: Record<string, ModelPreset> = {
  */
 export const DEFAULTS: Record<string, string> = { score: "deepseek-flash-think" };
 
-// 同一 service 的普通、推理、重试及维护请求共用节奏；给平台 50 RPM 留出余量。
+// 同一 service 的普通、推理、重试及维护请求共用节奏；书生为平台 50 RPM 留余量，硅基采用本站保守节奏。
 export const MODEL_REQUESTS_PER_MINUTE: Readonly<Record<string, number>> = { intern: 45, siliconflow: 30 };
 // Shared with maintenance processes through receipt reservations; local waiting never buys a fallback.
 export const MODEL_MAX_CONCURRENT: Readonly<Record<string, number>> = { intern: 3, siliconflow: 3 };

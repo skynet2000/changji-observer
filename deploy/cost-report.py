@@ -95,9 +95,9 @@ def message(report, sender, recipient, day):
     rows += ['', '有价通道分别统计（估算，不等于账户实际扣款）：']
     rows.extend(f"- {providers.get(p['service'],p['service'])}：{p['calls']} 次；{money(p['cny'])} 元。" for p in report.get('provider_costs', []))
     reasons = {'quota':'额度拒绝','rate':'限流','unknown':'结果未知/进行中','server':'上游服务错误','other':'其他失败'}
-    rows += ['', '昨日免费通道异常（尝试次数，重试分别计数）：']
+    rows += ['', '昨日优先通道及历史超算异常（尝试次数，重试分别计数）：']
     rows.extend(f"- {providers.get(e['service'],e['service'])}：{reasons.get(e['reason'],e['reason'])} {e['count']} 次" for e in report.get('model_errors', []))
-    if not report.get('model_errors'): rows.append('- 本窗口没有记录到免费通道异常。')
+    if not report.get('model_errors'): rows.append('- 本窗口没有记录到优先通道及历史超算异常。')
     rows += ['', '当前通道状态（非昨日统计）：']
     for h in report.get('provider_health', []):
         until = datetime.fromtimestamp(h['until']/1000, ZoneInfo('Asia/Shanghai'))
