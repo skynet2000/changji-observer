@@ -1,4 +1,4 @@
-import { MODEL_COST_POLICY } from "@aihot/site/models";
+import { AIHUBMIX_COST_POLICY, MODEL_COST_POLICY } from "@aihot/site/models";
 import { beijingDate } from "@aihot/contracts/time";
 import type { ReceiptRequest } from "./receipts.ts";
 
@@ -12,13 +12,14 @@ export function budgetedOutputTokens(requested: number): number {
   return setting && !unlimited ? Math.min(requested, MODEL_COST_POLICY.maxOutputTokens) : requested;
 }
 
-/** A conservative CNY estimate at the site's verified peak prices; unknown usage keeps the reservation. */
-export function modelCost(usage: Record<string, unknown> | null): number | null {
+/** A conservative estimate in the provider currency at verified peak prices; unknown usage keeps the reservation. */
+export function modelCost(usage: Record<string, unknown> | null, currency = "CNY"): number | null {
   if (!usage || !tokens(usage.prompt_tokens) || !tokens(usage.completion_tokens)) return null;
+  const policy = currency === "USD" ? AIHUBMIX_COST_POLICY : MODEL_COST_POLICY;
   const cached = tokens(usage.prompt_cache_hit_tokens) ? usage.prompt_cache_hit_tokens : 0;
   if (cached > usage.prompt_tokens) return null;
-  return roundUp(((usage.prompt_tokens - cached) * MODEL_COST_POLICY.inputPerMillion
-    + cached * MODEL_COST_POLICY.cachedInputPerMillion + usage.completion_tokens * MODEL_COST_POLICY.outputPerMillion) / 1e6);
+  return roundUp(((usage.prompt_tokens - cached) * policy.inputPerMillion
+    + cached * policy.cachedInputPerMillion + usage.completion_tokens * policy.outputPerMillion) / 1e6);
 }
 
 /** Byte-based input upper bound plus per-message framing; unsupported models or image inputs stop before sending. */
@@ -27,9 +28,13 @@ export function reserveModelCost(baseUrl: string, body: Record<string, unknown>)
   if (!setting) return undefined;
   const dailyLimit = setting === "unlimited" ? null : Number(setting);
   if (dailyLimit !== null && (!Number.isFinite(dailyLimit) || dailyLimit <= 0)) throw new Error("LLM_DAILY_BUDGET_CNY must be positive or unlimited");
+  const aihubmix = baseUrl.replace(/\/$/, "") === "https://aihubmix.com/v1" && body.model === "deepseek-v4.1-flash-1017";
+  const unlimitedToday = process.env.LLM_BUDGET_UNLIMITED_DATE === beijingDate(new Date());
+  if (aihubmix && dailyLimit !== null && !unlimitedToday) throw new Error("A finite CNY budget cannot bound USD calls without verified currency conversion");
+  const policy = aihubmix ? AIHUBMIX_COST_POLICY : MODEL_COST_POLICY;
   // SiliconFlow publishes the same peak prices as the official Flash endpoint; use that upper bound.
   const siliconflow = baseUrl.replace(/\/$/, "") === "https://api.siliconflow.cn/v1" && body.model === "deepseek-ai/DeepSeek-V4.1-Flash";
-  if (!siliconflow && (new URL(baseUrl).origin !== MODEL_COST_POLICY.origin || body.model !== MODEL_COST_POLICY.model)) {
+  if (!aihubmix && !siliconflow && (new URL(baseUrl).origin !== MODEL_COST_POLICY.origin || body.model !== MODEL_COST_POLICY.model)) {
     // The quota provider reports tokens but no CNY bill. Keep its monetary cost unknown, not a
     // fabricated zero or DeepSeek's retail price. A future finite cap must fail closed.
     const quotaModel = new URL(baseUrl).origin === "https://discovery-api.intern-ai.org.cn" && body.model === "deepseek-v4.1-flash-1017";
@@ -38,7 +43,7 @@ export function reserveModelCost(baseUrl: string, body: Record<string, unknown>)
   }
   const fields = ["model", "messages", "temperature", "max_tokens", "response_format", "thinking", "reasoning_effort", ...(siliconflow ? ["enable_thinking", "thinking_budget"] : [])];
   if (Object.keys(body).some(key => !fields.includes(key))) throw new Error("Cannot bound extra model request fields");
-  if (body.reasoning_effort !== undefined && !["low", "high", "max"].includes(String(body.reasoning_effort))) throw new Error("Unsupported reasoning effort");
+  if (body.reasoning_effort !== undefined && ![...(aihubmix ? ["none"] : []), "low", "high", "max"].includes(String(body.reasoning_effort))) throw new Error("Unsupported reasoning effort");
   if (!tokens(body.max_tokens) || body.max_tokens === 0 || !Array.isArray(body.messages)) throw new Error("Cannot bound model request cost");
   const thinkingBudget = siliconflow ? body.thinking_budget ?? 0 : 0;
   if (!tokens(thinkingBudget) || thinkingBudget > 32768) throw new Error("Unsupported thinking budget");
@@ -49,8 +54,7 @@ export function reserveModelCost(baseUrl: string, body: Record<string, unknown>)
       inputBytes += message.content.reduce((sum, p) => sum + Buffer.byteLength(p.text), 0);
     } else throw new Error("Cost budget supports text-only model requests");
   }
-  const maxAmount = roundUp(((inputBytes + body.messages.length * 1024) * MODEL_COST_POLICY.inputPerMillion
-    + (body.max_tokens + thinkingBudget) * MODEL_COST_POLICY.outputPerMillion) / 1e6);
-  const unlimitedToday = process.env.LLM_BUDGET_UNLIMITED_DATE === beijingDate(new Date());
-  return { maxAmount, dailyLimit: unlimitedToday ? null : dailyLimit, currency: "CNY" };
+  const maxAmount = roundUp(((inputBytes + body.messages.length * 1024) * policy.inputPerMillion
+    + (body.max_tokens + thinkingBudget) * policy.outputPerMillion) / 1e6);
+  return { maxAmount, dailyLimit: unlimitedToday ? null : dailyLimit, currency: aihubmix ? "USD" : "CNY" };
 }

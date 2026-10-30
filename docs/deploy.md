@@ -363,3 +363,7 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 ### 2026-10-30 硅基流动中间层
 
 按 `docs/model-routing.md` 在服务器私有环境填写 SILICONFLOW_BASE_URL / SILICONFLOW_API_KEY。保持每步选择Intern，次级回退由站点预设指定。上线前实测普通/推理参数；按峰值价格登记该服务的费用估算，费用日报分别列有价通道，不能把赠送余额当永久免费。仅发布本站web/api/worker，共享入口不重建。
+
+### 2026-10-30 推理时代第三层
+
+在私有环境配置 AIHUBMIX_BASE_URL=https://aihubmix.com/v1 与 AIHUBMIX_API_KEY。各任务仍选Intern，后继改为硅基→推理时代→官方。USD价格与回执单独存储，费用邮件分别展示CNY与USD；当前有限CNY预算不能跨币种，启用前核对限制。普通模式同时关闭原生thinking，验收推理Token，避免仅统一参数被网关忽略。备份并仅更新本站web/api/worker。

@@ -249,7 +249,7 @@ async function chatJsonOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>): Prom
         response: { ...json, _latencyMs: Date.now() - started },
         requestId: (json.id as string | undefined) ?? res.headers.get("x-request-id"),
         usage,
-        cost: costBudget ? { amount: modelCost(usage) ?? costBudget.maxAmount, currency: "CNY", basis: "estimated" } : null,
+        cost: costBudget ? { amount: modelCost(usage, costBudget.currency) ?? costBudget.maxAmount, currency: costBudget.currency, basis: "estimated" } : null,
       };
     },
   );
